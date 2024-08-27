@@ -5,5 +5,6 @@ project(BunnyEngine
         DESCRIPTION "A cute little graphics engine like a bunny.")
 
 add_subdirectory("./lib/rendering/vulkan")
+add_subdirectory("./third-party/glfw")
 
 add_subdirectory("./engine")
