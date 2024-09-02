@@ -1,44 +1,17 @@
 #include "VulkanRenderer.h"
+#include "Engine.h"
 
 #include <iostream>
-#include <memory>
-#include <GLFW/glfw3.h>
+
+using namespace Bunny;
 
 int main(void)
 {
     std::cout << "Welcome to Bunny Engine!\n";
 
-    GLFWwindow* window;
+    Engine engine;
 
-    /* Initialize the library */
-    if (!glfwInit())
-        return -1;
+    engine.run();
 
-    /* Create a windowed mode window and its OpenGL context */
-    window = glfwCreateWindow(640, 480, "Bunny Engine", NULL, NULL);
-    if (!window)
-    {
-        glfwTerminate();
-        return -1;
-    }
-
-    /* Make the window's context current */
-    glfwMakeContextCurrent(window);
-    // glClearColor( 0.4f, 0.3f, 0.4f, 0.0f );
-
-    /* Loop until the user closes the window */
-    while (!glfwWindowShouldClose(window))
-    {
-        /* Render here */
-        // glClear(GL_COLOR_BUFFER_BIT);
-
-        /* Swap front and back buffers */
-        glfwSwapBuffers(window);
-
-        /* Poll for and process events */
-        glfwPollEvents();
-    }
-
-    glfwTerminate();
     return 0;
 }

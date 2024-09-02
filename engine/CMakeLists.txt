@@ -1,4 +1,9 @@
-add_executable(FullEngine main.cpp)
+set(FULL_ENGINE_SOURCE 
+    Engine.h
+    Engine.cpp
+    main.cpp)
+
+add_executable(FullEngine ${FULL_ENGINE_SOURCE})
 
 target_compile_features(FullEngine PRIVATE cxx_std_20)
 
