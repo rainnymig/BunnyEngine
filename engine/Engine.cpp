@@ -1,5 +1,8 @@
 #include "Engine.h"
 
+#include <VulkanRenderer.h>
+#include <VulkanRendererFactory.h>
+
 #include <GLFW/glfw3.h>
 
 namespace Bunny
@@ -24,6 +27,11 @@ namespace Bunny
         glfwMakeContextCurrent(window);
         // glClearColor( 0.4f, 0.3f, 0.4f, 0.0f );
 
+        std::unique_ptr<Bunny::Render::RendererFactory> factory = std::make_unique<Bunny::Render::VulkanRendererFactory>();
+        std::unique_ptr<Bunny::Render::Renderer> renderer = factory->makeRenderer(window);
+        renderer->initialize();
+        // renderer->render();
+
         /* Loop until the user closes the window */
         while (!glfwWindowShouldClose(window))
         {
@@ -36,6 +44,8 @@ namespace Bunny
             /* Poll for and process events */
             glfwPollEvents();
         }
+
+        renderer->cleanup();
 
         glfwTerminate();
     }

@@ -4,6 +4,8 @@ project(BunnyEngine
         VERSION "0.0.1"
         DESCRIPTION "A cute little graphics engine like a bunny.")
 
+set (CMAKE_CXX_STANDARD 20)
+
 # Third Parties
 # GLFW
 add_subdirectory("./third-party/glfw")
