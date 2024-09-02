@@ -6,5 +6,6 @@ project(BunnyEngine
 
 add_subdirectory("./lib/rendering/vulkan")
 add_subdirectory("./third-party/glfw")
+add_subdirectory("./third-party/glm")
 
 add_subdirectory("./engine")
