@@ -15,8 +15,11 @@ namespace Bunny
         if (!glfwInit())
             return;
 
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+        glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+
         /* Create a windowed mode window and its OpenGL context */
-        window = glfwCreateWindow(640, 480, "Bunny Engine", NULL, NULL);
+        window = glfwCreateWindow(960, 540, "Bunny Engine", NULL, NULL);
         if (!window)
         {
             glfwTerminate();
@@ -47,6 +50,7 @@ namespace Bunny
 
         renderer->cleanup();
 
+        glfwDestroyWindow(window);
         glfwTerminate();
     }
 }

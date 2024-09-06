@@ -7,6 +7,7 @@ target_sources(VulkanRenderer
         headers/VulkanRenderer.h
         headers/VulkanRendererFactory.h
         headers/QueueFamilyIndices.h
+        headers/SwapChainSupportDetails.h
     PRIVATE
         src/VulkanRenderer.cpp
         src/VulkanRendererFactory.cpp    
