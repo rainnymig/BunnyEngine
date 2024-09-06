@@ -22,12 +22,14 @@ namespace Bunny::Render
     private:
 
         void createInstance();
+        void setupDebugMessenger();
+        void createSurface();
+        void pickPhysicalDevice();
+        void createLogicalDevice();
+
         bool checkValidationLayerSupport(const std::vector<const char*>& validationLayers) const;
         std::vector<const char*> getRequiredExtensions();
         void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo) const;
-        void setupDebugMessenger();
-        void pickPhysicalDevice();
-        void createLogicalDevice();
         bool isDeviceSuitable(VkPhysicalDevice device) const;
         QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) const;
 
@@ -43,5 +45,7 @@ namespace Bunny::Render
         VkPhysicalDevice mPhysicalDevice = VK_NULL_HANDLE;
         VkDevice mDevice;
         VkQueue mGraphicsQueue;
+        VkQueue mPresentQueue;
+        VkSurfaceKHR mSurface;
     };
 }

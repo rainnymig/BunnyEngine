@@ -5,10 +5,14 @@
 namespace Bunny::Render
 {
     struct QueueFamilyIndices {
-        std::optional<uint32_t> graphicsFamily;
+
+        using QueueFamilyIndexType = uint32_t;
+
+        std::optional<QueueFamilyIndexType> graphicsFamily;
+        std::optional<QueueFamilyIndexType> presentFamily;
 
         bool isComplete() const {
-            return graphicsFamily.has_value();
+            return graphicsFamily.has_value() && presentFamily.has_value();
         }
     };
 }

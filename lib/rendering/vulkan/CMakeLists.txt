@@ -14,6 +14,8 @@ target_sources(VulkanRenderer
 
 find_package(Vulkan REQUIRED)
 
+target_compile_definitions(VulkanRenderer PUBLIC GLFW_INCLUDE_VULKAN)
+
 # target_include_directories(VulkanRenderer PUBLIC "../renderer")
 target_include_directories(VulkanRenderer PUBLIC "./headers")
 target_include_directories(VulkanRenderer PUBLIC "${Vulkan_INCLUDE_DIRS}")
