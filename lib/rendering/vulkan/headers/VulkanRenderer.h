@@ -29,6 +29,11 @@ class VulkanRenderer : public Renderer
     void createImageViews();
     void createRenderPass();
     void createGraphicsPipeline();
+    void createFrameBuffers();
+    void createCommandPool();
+    void createCommandBuffer();
+    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+    void createSyncObjects();
 
     bool checkValidationLayerSupport(const std::vector<const char*>& validationLayers) const;
     std::vector<const char*> getRequiredExtensions() const;
@@ -46,7 +51,10 @@ class VulkanRenderer : public Renderer
         VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
         void* pUserData);
 
+    //  window
     class GLFWwindow* mWindow;
+
+    //  vulkan rendering objects
     VkInstance mInstance;
     VkDebugUtilsMessengerEXT mDebugMessenger;
     VkPhysicalDevice mPhysicalDevice = VK_NULL_HANDLE;
@@ -63,5 +71,13 @@ class VulkanRenderer : public Renderer
     VkRenderPass mRenderPass;
     VkPipelineLayout mPipelineLayout;
     VkPipeline mGraphicsPipeline;
+    std::vector<VkFramebuffer> mSwapChainFramebuffers;
+    VkCommandPool mCommandPool;
+    VkCommandBuffer mCommandBuffer;
+
+    //  vulkan sync objects
+    VkSemaphore mImageAvailableSemaphore;
+    VkSemaphore mRenderFinishedSemaphore;
+    VkFence mInFlightFence;
 };
 } // namespace Bunny::Render
