@@ -28,6 +28,7 @@ namespace Bunny::Render
         void pickPhysicalDevice();
         void createLogicalDevice();
         void createSwapChain();
+        void createImageViews();
 
         bool checkValidationLayerSupport(const std::vector<const char*>& validationLayers) const;
         std::vector<const char*> getRequiredExtensions() const;
@@ -57,6 +58,7 @@ namespace Bunny::Render
         VkSurfaceKHR mSurface;
         VkSwapchainKHR mSwapChain;
         std::vector<VkImage> mSwapChainImages;
+        std::vector<VkImageView> mSwapChainImageViews;
         VkFormat mSwapChainImageFormat;
         VkExtent2D mSwapChainExtent;
     };
