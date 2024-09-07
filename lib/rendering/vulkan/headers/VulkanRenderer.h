@@ -27,6 +27,8 @@ class VulkanRenderer : public Renderer
     void createLogicalDevice();
     void createSwapChain();
     void createImageViews();
+    void createRenderPass();
+    void createGraphicsPipeline();
 
     bool checkValidationLayerSupport(const std::vector<const char*>& validationLayers) const;
     std::vector<const char*> getRequiredExtensions() const;
@@ -38,6 +40,7 @@ class VulkanRenderer : public Renderer
     VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) const;
     VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) const;
     QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) const;
+    VkShaderModule createShaderModule(const std::vector<std::byte>& code) const;
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
         VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
@@ -57,5 +60,8 @@ class VulkanRenderer : public Renderer
     std::vector<VkImageView> mSwapChainImageViews;
     VkFormat mSwapChainImageFormat;
     VkExtent2D mSwapChainExtent;
+    VkRenderPass mRenderPass;
+    VkPipelineLayout mPipelineLayout;
+    VkPipeline mGraphicsPipeline;
 };
 } // namespace Bunny::Render

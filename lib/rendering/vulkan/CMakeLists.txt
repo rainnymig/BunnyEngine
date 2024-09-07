@@ -6,9 +6,11 @@ target_sources(VulkanRenderer
     PUBLIC
         headers/VulkanRenderer.h
         headers/VulkanRendererFactory.h
+    PRIVATE
         headers/QueueFamilyIndices.h
         headers/SwapChainSupportDetails.h
-    PRIVATE
+        headers/Helper.h
+        src/Helper.cpp
         src/VulkanRenderer.cpp
         src/VulkanRendererFactory.cpp    
 )
