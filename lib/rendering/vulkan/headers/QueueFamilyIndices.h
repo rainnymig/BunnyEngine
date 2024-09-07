@@ -4,15 +4,14 @@
 
 namespace Bunny::Render
 {
-    struct QueueFamilyIndices {
+struct QueueFamilyIndices
+{
 
-        using QueueFamilyIndexType = uint32_t;
+    using QueueFamilyIndexType = uint32_t;
 
-        std::optional<QueueFamilyIndexType> graphicsFamily;
-        std::optional<QueueFamilyIndexType> presentFamily;
+    std::optional<QueueFamilyIndexType> graphicsFamily;
+    std::optional<QueueFamilyIndexType> presentFamily;
 
-        bool isComplete() const {
-            return graphicsFamily.has_value() && presentFamily.has_value();
-        }
-    };
-}
+    bool isComplete() const { return graphicsFamily.has_value() && presentFamily.has_value(); }
+};
+} // namespace Bunny::Render

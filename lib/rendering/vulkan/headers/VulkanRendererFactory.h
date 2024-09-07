@@ -4,9 +4,9 @@
 
 namespace Bunny::Render
 {
-    class VulkanRendererFactory : public RendererFactory
-    {
-    public:
-        virtual std::unique_ptr<Renderer> makeRenderer(GLFWwindow* window) override;
-    };
-}
+class VulkanRendererFactory : public RendererFactory
+{
+  public:
+    virtual std::unique_ptr<Renderer> makeRenderer(GLFWwindow* window) override;
+};
+} // namespace Bunny::Render

@@ -1,11 +1,10 @@
 #pragma once
 
-
 namespace Bunny
 {
-    class Engine
-    {
-    public:
-        void run();
-    };
-}
+class Engine
+{
+  public:
+    void run();
+};
+} // namespace Bunny
