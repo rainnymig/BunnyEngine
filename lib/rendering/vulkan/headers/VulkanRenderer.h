@@ -7,9 +7,13 @@
 #include <vulkan/vulkan.h>
 
 #include <vector>
+#include <array>
 
 namespace Bunny::Render
 {
+
+constexpr size_t MAX_FRAMES_IN_FLIGHT = 2;
+
 class VulkanRenderer : public Renderer
 {
   public:
@@ -73,11 +77,14 @@ class VulkanRenderer : public Renderer
     VkPipeline mGraphicsPipeline;
     std::vector<VkFramebuffer> mSwapChainFramebuffers;
     VkCommandPool mCommandPool;
-    VkCommandBuffer mCommandBuffer;
+    std::array<VkCommandBuffer, MAX_FRAMES_IN_FLIGHT> mCommandBuffers;
 
     //  vulkan sync objects
-    VkSemaphore mImageAvailableSemaphore;
-    VkSemaphore mRenderFinishedSemaphore;
-    VkFence mInFlightFence;
+    std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> mImageAvailableSemaphores;
+    std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> mRenderFinishedSemaphores;
+    std::array<VkFence, MAX_FRAMES_IN_FLIGHT> mInFlightFences;
+
+    //  multi frame inflight objects
+    uint32_t mCurrentFrameId = 0;
 };
 } // namespace Bunny::Render
