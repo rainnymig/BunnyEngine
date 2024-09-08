@@ -41,6 +41,7 @@ class VulkanRenderer : public Renderer
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
     void createSyncObjects();
     void recreateSwapChain();
+    void createVertexBuffer();
 
     void cleanUpSwapChain();
 
@@ -55,6 +56,7 @@ class VulkanRenderer : public Renderer
     VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) const;
     QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) const;
     VkShaderModule createShaderModule(const std::vector<std::byte>& code) const;
+    uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) const;
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
         VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
@@ -83,6 +85,10 @@ class VulkanRenderer : public Renderer
     std::vector<VkFramebuffer> mSwapChainFramebuffers;
     VkCommandPool mCommandPool;
     std::array<VkCommandBuffer, MAX_FRAMES_IN_FLIGHT> mCommandBuffers;
+
+    //  rendering buffers
+    VkBuffer mVertexBuffer;
+    VkDeviceMemory mVertexBufferMemory;
 
     //  vulkan sync objects
     std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> mImageAvailableSemaphores;
