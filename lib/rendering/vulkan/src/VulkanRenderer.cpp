@@ -72,13 +72,25 @@ void VulkanRenderer::render()
 {
     //  wait for previous frame to finish rendering
     vkWaitForFences(mDevice, 1, &mInFlightFences[mCurrentFrameId], VK_TRUE, UINT64_MAX);
-    //  reset fence immediately
-    vkResetFences(mDevice, 1, &mInFlightFences[mCurrentFrameId]);
 
     //  wait for image in the swap chain to be available before acquiring it
     uint32_t imageIndex;
-    vkAcquireNextImageKHR(
+    VkResult result = vkAcquireNextImageKHR(
         mDevice, mSwapChain, UINT64_MAX, mImageAvailableSemaphores[mCurrentFrameId], VK_NULL_HANDLE, &imageIndex);
+
+    //  recreate swap chain when necessary
+    if (result == VK_ERROR_OUT_OF_DATE_KHR)
+    {
+        recreateSwapChain();
+        return;
+    }
+    else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+    {
+        throw std::runtime_error("failed to acquire swap chain image!");
+    }
+
+    //  reset fence only after image is successfully acquired
+    vkResetFences(mDevice, 1, &mInFlightFences[mCurrentFrameId]);
 
     //  reset and record command buffer
     vkResetCommandBuffer(mCommandBuffers[mCurrentFrameId], 0);
@@ -114,12 +126,23 @@ void VulkanRenderer::render()
     presentInfo.pSwapchains = swapChains;
     presentInfo.pImageIndices = &imageIndex;
     presentInfo.pResults = nullptr; // Optional
-    vkQueuePresentKHR(mPresentQueue, &presentInfo);
+    result = vkQueuePresentKHR(mPresentQueue, &presentInfo);
+
+    //  recreate swap chain when necessary
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || mFrameBufferResized)
+    {
+        mFrameBufferResized = false;
+        recreateSwapChain();
+    }
+    else if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error("failed to present swap chain image!");
+    }
 
     mCurrentFrameId = (mCurrentFrameId + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
-void VulkanRenderer::cleanup()
+void VulkanRenderer::cleanUp()
 {
     //  wait for rendering operations to finish before cleaning up
     vkDeviceWaitIdle(mDevice);
@@ -129,6 +152,7 @@ void VulkanRenderer::cleanup()
         DestroyDebugUtilsMessengerEXT(mInstance, mDebugMessenger, nullptr);
     }
 
+    cleanUpSwapChain();
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
     {
         vkDestroySemaphore(mDevice, mImageAvailableSemaphores[i], nullptr);
@@ -136,21 +160,17 @@ void VulkanRenderer::cleanup()
         vkDestroyFence(mDevice, mInFlightFences[i], nullptr);
     }
     vkDestroyCommandPool(mDevice, mCommandPool, nullptr);
-    for (auto framebuffer : mSwapChainFramebuffers)
-    {
-        vkDestroyFramebuffer(mDevice, framebuffer, nullptr);
-    }
     vkDestroyPipeline(mDevice, mGraphicsPipeline, nullptr);
     vkDestroyPipelineLayout(mDevice, mPipelineLayout, nullptr);
     vkDestroyRenderPass(mDevice, mRenderPass, nullptr);
-    for (auto imageView : mSwapChainImageViews)
-    {
-        vkDestroyImageView(mDevice, imageView, nullptr);
-    }
-    vkDestroySwapchainKHR(mDevice, mSwapChain, nullptr);
     vkDestroyDevice(mDevice, nullptr);
     vkDestroySurfaceKHR(mInstance, mSurface, nullptr);
     vkDestroyInstance(mInstance, nullptr);
+}
+
+void VulkanRenderer::setFrameBufferResized()
+{
+    mFrameBufferResized = true;
 }
 
 void VulkanRenderer::createInstance()
@@ -726,6 +746,40 @@ void VulkanRenderer::createSyncObjects()
             throw std::runtime_error("failed to create semaphores!");
         }
     }
+}
+
+void VulkanRenderer::recreateSwapChain()
+{
+    //  handle window minimization
+    //  if window is minimized, pause and wait
+    int width = 0, height = 0;
+    glfwGetFramebufferSize(mWindow, &width, &height);
+    while (width == 0 || height == 0)
+    {
+        glfwGetFramebufferSize(mWindow, &width, &height);
+        glfwWaitEvents();
+    }
+
+    vkDeviceWaitIdle(mDevice);
+
+    cleanUpSwapChain();
+
+    createSwapChain();
+    createImageViews();
+    createFrameBuffers();
+}
+
+void VulkanRenderer::cleanUpSwapChain()
+{
+    for (auto framebuffer : mSwapChainFramebuffers)
+    {
+        vkDestroyFramebuffer(mDevice, framebuffer, nullptr);
+    }
+    for (auto imageView : mSwapChainImageViews)
+    {
+        vkDestroyImageView(mDevice, imageView, nullptr);
+    }
+    vkDestroySwapchainKHR(mDevice, mSwapChain, nullptr);
 }
 
 bool VulkanRenderer::checkValidationLayerSupport(const std::vector<const char*>& validationLayers) const

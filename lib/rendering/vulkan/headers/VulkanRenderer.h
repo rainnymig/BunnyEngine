@@ -21,7 +21,9 @@ class VulkanRenderer : public Renderer
 
     virtual void initialize() override;
     virtual void render() override;
-    virtual void cleanup() override;
+    virtual void cleanUp() override;
+
+    void setFrameBufferResized();
 
   private:
     void createInstance();
@@ -38,6 +40,9 @@ class VulkanRenderer : public Renderer
     void createCommandBuffer();
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
     void createSyncObjects();
+    void recreateSwapChain();
+
+    void cleanUpSwapChain();
 
     bool checkValidationLayerSupport(const std::vector<const char*>& validationLayers) const;
     std::vector<const char*> getRequiredExtensions() const;
@@ -86,5 +91,8 @@ class VulkanRenderer : public Renderer
 
     //  multi frame inflight objects
     uint32_t mCurrentFrameId = 0;
+
+    //  explicitly handle window (framebuffer) resize
+    bool mFrameBufferResized = false;
 };
 } // namespace Bunny::Render

@@ -7,6 +7,13 @@
 
 namespace Bunny
 {
+
+static void WindowFrameBufferResizedCallback(GLFWwindow* window, int width, int height)
+{
+    auto renderer = reinterpret_cast<Bunny::Render::VulkanRenderer*>(glfwGetWindowUserPointer(window));
+    renderer->setFrameBufferResized();
+}
+
 void Engine::run()
 {
     GLFWwindow* window;
@@ -18,7 +25,7 @@ void Engine::run()
     }
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
     /* Create a windowed mode window and its OpenGL context */
     window = glfwCreateWindow(960, 540, "Bunny Engine", NULL, NULL);
@@ -35,7 +42,9 @@ void Engine::run()
     std::unique_ptr<Bunny::Render::RendererFactory> factory = std::make_unique<Bunny::Render::VulkanRendererFactory>();
     std::unique_ptr<Bunny::Render::Renderer> renderer = factory->makeRenderer(window);
     renderer->initialize();
-    // renderer->render();
+
+    glfwSetWindowUserPointer(window, renderer.get());
+    glfwSetFramebufferSizeCallback(window, WindowFrameBufferResizedCallback);
 
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window))
@@ -52,7 +61,7 @@ void Engine::run()
         renderer->render();
     }
 
-    renderer->cleanup();
+    renderer->cleanUp();
 
     glfwDestroyWindow(window);
     glfwTerminate();
