@@ -42,6 +42,7 @@ class VulkanRenderer : public Renderer
     void createSyncObjects();
     void recreateSwapChain();
     void createVertexBuffer();
+    void createIndexBuffer();
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer,
         VkDeviceMemory& bufferMemory);
 
@@ -92,6 +93,8 @@ class VulkanRenderer : public Renderer
     //  rendering buffers
     VkBuffer mVertexBuffer;
     VkDeviceMemory mVertexBufferMemory;
+    VkBuffer mIndexBuffer;
+    VkDeviceMemory mIndexBufferMemory;
 
     //  vulkan sync objects
     std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> mImageAvailableSemaphores;

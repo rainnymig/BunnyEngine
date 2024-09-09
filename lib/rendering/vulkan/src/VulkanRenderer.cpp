@@ -24,11 +24,14 @@ const std::vector<const char*> validationLayers = {"VK_LAYER_KHRONOS_validation"
 
 constexpr std::array<const char*, 1> deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
-const static std::vector<Bunny::Render::BasicVertex> vertices{
-    {{0.0f, -0.5f}, {1.0f, 1.0f, 0.0f}},
-    {{0.5f, 0.5f},  {0.0f, 1.0f, 1.0f}},
-    {{-0.5f, 0.5f}, {1.0f, 0.0f, 1.0f}}
+const std::vector<Bunny::Render::BasicVertex> vertices = {
+    {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+    {{0.5f, -0.5f},  {0.0f, 1.0f, 0.0f}},
+    {{0.5f, 0.5f},   {0.0f, 0.0f, 1.0f}},
+    {{-0.5f, 0.5f},  {1.0f, 1.0f, 1.0f}}
 };
+
+const std::vector<uint16_t> indices = {0, 1, 2, 2, 3, 0};
 
 VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
     const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger)
@@ -72,6 +75,7 @@ void VulkanRenderer::initialize()
     createFrameBuffers();
     createCommandPool();
     createVertexBuffer();
+    createIndexBuffer();
     createCommandBuffer();
     createSyncObjects();
 }
@@ -160,6 +164,8 @@ void VulkanRenderer::cleanUp()
         DestroyDebugUtilsMessengerEXT(mInstance, mDebugMessenger, nullptr);
     }
 
+    vkDestroyBuffer(mDevice, mIndexBuffer, nullptr);
+    vkFreeMemory(mDevice, mIndexBufferMemory, nullptr);
     vkDestroyBuffer(mDevice, mVertexBuffer, nullptr);
     vkFreeMemory(mDevice, mVertexBufferMemory, nullptr);
 
@@ -720,6 +726,9 @@ void VulkanRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t
     VkDeviceSize offsets[] = {0};
     vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 
+    //  bind index buffer
+    vkCmdBindIndexBuffer(commandBuffer, mIndexBuffer, 0, VK_INDEX_TYPE_UINT16);
+
     //  update dynamic states (viewport, scissors)
     VkViewport viewport{};
     viewport.x = 0.0f;
@@ -736,7 +745,7 @@ void VulkanRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
     //  draw!!
-    vkCmdDraw(commandBuffer, static_cast<uint32_t>(vertices.size()), 1, 0, 0);
+    vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 
     //  end render pass
     vkCmdEndRenderPass(commandBuffer);
@@ -813,6 +822,29 @@ void VulkanRenderer::createVertexBuffer()
     copyBuffer(stagingBuffer, mVertexBuffer, bufferSize);
 
     //  clean up staging buffer
+    vkDestroyBuffer(mDevice, stagingBuffer, nullptr);
+    vkFreeMemory(mDevice, stagingBufferMemory, nullptr);
+}
+
+void VulkanRenderer::createIndexBuffer()
+{
+    VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
+
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingBufferMemory;
+    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
+    void* data;
+    vkMapMemory(mDevice, stagingBufferMemory, 0, bufferSize, 0, &data);
+    memcpy(data, indices.data(), (size_t)bufferSize);
+    vkUnmapMemory(mDevice, stagingBufferMemory);
+
+    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, mIndexBuffer, mIndexBufferMemory);
+
+    copyBuffer(stagingBuffer, mIndexBuffer, bufferSize);
+
     vkDestroyBuffer(mDevice, stagingBuffer, nullptr);
     vkFreeMemory(mDevice, stagingBufferMemory, nullptr);
 }
