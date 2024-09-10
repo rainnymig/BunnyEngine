@@ -17,4 +17,5 @@ add_subdirectory("./third-party/glm")
 # Bunny stuff
 add_subdirectory("./lib/rendering/renderer")
 add_subdirectory("./lib/rendering/vulkan")
+add_subdirectory("./lib/physics")
 add_subdirectory("./engine")

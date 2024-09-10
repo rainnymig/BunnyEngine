@@ -1,6 +1,4 @@
-add_library(VulkanRenderer 
-
-)
+add_library(VulkanRenderer)
 
 target_sources(VulkanRenderer
     PUBLIC
