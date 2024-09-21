@@ -15,7 +15,9 @@ set(GLFW_INSTALL OFF CACHE BOOL "GLFW lib only")
 add_subdirectory("./third-party/glm")
 
 # Bunny stuff
+# add_subdirectory("./lib/time")
 add_subdirectory("./lib/rendering/renderer")
 add_subdirectory("./lib/rendering/vulkan")
 add_subdirectory("./lib/physics")
+# add_subdirectory("./lib/task-system")
 add_subdirectory("./engine")
