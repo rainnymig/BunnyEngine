@@ -45,6 +45,11 @@ class VulkanRenderer : public Renderer
     void createIndexBuffer();
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer,
         VkDeviceMemory& bufferMemory);
+    void createDescriptorSetLayout();
+    void createDescriptorPool();
+    void createDescriptorSets();
+    void createUniformBuffers();
+    void updateUniformBuffer(uint32_t currentImage);
 
     void cleanUpSwapChain();
 
@@ -84,6 +89,9 @@ class VulkanRenderer : public Renderer
     VkFormat mSwapChainImageFormat;
     VkExtent2D mSwapChainExtent;
     VkRenderPass mRenderPass;
+    VkDescriptorSetLayout mDescriptorSetLayout;
+    VkDescriptorPool mDescriptorPool;
+    std::vector<VkDescriptorSet> mDescriptorSets;
     VkPipelineLayout mPipelineLayout;
     VkPipeline mGraphicsPipeline;
     std::vector<VkFramebuffer> mSwapChainFramebuffers;
@@ -95,6 +103,12 @@ class VulkanRenderer : public Renderer
     VkDeviceMemory mVertexBufferMemory;
     VkBuffer mIndexBuffer;
     VkDeviceMemory mIndexBufferMemory;
+
+    //  uniform buffers
+    //  multiple buffers for multiple frames in-flight
+    std::vector<VkBuffer> mUniformBuffers;
+    std::vector<VkDeviceMemory> mUniformBuffersMemory;
+    std::vector<void*> mUniformBuffersMapped;
 
     //  vulkan sync objects
     std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> mImageAvailableSemaphores;
