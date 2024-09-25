@@ -13,6 +13,8 @@ set(GLFW_BUILD_DOCS OFF CACHE BOOL "GLFW lib only")
 set(GLFW_INSTALL OFF CACHE BOOL "GLFW lib only")
 # GLM
 add_subdirectory("./third-party/glm")
+# STB_IMAGE
+add_subdirectory("./third-party/stb_image")
 
 # Bunny stuff
 # add_subdirectory("./lib/time")
