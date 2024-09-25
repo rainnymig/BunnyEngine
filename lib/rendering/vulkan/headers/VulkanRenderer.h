@@ -50,6 +50,9 @@ class VulkanRenderer : public Renderer
     void createDescriptorSets();
     void createUniformBuffers();
     void updateUniformBuffer(uint32_t currentImage);
+    void createTextureImage();
+    void createTextureImageView();
+    void createTextureSampler();
 
     void cleanUpSwapChain();
 
@@ -66,6 +69,13 @@ class VulkanRenderer : public Renderer
     VkShaderModule createShaderModule(const std::vector<std::byte>& code) const;
     uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) const;
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) const;
+    void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
+        VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory) const;
+    VkImageView createImageView(VkImage image, VkFormat format) const;
+    VkCommandBuffer beginSingleTimeCommands() const;
+    void endAndSubmitSingleTimeCommands(VkCommandBuffer commandBuffer) const;
+    void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) const;
+    void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height) const;
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
         VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
@@ -109,6 +119,12 @@ class VulkanRenderer : public Renderer
     std::vector<VkBuffer> mUniformBuffers;
     std::vector<VkDeviceMemory> mUniformBuffersMemory;
     std::vector<void*> mUniformBuffersMapped;
+
+    //  image texture
+    VkImage mTextureImage;
+    VkDeviceMemory mTextureImageMemory;
+    VkImageView mTextureImageView;
+    VkSampler mTextureSampler;
 
     //  vulkan sync objects
     std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> mImageAvailableSemaphores;
