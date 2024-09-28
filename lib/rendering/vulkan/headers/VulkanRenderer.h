@@ -53,6 +53,7 @@ class VulkanRenderer : public Renderer
     void createTextureImage();
     void createTextureImageView();
     void createTextureSampler();
+    void createDepthResources();
 
     void cleanUpSwapChain();
 
@@ -71,11 +72,15 @@ class VulkanRenderer : public Renderer
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) const;
     void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
         VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory) const;
-    VkImageView createImageView(VkImage image, VkFormat format) const;
+    VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) const;
     VkCommandBuffer beginSingleTimeCommands() const;
     void endAndSubmitSingleTimeCommands(VkCommandBuffer commandBuffer) const;
     void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) const;
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height) const;
+    VkFormat findSupportedFormat(
+        const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) const;
+    VkFormat findDepthFormat() const;
+    bool hasStencilComponent(VkFormat format) const;
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
         VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
@@ -107,6 +112,11 @@ class VulkanRenderer : public Renderer
     std::vector<VkFramebuffer> mSwapChainFramebuffers;
     VkCommandPool mCommandPool;
     std::array<VkCommandBuffer, MAX_FRAMES_IN_FLIGHT> mCommandBuffers;
+
+    //  depth stencil
+    VkImage mDepthImage;
+    VkDeviceMemory mDepthImageMemory;
+    VkImageView mDepthImageView;
 
     //  rendering buffers
     VkBuffer mVertexBuffer;
