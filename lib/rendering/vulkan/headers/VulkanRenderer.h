@@ -54,6 +54,7 @@ class VulkanRenderer : public Renderer
     void createTextureImageView();
     void createTextureSampler();
     void createDepthResources();
+    void loadModel();
 
     void cleanUpSwapChain();
 
