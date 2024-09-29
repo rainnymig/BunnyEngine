@@ -13,9 +13,13 @@ set(GLFW_BUILD_DOCS OFF CACHE BOOL "GLFW lib only")
 set(GLFW_INSTALL OFF CACHE BOOL "GLFW lib only")
 # GLM
 add_subdirectory("./third-party/glm")
+# Stb Image
+add_subdirectory("./third-party/stb_image")
+# Tiny Obj Loader
+add_subdirectory("./third-party/tiny_obj_loader")
 
 # Bunny stuff
-# add_subdirectory("./lib/time")
+add_subdirectory("./lib/time")
 add_subdirectory("./lib/rendering/renderer")
 add_subdirectory("./lib/rendering/vulkan")
 add_subdirectory("./lib/physics")
