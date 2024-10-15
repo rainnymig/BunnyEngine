@@ -7,3 +7,4 @@ add_executable(FullEngine ${FULL_ENGINE_SOURCE})
 
 target_link_libraries(FullEngine PRIVATE VulkanRenderer)
 target_link_libraries(FullEngine PRIVATE glfw)
+target_link_libraries(FullEngine PRIVATE PhysicsEngine)
