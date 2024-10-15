@@ -2,5 +2,4 @@
 
 namespace Bunny::Physics
 {
-using Real = float;
 }
