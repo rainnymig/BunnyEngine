@@ -52,6 +52,7 @@ void Shader::destroyShaderModule()
     if (mDevice != nullptr && mShaderModule != nullptr)
     {
         vkDestroyShaderModule(mDevice, mShaderModule, nullptr);
+        mShaderModule = nullptr;
     }
 }
 } // namespace Bunny::Render

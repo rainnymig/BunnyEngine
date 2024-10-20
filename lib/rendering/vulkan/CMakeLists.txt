@@ -2,15 +2,17 @@ add_library(VulkanRenderer)
 
 target_sources(VulkanRenderer
     PUBLIC
+        headers/Mesh.h
+        headers/Shader.h
         headers/VulkanRenderer.h
         headers/VulkanRendererFactory.h
         headers/Vertex.h
-        headers/Shader.h
     PRIVATE
+        headers/Helper.h
         headers/QueueFamilyIndices.h
         headers/SwapChainSupportDetails.h
-        headers/Helper.h
         src/Helper.cpp
+        src/Mesh.cpp
         src/Shader.cpp
         src/VulkanRenderer.cpp
         src/VulkanRendererFactory.cpp
