@@ -5,11 +5,13 @@ target_sources(VulkanRenderer
         headers/VulkanRenderer.h
         headers/VulkanRendererFactory.h
         headers/Vertex.h
+        headers/Shader.h
     PRIVATE
         headers/QueueFamilyIndices.h
         headers/SwapChainSupportDetails.h
         headers/Helper.h
         src/Helper.cpp
+        src/Shader.cpp
         src/VulkanRenderer.cpp
         src/VulkanRendererFactory.cpp
 )
