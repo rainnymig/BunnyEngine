@@ -10,6 +10,8 @@
 
 [tiny_obj_loader](https://github.com/tinyobjloader/tinyobjloader) MIT license. 
 
+[vk-bootstrap](https://github.com/charles-lunarg/vk-bootstrap) MIT license.
+
 ### before build
 
 1. install vulkan sdk

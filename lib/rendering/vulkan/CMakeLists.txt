@@ -26,9 +26,20 @@ target_compile_definitions(VulkanRenderer PUBLIC GLFW_INCLUDE_VULKAN)
 target_include_directories(VulkanRenderer PUBLIC "./headers")
 target_include_directories(VulkanRenderer PUBLIC "${Vulkan_INCLUDE_DIRS}")
 
-target_link_libraries(VulkanRenderer PUBLIC Renderer)
+target_link_libraries(VulkanRenderer 
+    PUBLIC 
+        Renderer
+    PRIVATE
+        "${Vulkan_LIBRARIES}"
+        StbImage
+        TinyObjLoader
+        glfw
+        vk-bootstrap::vk-bootstrap
+    )
 
-target_link_libraries(VulkanRenderer PRIVATE StbImage)
-target_link_libraries(VulkanRenderer PRIVATE TinyObjLoader)
-target_link_libraries(VulkanRenderer PRIVATE "${Vulkan_LIBRARIES}")
-target_link_libraries(VulkanRenderer PRIVATE glfw)
+# target_link_libraries(VulkanRenderer PRIVATE "${Vulkan_LIBRARIES}")
+
+# target_link_libraries(VulkanRenderer PRIVATE StbImage)
+# target_link_libraries(VulkanRenderer PRIVATE TinyObjLoader)
+# target_link_libraries(VulkanRenderer PRIVATE glfw)
+# target_link_libraries(VulkanRenderer PRIVATE vk-bootstrap::vk-bootstrap)

@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.26)
 
+include(FetchContent)
+
 project(BunnyEngine
         VERSION "0.0.1"
         DESCRIPTION "A cute little graphics engine like a bunny.")
@@ -17,6 +19,13 @@ add_subdirectory("./third-party/glm")
 add_subdirectory("./third-party/stb_image")
 # Tiny Obj Loader
 add_subdirectory("./third-party/tiny_obj_loader")
+# Vk-Bootstrap
+FetchContent_Declare(
+    fetch_vk_bootstrap
+    GIT_REPOSITORY https://github.com/charles-lunarg/vk-bootstrap
+    GIT_TAG        v1.3.301 #suggest using a tag so the library doesn't update whenever new commits are pushed to a branch
+)
+FetchContent_MakeAvailable(fetch_vk_bootstrap)
 
 # Bunny stuff
 add_subdirectory("./lib/time")
