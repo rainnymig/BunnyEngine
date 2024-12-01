@@ -66,4 +66,15 @@ void createBuffer(VkDevice device, VkPhysicalDevice physicalDevice, VkDeviceSize
     vkBindBufferMemory(device, buffer, bufferMemory, 0);
 }
 
+VkPipelineShaderStageCreateInfo makeShaderStageCreateInfo(
+    VkShaderStageFlagBits stage, VkShaderModule shaderModule, const char* entryPoint)
+{
+    VkPipelineShaderStageCreateInfo info{.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+        .pNext = nullptr,
+        .stage = stage,
+        .module = shaderModule,
+        .pName = entryPoint};
+    return info;
+}
+
 } // namespace Bunny::Render
