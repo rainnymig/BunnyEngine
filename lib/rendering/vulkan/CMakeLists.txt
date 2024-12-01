@@ -2,7 +2,9 @@ add_library(VulkanRenderer)
 
 target_sources(VulkanRenderer
     PUBLIC
+        headers/Material.h
         headers/Mesh.h
+        headers/PipelineBuilder.h
         headers/Shader.h
         headers/VulkanRenderer.h
         headers/VulkanRendererFactory.h
@@ -13,6 +15,7 @@ target_sources(VulkanRenderer
         headers/SwapChainSupportDetails.h
         src/Helper.cpp
         src/Mesh.cpp
+        src/PipelineBuilder.cpp
         src/Shader.cpp
         src/VulkanRenderer.cpp
         src/VulkanRendererFactory.cpp

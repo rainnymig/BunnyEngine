@@ -14,4 +14,8 @@ uint32_t findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, Vk
 
 void createBuffer(VkDevice device, VkPhysicalDevice physicalDevice, VkDeviceSize size, VkBufferUsageFlags usage,
     VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
+
+VkPipelineShaderStageCreateInfo makeShaderStageCreateInfo(
+    VkShaderStageFlagBits stage, VkShaderModule shaderModule, const char* entryPoint = "main");
+
 } // namespace Bunny::Render
