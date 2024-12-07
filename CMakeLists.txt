@@ -28,6 +28,8 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(fetch_vk_bootstrap)
 # Vulkan memory allocator
 add_subdirectory("./third-party/vma")
+# fmt
+add_subdirectory("./third-party/fmt")
 
 # Bunny stuff
 add_subdirectory("./lib/time")

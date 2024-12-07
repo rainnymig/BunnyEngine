@@ -1,14 +1,17 @@
 #pragma once
 
-#include <Renderer.h>
-#include <QueueFamilyIndices.h>
-#include <SwapChainSupportDetails.h>
+#include "Renderer.h"
+
+#include "QueueFamilyIndices.h"
+#include "SwapChainSupportDetails.h"
+#include "Utils.h"
 
 #include <vulkan/vulkan.h>
 #include <vk_mem_alloc.h>
 
 #include <vector>
 #include <array>
+#include <functional>
 
 namespace Bunny::Render
 {
@@ -84,6 +87,8 @@ class VulkanRenderer : public Renderer
     VkFormat findDepthFormat() const;
     bool hasStencilComponent(VkFormat format) const;
 
+    void submitImmediateCommands(std::function<void(VkCommandBuffer)>&& commandFunc);
+
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
         VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
         void* pUserData);
@@ -114,6 +119,14 @@ class VulkanRenderer : public Renderer
     std::vector<VkFramebuffer> mSwapChainFramebuffers;
     VkCommandPool mCommandPool;
     std::array<VkCommandBuffer, MAX_FRAMES_IN_FLIGHT> mCommandBuffers;
+
+    //  immediate submit command
+    VkCommandPool mImmediateCommandPool;
+    VkCommandBuffer mImmediateCommandBuffer;
+    VkFence mImmediateFence;
+
+    //  deletion stack
+    Utils::FunctionStack<> mDeletionStack;
 
     //  memory allocation
     VmaAllocator mAllocator;
