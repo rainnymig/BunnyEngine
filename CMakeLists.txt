@@ -26,6 +26,8 @@ FetchContent_Declare(
     GIT_TAG        v1.3.301 #suggest using a tag so the library doesn't update whenever new commits are pushed to a branch
 )
 FetchContent_MakeAvailable(fetch_vk_bootstrap)
+# Vulkan memory allocator
+add_subdirectory("./third-party/vma")
 
 # Bunny stuff
 add_subdirectory("./lib/time")

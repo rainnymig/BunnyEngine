@@ -12,6 +12,8 @@
 
 [vk-bootstrap](https://github.com/charles-lunarg/vk-bootstrap) MIT license.
 
+[vulkan memory allocator](https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator) MIT license
+
 ### before build
 
 1. install vulkan sdk
