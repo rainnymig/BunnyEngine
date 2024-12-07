@@ -5,6 +5,7 @@
 #include <SwapChainSupportDetails.h>
 
 #include <vulkan/vulkan.h>
+#include <vk_mem_alloc.h>
 
 #include <vector>
 #include <array>
@@ -113,6 +114,9 @@ class VulkanRenderer : public Renderer
     std::vector<VkFramebuffer> mSwapChainFramebuffers;
     VkCommandPool mCommandPool;
     std::array<VkCommandBuffer, MAX_FRAMES_IN_FLIGHT> mCommandBuffers;
+
+    //  memory allocation
+    VmaAllocator mAllocator;
 
     //  depth stencil
     VkImage mDepthImage;

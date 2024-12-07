@@ -32,6 +32,7 @@ target_include_directories(VulkanRenderer PUBLIC "${Vulkan_INCLUDE_DIRS}")
 target_link_libraries(VulkanRenderer 
     PUBLIC 
         Renderer
+        vma
     PRIVATE
         "${Vulkan_LIBRARIES}"
         StbImage
