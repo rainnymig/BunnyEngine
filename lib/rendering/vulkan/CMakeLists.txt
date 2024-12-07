@@ -2,6 +2,8 @@ add_library(VulkanRenderer)
 
 target_sources(VulkanRenderer
     PUBLIC
+        headers/ErrorCheck.h
+        headers/Fundamentals.h
         headers/Material.h
         headers/Mesh.h
         headers/PipelineBuilder.h
@@ -13,10 +15,12 @@ target_sources(VulkanRenderer
         headers/Helper.h
         headers/QueueFamilyIndices.h
         headers/SwapChainSupportDetails.h
+        headers/Utils.h
         src/Helper.cpp
         src/Mesh.cpp
         src/PipelineBuilder.cpp
         src/Shader.cpp
+        src/Utils.cpp
         src/VulkanRenderer.cpp
         src/VulkanRendererFactory.cpp
 )
@@ -39,6 +43,7 @@ target_link_libraries(VulkanRenderer
         TinyObjLoader
         glfw
         vk-bootstrap::vk-bootstrap
+        fmt::fmt
     )
 
 # target_link_libraries(VulkanRenderer PRIVATE "${Vulkan_LIBRARIES}")

@@ -104,6 +104,7 @@ void VulkanRenderer::initialize()
     createDescriptorSetLayout();
     createGraphicsPipeline();
     createCommandPool();
+    createCommandBuffer();
     createDepthResources();
     createFrameBuffers();
     createTextureImage();
@@ -115,7 +116,6 @@ void VulkanRenderer::initialize()
     createUniformBuffers();
     createDescriptorPool();
     createDescriptorSets();
-    createCommandBuffer();
     createSyncObjects();
 }
 
@@ -1683,6 +1683,24 @@ VkFormat VulkanRenderer::findDepthFormat() const
 bool VulkanRenderer::hasStencilComponent(VkFormat format) const
 {
     return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
+}
+
+void VulkanRenderer::submitImmediateCommands(std::function<void(VkCommandBuffer)>&& commandFunc)
+{
+    VkCommandBufferAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocInfo.commandPool = mCommandPool;
+    allocInfo.commandBufferCount = 1;
+
+    VkCommandBuffer commandBuffer;
+    vkAllocateCommandBuffers(mDevice, &allocInfo, &commandBuffer);
+
+    VkCommandBufferBeginInfo beginInfo{};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+    vkBeginCommandBuffer(commandBuffer, &beginInfo);
 }
 
 VKAPI_ATTR VkBool32 VKAPI_CALL VulkanRenderer::debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
