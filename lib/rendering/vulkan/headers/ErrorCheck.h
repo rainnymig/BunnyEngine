@@ -3,7 +3,7 @@
 #include <vulkan/vk_enum_string_helper.h>
 #include <fmt/core.h>
 
-#define VkHardCheck(exp)                                                                                               \
+#define VK_HARD_CHECK(exp)                                                                                             \
     {                                                                                                                  \
         VkResult r = exp;                                                                                              \
         if (r)                                                                                                         \
@@ -13,7 +13,7 @@
         }                                                                                                              \
     }
 
-#define VkSoftCheck(exp)                                                                                               \
+#define VK_SOFT_CHECK(exp)                                                                                             \
     {                                                                                                                  \
         VkResult r = exp;                                                                                              \
         if (r)                                                                                                         \

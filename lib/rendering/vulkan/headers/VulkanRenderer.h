@@ -40,8 +40,9 @@ class VulkanRenderer : public Renderer
     void createRenderPass();
     void createGraphicsPipeline();
     void createFrameBuffers();
-    void createCommandPool();
-    void createCommandBuffer();
+    void createCommand();
+    void createGraphicsCommand();
+    void createImmediateCommand();
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
     void createSyncObjects();
     void recreateSwapChain();
@@ -78,8 +79,6 @@ class VulkanRenderer : public Renderer
     void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
         VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory) const;
     VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) const;
-    VkCommandBuffer beginSingleTimeCommands() const;
-    void endAndSubmitSingleTimeCommands(VkCommandBuffer commandBuffer) const;
     void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) const;
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height) const;
     VkFormat findSupportedFormat(
@@ -87,7 +86,7 @@ class VulkanRenderer : public Renderer
     VkFormat findDepthFormat() const;
     bool hasStencilComponent(VkFormat format) const;
 
-    void submitImmediateCommands(std::function<void(VkCommandBuffer)>&& commandFunc);
+    void submitImmediateCommands(std::function<void(VkCommandBuffer)>&& commandFunc) const;
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
         VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
