@@ -66,6 +66,57 @@ void createBuffer(VkDevice device, VkPhysicalDevice physicalDevice, VkDeviceSize
     vkBindBufferMemory(device, buffer, bufferMemory, 0);
 }
 
+VkCommandPoolCreateInfo makeCommandPoolCreateInfo(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flags)
+{
+    VkCommandPoolCreateInfo info = {};
+    info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    info.pNext = nullptr;
+    info.queueFamilyIndex = queueFamilyIndex;
+    info.flags = flags;
+    return info;
+}
+
+VkCommandBufferAllocateInfo makeCommandBufferAllocateInfo(VkCommandPool commandPool, uint32_t bufferCount)
+{
+    VkCommandBufferAllocateInfo info = {};
+    info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    info.pNext = nullptr;
+    info.commandPool = commandPool;
+    info.commandBufferCount = bufferCount;
+    info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    return info;
+}
+
+VkCommandBufferSubmitInfo makeCommandBufferSubmitInfo(VkCommandBuffer commandBuffer)
+{
+    VkCommandBufferSubmitInfo info{};
+    info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
+    info.pNext = nullptr;
+    info.commandBuffer = commandBuffer;
+    info.deviceMask = 0;
+
+    return info;
+}
+
+VkSubmitInfo2 makeSubmitInfo2(VkCommandBufferSubmitInfo* cmdBufferSubmit, VkSemaphoreSubmitInfo* signalSemaphoreInfo,
+    VkSemaphoreSubmitInfo* waitSemaphoreInfo)
+{
+    VkSubmitInfo2 info = {};
+    info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
+    info.pNext = nullptr;
+
+    info.waitSemaphoreInfoCount = waitSemaphoreInfo == nullptr ? 0 : 1;
+    info.pWaitSemaphoreInfos = waitSemaphoreInfo;
+
+    info.signalSemaphoreInfoCount = signalSemaphoreInfo == nullptr ? 0 : 1;
+    info.pSignalSemaphoreInfos = signalSemaphoreInfo;
+
+    info.commandBufferInfoCount = 1;
+    info.pCommandBufferInfos = cmdBufferSubmit;
+
+    return info;
+}
+
 VkPipelineShaderStageCreateInfo makeShaderStageCreateInfo(
     VkShaderStageFlagBits stage, VkShaderModule shaderModule, const char* entryPoint)
 {
