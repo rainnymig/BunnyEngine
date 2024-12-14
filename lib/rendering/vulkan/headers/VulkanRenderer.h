@@ -2,6 +2,7 @@
 
 #include "Renderer.h"
 
+#include "Fundamentals.h"
 #include "QueueFamilyIndices.h"
 #include "SwapChainSupportDetails.h"
 #include "Utils.h"
@@ -50,6 +51,7 @@ class VulkanRenderer : public Renderer
     void createIndexBuffer();
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer,
         VkDeviceMemory& bufferMemory);
+    AllocatedBuffer createBuffer(VkDeviceSize size, VkBufferUsageFlags bufferUsage, VmaMemoryUsage memoryUsage);
     void createDescriptorSetLayout();
     void createDescriptorPool();
     void createDescriptorSets();
