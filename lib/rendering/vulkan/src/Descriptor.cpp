@@ -159,7 +159,7 @@ void DescriptorWriter::Clear()
 }
 
 void DescriptorWriter::WriteImage(
-    int binding, VkImageView imageView, VkSampler sampler, VkImageLayout layout, VkDescriptorType type)
+    uint32_t binding, VkImageView imageView, VkSampler sampler, VkImageLayout layout, VkDescriptorType type)
 {
     VkDescriptorImageInfo& info = mImageInfos.emplace_back(
         VkDescriptorImageInfo{.sampler = sampler, .imageView = imageView, .imageLayout = layout});
@@ -175,7 +175,7 @@ void DescriptorWriter::WriteImage(
     mWrites.push_back(write);
 }
 
-void DescriptorWriter::WriteBuffer(int binding, VkBuffer buffer, size_t size, size_t offset, VkDescriptorType type)
+void DescriptorWriter::WriteBuffer(uint32_t binding, VkBuffer buffer, size_t size, size_t offset, VkDescriptorType type)
 {
     VkDescriptorBufferInfo& info =
         mBufferInfos.emplace_back(VkDescriptorBufferInfo{.buffer = buffer, .offset = offset, .range = size});

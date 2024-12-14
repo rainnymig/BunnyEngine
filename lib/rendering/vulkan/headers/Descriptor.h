@@ -53,8 +53,9 @@ class DescriptorWriter
 {
   public:
     void Clear();
-    void WriteImage(int binding, VkImageView imageView, VkSampler sampler, VkImageLayout layout, VkDescriptorType type);
-    void WriteBuffer(int binding, VkBuffer buffer, size_t size, size_t offset, VkDescriptorType type);
+    void WriteImage(
+        uint32_t binding, VkImageView imageView, VkSampler sampler, VkImageLayout layout, VkDescriptorType type);
+    void WriteBuffer(uint32_t binding, VkBuffer buffer, size_t size, size_t offset, VkDescriptorType type);
 
     void UpdateSet(VkDevice device, VkDescriptorSet descriptorSet);
 
