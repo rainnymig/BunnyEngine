@@ -1,18 +1,11 @@
 #include "Engine.h"
 
-#include <VulkanRenderer.h>
 #include <VulkanRendererFactory.h>
 
 #include <GLFW/glfw3.h>
 
 namespace Bunny
 {
-
-static void WindowFrameBufferResizedCallback(GLFWwindow* window, int width, int height)
-{
-    auto renderer = reinterpret_cast<Bunny::Render::VulkanRenderer*>(glfwGetWindowUserPointer(window));
-    renderer->setFrameBufferResized();
-}
 
 void Engine::run()
 {
@@ -42,9 +35,6 @@ void Engine::run()
     std::unique_ptr<Bunny::Render::RendererFactory> factory = std::make_unique<Bunny::Render::VulkanRendererFactory>();
     std::unique_ptr<Bunny::Render::Renderer> renderer = factory->makeRenderer(window);
     renderer->initialize();
-
-    glfwSetWindowUserPointer(window, renderer.get());
-    glfwSetFramebufferSizeCallback(window, WindowFrameBufferResizedCallback);
 
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window))
