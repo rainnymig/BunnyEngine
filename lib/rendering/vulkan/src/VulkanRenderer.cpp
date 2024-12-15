@@ -1717,5 +1717,11 @@ VKAPI_ATTR VkBool32 VKAPI_CALL VulkanRenderer::debugCallback(VkDebugUtilsMessage
 
 VulkanRenderer::VulkanRenderer(GLFWwindow* window) : mWindow(window)
 {
+    glfwSetWindowUserPointer(window, this);
+    glfwSetFramebufferSizeCallback(window, [](GLFWwindow* window, int width, int height) {
+        auto renderer = reinterpret_cast<VulkanRenderer*>(glfwGetWindowUserPointer(window));
+        renderer->setFrameBufferResized();
+    });
 }
+
 } // namespace Bunny::Render
