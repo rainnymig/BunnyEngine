@@ -125,6 +125,7 @@ void VulkanRenderer::initialize()
     // createDescriptorSets();
     createDescriptorAllocator();
     createDescriptorSetsNew();
+    setupDepthResourcesLayout();
 }
 
 void VulkanRenderer::render()
@@ -997,7 +998,7 @@ void VulkanRenderer::createGraphicsPipelineNew()
     builder.setCulling(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
     builder.setMultisamplingNone();
     builder.disableBlending(); //  opaque pipeline
-    builder.enableDepthTest(true, VK_COMPARE_OP_GREATER_OR_EQUAL);
+    builder.enableDepthTest(VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL);
     builder.setColorAttachmentFormat(mSwapChainImageFormat);
     builder.setDepthFormat(mDepthImageFormat);
     builder.setPipelineLayout(mPipelineLayout);
@@ -1567,6 +1568,14 @@ void VulkanRenderer::createDepthResources()
         VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, mDepthImage,
         mDepthImageMemory);
     mDepthImageView = createImageView(mDepthImage, mDepthImageFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+}
+
+void VulkanRenderer::setupDepthResourcesLayout()
+{
+    submitImmediateCommands([this](VkCommandBuffer cmdBuf) {
+        transitionImageLayout(cmdBuf, mDepthImage, mDepthImageFormat, VK_IMAGE_LAYOUT_UNDEFINED,
+            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+    });
 }
 
 void VulkanRenderer::loadModel()
