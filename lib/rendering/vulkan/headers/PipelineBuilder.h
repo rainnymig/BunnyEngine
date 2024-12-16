@@ -18,6 +18,8 @@ class PipelineBuilder
 
     void setShaders(VkShaderModule vertexShader, VkShaderModule fragmentShader);
     void setInputTopology(VkPrimitiveTopology topology);
+    void setVertexInput(const VkVertexInputAttributeDescription* pAttributeDesc, uint32_t attributeDescCount,
+        const VkVertexInputBindingDescription* pBindingDesc, uint32_t bindingDescCount);
     void setPolygonMode(VkPolygonMode mode);
     void setCulling(VkCullModeFlags cullMode, VkFrontFace frontFace);
     void setMultisamplingNone();
@@ -28,9 +30,11 @@ class PipelineBuilder
     void setDepthFormat(VkFormat format);
     void disableDepthTest();
     void enableDepthTest(bool depthWriteEnable, VkCompareOp op);
+    void setPipelineLayout(VkPipelineLayout layout);
 
   private:
     std::vector<VkPipelineShaderStageCreateInfo> mShaderStages;
+    VkPipelineVertexInputStateCreateInfo mVertexInputInfo;
     VkPipelineInputAssemblyStateCreateInfo mInputAssembly;
     VkPipelineRasterizationStateCreateInfo mRasterizer;
     VkPipelineColorBlendAttachmentState mColorBlendAttachment;

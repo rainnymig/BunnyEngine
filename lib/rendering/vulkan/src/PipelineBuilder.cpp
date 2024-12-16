@@ -31,11 +31,6 @@ VkPipeline PipelineBuilder::build(VkDevice device)
     colorBlending.attachmentCount = 1;
     colorBlending.pAttachments = &mColorBlendAttachment;
 
-    //  completely clear VertexInputStateCreateInfo, as we have no need for it
-    //  vertex data is passed in in uniform buffers instead of vertex shader input
-    VkPipelineVertexInputStateCreateInfo mVertexInputInfo = {
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
-
     //  build the actual pipeline
     //  we now use all of the info structs we have been writing into into this one
     //  to create the pipeline
@@ -78,6 +73,7 @@ VkPipeline PipelineBuilder::build(VkDevice device)
 
 void PipelineBuilder::clear()
 {
+    mVertexInputInfo = {.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
     mInputAssembly = {.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO};
     mRasterizer = {.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO};
     mColorAttachmentformat = {};
@@ -102,6 +98,16 @@ void PipelineBuilder::setInputTopology(VkPrimitiveTopology topology)
     //  if true, when using STRIP type topologies, it's possible to break up lines or triangles
     //  not needed for now
     mInputAssembly.primitiveRestartEnable = VK_FALSE;
+}
+
+void PipelineBuilder::setVertexInput(const VkVertexInputAttributeDescription* pAttributeDesc,
+    uint32_t attributeDescCount, const VkVertexInputBindingDescription* pBindingDesc, uint32_t bindingDescCount)
+{
+    mVertexInputInfo.pNext = nullptr;
+    mVertexInputInfo.vertexBindingDescriptionCount = bindingDescCount;
+    mVertexInputInfo.pVertexBindingDescriptions = pBindingDesc;
+    mVertexInputInfo.vertexAttributeDescriptionCount = attributeDescCount;
+    mVertexInputInfo.pVertexAttributeDescriptions = pAttributeDesc;
 }
 
 void PipelineBuilder::setPolygonMode(VkPolygonMode mode)
@@ -199,6 +205,11 @@ void PipelineBuilder::enableDepthTest(bool depthWriteEnable, VkCompareOp op)
     mDepthStencil.back = {};
     mDepthStencil.minDepthBounds = 0.f;
     mDepthStencil.maxDepthBounds = 1.f;
+}
+
+void PipelineBuilder::setPipelineLayout(VkPipelineLayout layout)
+{
+    mPipelineLayout = layout;
 }
 
 } // namespace Bunny::Render

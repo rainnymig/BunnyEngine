@@ -52,19 +52,19 @@ void DescriptorAllocator::Init(VkDevice device, uint32_t maxSets, std::span<Pool
     mReadyPools.push_back(newPool);
 }
 
-VkDescriptorSet DescriptorAllocator::Allocate(VkDevice device, VkDescriptorSetLayout layout, void* pNext)
+void DescriptorAllocator::Allocate(
+    VkDevice device, VkDescriptorSetLayout* pLayout, VkDescriptorSet* pDescSet, uint32_t count, void* pNext)
 {
     VkDescriptorPool pool = GetPool(device);
 
     VkDescriptorSetAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     allocInfo.descriptorPool = pool;
-    allocInfo.descriptorSetCount = 1;
-    allocInfo.pSetLayouts = &layout;
+    allocInfo.descriptorSetCount = count;
+    allocInfo.pSetLayouts = pLayout;
     allocInfo.pNext = pNext;
 
-    VkDescriptorSet newSet;
-    VkResult result = vkAllocateDescriptorSets(device, &allocInfo, &newSet);
+    VkResult result = vkAllocateDescriptorSets(device, &allocInfo, pDescSet);
 
     //  if these error occur it means pool is full
     //  push the pool to full pools and create new pool
@@ -75,12 +75,10 @@ VkDescriptorSet DescriptorAllocator::Allocate(VkDevice device, VkDescriptorSetLa
         allocInfo.descriptorPool = pool;
 
         //  if it fails again then panic
-        VK_HARD_CHECK(vkAllocateDescriptorSets(device, &allocInfo, &newSet));
+        VK_HARD_CHECK(vkAllocateDescriptorSets(device, &allocInfo, pDescSet));
     }
 
     mReadyPools.push_back(pool);
-
-    return newSet;
 }
 
 void DescriptorAllocator::ClearPools(VkDevice device)
@@ -170,6 +168,7 @@ void DescriptorWriter::WriteImage(
         .dstBinding = binding,
         .dstArrayElement = 0,
         .descriptorCount = 1,
+        .descriptorType = type,
         .pImageInfo = &info};
 
     mWrites.push_back(write);
@@ -186,6 +185,7 @@ void DescriptorWriter::WriteBuffer(uint32_t binding, VkBuffer buffer, size_t siz
         .dstBinding = binding,
         .dstArrayElement = 0,
         .descriptorCount = 1,
+        .descriptorType = type,
         .pBufferInfo = &info};
 
     mWrites.push_back(write);
@@ -193,7 +193,7 @@ void DescriptorWriter::WriteBuffer(uint32_t binding, VkBuffer buffer, size_t siz
 
 void DescriptorWriter::UpdateSet(VkDevice device, VkDescriptorSet descriptorSet)
 {
-    for (VkWriteDescriptorSet write : mWrites)
+    for (VkWriteDescriptorSet& write : mWrites)
     {
         write.dstSet = descriptorSet;
     }
