@@ -2,6 +2,7 @@
 
 #include "Renderer.h"
 
+#include "Descriptor.h"
 #include "Fundamentals.h"
 #include "QueueFamilyIndices.h"
 #include "SwapChainSupportDetails.h"
@@ -17,7 +18,7 @@
 namespace Bunny::Render
 {
 
-constexpr size_t MAX_FRAMES_IN_FLIGHT = 2;
+constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 2;
 
 class VulkanRenderer : public Renderer
 {
@@ -28,6 +29,8 @@ class VulkanRenderer : public Renderer
     virtual void render() override;
     virtual void cleanUp() override;
 
+    void renderOld();
+
     void setFrameBufferResized();
 
   private:
@@ -36,10 +39,13 @@ class VulkanRenderer : public Renderer
     void createSurface();
     void pickPhysicalDevice();
     void createLogicalDevice();
+    void initVulkan();
     void createSwapChain();
+    void createSwapChainNew();
     void createImageViews();
     void createRenderPass();
     void createGraphicsPipeline();
+    void createGraphicsPipelineNew();
     void createFrameBuffers();
     void createCommand();
     void createGraphicsCommand();
@@ -53,8 +59,11 @@ class VulkanRenderer : public Renderer
         VkDeviceMemory& bufferMemory);
     AllocatedBuffer createBuffer(VkDeviceSize size, VkBufferUsageFlags bufferUsage, VmaMemoryUsage memoryUsage);
     void createDescriptorSetLayout();
+    void createDescriptorSetLayoutNew();
     void createDescriptorPool();
+    void createDescriptorAllocator();
     void createDescriptorSets();
+    void createDescriptorSetsNew();
     void createUniformBuffers();
     void updateUniformBuffer(uint32_t currentImage);
     void createTextureImage();
@@ -81,12 +90,12 @@ class VulkanRenderer : public Renderer
     void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
         VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory) const;
     VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) const;
-    void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) const;
+    void immediateTransitionImageLayout(
+        VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) const;
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height) const;
     VkFormat findSupportedFormat(
         const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) const;
     VkFormat findDepthFormat() const;
-    bool hasStencilComponent(VkFormat format) const;
 
     void submitImmediateCommands(std::function<void(VkCommandBuffer)>&& commandFunc) const;
 
@@ -114,6 +123,7 @@ class VulkanRenderer : public Renderer
     VkRenderPass mRenderPass;
     VkDescriptorSetLayout mDescriptorSetLayout;
     VkDescriptorPool mDescriptorPool;
+    DescriptorAllocator mDescriptorAllocator;
     std::vector<VkDescriptorSet> mDescriptorSets;
     VkPipelineLayout mPipelineLayout;
     VkPipeline mGraphicsPipeline;
@@ -136,6 +146,7 @@ class VulkanRenderer : public Renderer
     VkImage mDepthImage;
     VkDeviceMemory mDepthImageMemory;
     VkImageView mDepthImageView;
+    VkFormat mDepthImageFormat;
 
     //  rendering buffers
     VkBuffer mVertexBuffer;
