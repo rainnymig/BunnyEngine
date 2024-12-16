@@ -70,6 +70,7 @@ class VulkanRenderer : public Renderer
     void createTextureImageView();
     void createTextureSampler();
     void createDepthResources();
+    void setupDepthResourcesLayout();
     void loadModel();
 
     void cleanUpSwapChain();
