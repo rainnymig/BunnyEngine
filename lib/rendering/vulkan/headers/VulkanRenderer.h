@@ -29,28 +29,17 @@ class VulkanRenderer : public Renderer
     virtual void render() override;
     virtual void cleanUp() override;
 
-    void renderOld();
-
     void setFrameBufferResized();
 
   private:
-    void createInstance();
-    void setupDebugMessenger();
     void createSurface();
-    void pickPhysicalDevice();
-    void createLogicalDevice();
     void initVulkan();
     void createSwapChain();
-    void createSwapChainNew();
     void createImageViews();
-    void createRenderPass();
     void createGraphicsPipeline();
-    void createGraphicsPipelineNew();
-    void createFrameBuffers();
     void createCommand();
     void createGraphicsCommand();
     void createImmediateCommand();
-    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
     void createSyncObjects();
     void recreateSwapChain();
     void createVertexBuffer();
@@ -59,11 +48,8 @@ class VulkanRenderer : public Renderer
         VkDeviceMemory& bufferMemory);
     AllocatedBuffer createBuffer(VkDeviceSize size, VkBufferUsageFlags bufferUsage, VmaMemoryUsage memoryUsage);
     void createDescriptorSetLayout();
-    void createDescriptorSetLayoutNew();
-    void createDescriptorPool();
     void createDescriptorAllocator();
     void createDescriptorSets();
-    void createDescriptorSetsNew();
     void createUniformBuffers();
     void updateUniformBuffer(uint32_t currentImage);
     void createTextureImage();
@@ -75,11 +61,6 @@ class VulkanRenderer : public Renderer
 
     void cleanUpSwapChain();
 
-    bool checkValidationLayerSupport(const std::vector<const char*>& validationLayers) const;
-    std::vector<const char*> getRequiredExtensions() const;
-    void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo) const;
-    bool isDeviceSuitable(VkPhysicalDevice device) const;
-    bool checkDeviceExtensionSupport(VkPhysicalDevice device) const;
     SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface) const;
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) const;
     VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) const;
@@ -91,18 +72,12 @@ class VulkanRenderer : public Renderer
     void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
         VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory) const;
     VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) const;
-    void immediateTransitionImageLayout(
-        VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) const;
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height) const;
     VkFormat findSupportedFormat(
         const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) const;
     VkFormat findDepthFormat() const;
 
     void submitImmediateCommands(std::function<void(VkCommandBuffer)>&& commandFunc) const;
-
-    static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-        VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-        void* pUserData);
 
     //  window
     class GLFWwindow* mWindow;
@@ -121,9 +96,7 @@ class VulkanRenderer : public Renderer
     std::vector<VkImageView> mSwapChainImageViews;
     VkFormat mSwapChainImageFormat;
     VkExtent2D mSwapChainExtent;
-    VkRenderPass mRenderPass;
     VkDescriptorSetLayout mDescriptorSetLayout;
-    VkDescriptorPool mDescriptorPool;
     DescriptorAllocator mDescriptorAllocator;
     std::vector<VkDescriptorSet> mDescriptorSets;
     VkPipelineLayout mPipelineLayout;
