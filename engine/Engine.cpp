@@ -30,7 +30,6 @@ void Engine::run()
 
     /* Make the window's context current */
     glfwMakeContextCurrent(window);
-    // glClearColor( 0.4f, 0.3f, 0.4f, 0.0f );
 
     std::unique_ptr<Bunny::Render::RendererFactory> factory = std::make_unique<Bunny::Render::VulkanRendererFactory>();
     std::unique_ptr<Bunny::Render::Renderer> renderer = factory->makeRenderer(window);
@@ -39,12 +38,6 @@ void Engine::run()
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window))
     {
-        /* Render here */
-        // glClear(GL_COLOR_BUFFER_BIT);
-
-        /* Swap front and back buffers */
-        // glfwSwapBuffers(window);
-
         /* Poll for and process events */
         glfwPollEvents();
 
