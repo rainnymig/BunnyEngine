@@ -14,6 +14,8 @@
 
 [vulkan memory allocator](https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator) MIT license
 
+[imgui](https://github.com/ocornut/imgui) MIT license
+
 ### before build
 
 1. install vulkan sdk
