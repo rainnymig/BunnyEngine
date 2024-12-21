@@ -58,6 +58,8 @@ class VulkanRenderer : public Renderer
     void createDepthResources();
     void setupDepthResourcesLayout();
     void loadModel();
+    void initImgui();
+    void renderImgui(VkCommandBuffer commandBuffer, VkImageView targetImageView);
 
     void cleanUpSwapChain();
 
@@ -150,5 +152,8 @@ class VulkanRenderer : public Renderer
 
     //  explicitly handle window (framebuffer) resize
     bool mFrameBufferResized = false;
+
+    //  render imgui demo window
+    // bool mRenderImguiDemo = true;
 };
 } // namespace Bunny::Render

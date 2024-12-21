@@ -15,6 +15,9 @@
 #include <stb_image.h>
 #include <tiny_obj_loader.h>
 #include <VkBootstrap.h>
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_vulkan.h>
 
 #include <chrono>
 #include <iostream>
@@ -99,6 +102,7 @@ void VulkanRenderer::initialize()
     createDescriptorAllocator();
     createDescriptorSets();
     setupDepthResourcesLayout();
+    initImgui();
 }
 
 void VulkanRenderer::render()
@@ -127,6 +131,20 @@ void VulkanRenderer::render()
 
     //  update uniform buffers
     updateUniformBuffer(mCurrentFrameId);
+
+    //  update imgui
+    ImGui_ImplVulkan_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+
+    ImGui::NewFrame();
+
+    // ImGui::ShowDemoWindow(&mRenderImguiDemo);
+
+    ImGui::Begin("Hello!");
+    ImGui::Text("Hi there!");
+    ImGui::End();
+
+    ImGui::Render();
 
     {
         VkCommandBuffer cmdBuf = mCommandBuffers[mCurrentFrameId];
@@ -194,6 +212,8 @@ void VulkanRenderer::render()
 
         vkCmdEndRendering(cmdBuf);
 
+        renderImgui(cmdBuf, mSwapChainImageViews[imageIndex]);
+
         transitionImageLayout(cmdBuf, mSwapChainImages[imageIndex], mSwapChainImageFormat,
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
@@ -255,47 +275,7 @@ void VulkanRenderer::cleanUp()
     //  wait for rendering operations to finish before cleaning up
     vkDeviceWaitIdle(mDevice);
 
-    DestroyDebugUtilsMessengerEXT(mInstance, mDebugMessenger, nullptr);
-
-    vkDestroyBuffer(mDevice, mIndexBuffer, nullptr);
-    vkFreeMemory(mDevice, mIndexBufferMemory, nullptr);
-    vkDestroyBuffer(mDevice, mVertexBuffer, nullptr);
-    vkFreeMemory(mDevice, mVertexBufferMemory, nullptr);
-
-    vkDestroySampler(mDevice, mTextureSampler, nullptr);
-    vkDestroyImageView(mDevice, mTextureImageView, nullptr);
-    vkDestroyImage(mDevice, mTextureImage, nullptr);
-    vkFreeMemory(mDevice, mTextureImageMemory, nullptr);
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-    {
-        vkDestroyBuffer(mDevice, mUniformBuffers[i], nullptr);
-        vkFreeMemory(mDevice, mUniformBuffersMemory[i], nullptr);
-    }
-    mDescriptorAllocator.DestroyPools(mDevice);
-    vkDestroyDescriptorSetLayout(mDevice, mDescriptorSetLayout, nullptr);
-
-    vkDestroyFence(mDevice, mImmediateFence, nullptr);
-
-    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-    {
-        vkDestroySemaphore(mDevice, mImageAvailableSemaphores[i], nullptr);
-        vkDestroySemaphore(mDevice, mRenderFinishedSemaphores[i], nullptr);
-        vkDestroyFence(mDevice, mInFlightFences[i], nullptr);
-    }
-
-    vkDestroyCommandPool(mDevice, mImmediateCommandPool, nullptr);
-    vkDestroyCommandPool(mDevice, mCommandPool, nullptr);
-
-    vkDestroyPipeline(mDevice, mGraphicsPipeline, nullptr);
-    vkDestroyPipelineLayout(mDevice, mPipelineLayout, nullptr);
-
-    cleanUpSwapChain();
-
-    vmaDestroyAllocator(mAllocator);
-
-    vkDestroyDevice(mDevice, nullptr);
-    vkDestroySurfaceKHR(mInstance, mSurface, nullptr);
-    vkDestroyInstance(mInstance, nullptr);
+    mDeletionStack.Flush();
 }
 
 void VulkanRenderer::setFrameBufferResized()
@@ -309,6 +289,7 @@ void VulkanRenderer::createSurface()
     {
         throw std::runtime_error("failed to create window surface!");
     }
+    mDeletionStack.AddFunction([this]() { vkDestroySurfaceKHR(mInstance, mSurface, nullptr); });
 }
 
 void VulkanRenderer::initVulkan()
@@ -329,6 +310,9 @@ void VulkanRenderer::initVulkan()
     vkb::Instance vkbInstance = instanceBuildResult.value();
     mInstance = vkbInstance.instance;
     mDebugMessenger = vkbInstance.debug_messenger;
+
+    mDeletionStack.AddFunction([this]() { vkDestroyInstance(mInstance, nullptr); });
+    mDeletionStack.AddFunction([this]() { DestroyDebugUtilsMessengerEXT(mInstance, mDebugMessenger, nullptr); });
 
     //  creat VkSurface
     createSurface();
@@ -364,6 +348,8 @@ void VulkanRenderer::initVulkan()
     mPhysicalDevice = vkbPhysicalDevice.physical_device;
     mDevice = vkbDevice.device;
 
+    mDeletionStack.AddFunction([this]() { vkDestroyDevice(mDevice, nullptr); });
+
     //  get queue family
     mGraphicsQueue = vkbDevice.get_queue(vkb::QueueType::graphics).value();
     mQueueFamilyIndices.graphicsFamily = vkbDevice.get_queue_index(vkb::QueueType::graphics).value();
@@ -377,6 +363,8 @@ void VulkanRenderer::initVulkan()
     allocatorInfo.instance = mInstance;
     allocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
     vmaCreateAllocator(&allocatorInfo, &mAllocator);
+
+    mDeletionStack.AddFunction([this]() { vmaDestroyAllocator(mAllocator); });
 }
 
 void VulkanRenderer::createSwapChain()
@@ -402,6 +390,8 @@ void VulkanRenderer::createSwapChain()
     mSwapChainImages = vkbSwapchain.get_images().value();
     mSwapChainImageViews = vkbSwapchain.get_image_views().value();
     mSwapChainImageFormat = surfaceFormat.format;
+
+    mDeletionStack.AddFunction([this]() { cleanUpSwapChain(); });
 }
 
 void VulkanRenderer::createImageViews()
@@ -455,6 +445,11 @@ void VulkanRenderer::createGraphicsPipeline()
 
     mGraphicsPipeline = builder.build(mDevice);
 
+    mDeletionStack.AddFunction([this]() {
+        vkDestroyPipeline(mDevice, mGraphicsPipeline, nullptr);
+        vkDestroyPipelineLayout(mDevice, mPipelineLayout, nullptr);
+    });
+
     //  clean up shaders
     vkDestroyShaderModule(mDevice, vertexShaderModule, nullptr);
     vkDestroyShaderModule(mDevice, fragmentShaderModule, nullptr);
@@ -474,6 +469,8 @@ void VulkanRenderer::createGraphicsCommand()
         mQueueFamilyIndices.graphicsFamily.value(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
     VK_HARD_CHECK(vkCreateCommandPool(mDevice, &poolInfo, nullptr, &mCommandPool));
 
+    mDeletionStack.AddFunction([this]() { vkDestroyCommandPool(mDevice, mCommandPool, nullptr); });
+
     //  create command buffer
     VkCommandBufferAllocateInfo allocInfo = makeCommandBufferAllocateInfo(mCommandPool, MAX_FRAMES_IN_FLIGHT);
     VK_HARD_CHECK(vkAllocateCommandBuffers(mDevice, &allocInfo, mCommandBuffers.data()));
@@ -485,6 +482,8 @@ void VulkanRenderer::createImmediateCommand()
     VkCommandPoolCreateInfo poolInfo = makeCommandPoolCreateInfo(
         mQueueFamilyIndices.graphicsFamily.value(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
     VK_HARD_CHECK(vkCreateCommandPool(mDevice, &poolInfo, nullptr, &mImmediateCommandPool));
+
+    mDeletionStack.AddFunction([this]() { vkDestroyCommandPool(mDevice, mImmediateCommandPool, nullptr); });
 
     //  create command buffer
     VkCommandBufferAllocateInfo allocInfo = makeCommandBufferAllocateInfo(mImmediateCommandPool, 1);
@@ -510,7 +509,18 @@ void VulkanRenderer::createSyncObjects()
         }
     }
 
+    mDeletionStack.AddFunction([this]() {
+        for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+        {
+            vkDestroySemaphore(mDevice, mImageAvailableSemaphores[i], nullptr);
+            vkDestroySemaphore(mDevice, mRenderFinishedSemaphores[i], nullptr);
+            vkDestroyFence(mDevice, mInFlightFences[i], nullptr);
+        }
+    });
+
     VK_HARD_CHECK(vkCreateFence(mDevice, &fenceInfo, nullptr, &mImmediateFence));
+
+    mDeletionStack.AddFunction([this]() { vkDestroyFence(mDevice, mImmediateFence, nullptr); });
 }
 
 void VulkanRenderer::recreateSwapChain()
@@ -560,6 +570,11 @@ void VulkanRenderer::createVertexBuffer()
     //  clean up staging buffer
     vkDestroyBuffer(mDevice, stagingBuffer, nullptr);
     vkFreeMemory(mDevice, stagingBufferMemory, nullptr);
+
+    mDeletionStack.AddFunction([this]() {
+        vkDestroyBuffer(mDevice, mVertexBuffer, nullptr);
+        vkFreeMemory(mDevice, mVertexBufferMemory, nullptr);
+    });
 }
 
 void VulkanRenderer::createIndexBuffer()
@@ -583,6 +598,11 @@ void VulkanRenderer::createIndexBuffer()
 
     vkDestroyBuffer(mDevice, stagingBuffer, nullptr);
     vkFreeMemory(mDevice, stagingBufferMemory, nullptr);
+
+    mDeletionStack.AddFunction([this]() {
+        vkDestroyBuffer(mDevice, mIndexBuffer, nullptr);
+        vkFreeMemory(mDevice, mIndexBufferMemory, nullptr);
+    });
 }
 
 void VulkanRenderer::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties,
@@ -664,6 +684,8 @@ void VulkanRenderer::createDescriptorSetLayout()
     }
 
     mDescriptorSetLayout = builder.Build(mDevice);
+
+    mDeletionStack.AddFunction([this]() { vkDestroyDescriptorSetLayout(mDevice, mDescriptorSetLayout, nullptr); });
 }
 
 void VulkanRenderer::createDescriptorAllocator()
@@ -673,6 +695,8 @@ void VulkanRenderer::createDescriptorAllocator()
         {.mType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .mRatio = 1}
     };
     mDescriptorAllocator.Init(mDevice, MAX_FRAMES_IN_FLIGHT, poolSizes);
+
+    mDeletionStack.AddFunction([this]() { mDescriptorAllocator.DestroyPools(mDevice); });
 }
 
 void VulkanRenderer::createDescriptorSets()
@@ -708,6 +732,14 @@ void VulkanRenderer::createUniformBuffers()
             mUniformBuffersMemory[i]);
         vkMapMemory(mDevice, mUniformBuffersMemory[i], 0, bufferSize, 0, &mUniformBuffersMapped[i]);
     }
+
+    mDeletionStack.AddFunction([this]() {
+        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+        {
+            vkDestroyBuffer(mDevice, mUniformBuffers[i], nullptr);
+            vkFreeMemory(mDevice, mUniformBuffersMemory[i], nullptr);
+        }
+    });
 }
 
 void VulkanRenderer::updateUniformBuffer(uint32_t currentImage)
@@ -777,11 +809,17 @@ void VulkanRenderer::createTextureImage()
 
     vkDestroyBuffer(mDevice, stagingBuffer, nullptr);
     vkFreeMemory(mDevice, stagingBufferMemory, nullptr);
+
+    mDeletionStack.AddFunction([this]() {
+        vkDestroyImage(mDevice, mTextureImage, nullptr);
+        vkFreeMemory(mDevice, mTextureImageMemory, nullptr);
+    });
 }
 
 void VulkanRenderer::createTextureImageView()
 {
     mTextureImageView = createImageView(mTextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
+    mDeletionStack.AddFunction([this]() { vkDestroyImageView(mDevice, mTextureImageView, nullptr); });
 }
 
 void VulkanRenderer::createTextureSampler()
@@ -811,6 +849,8 @@ void VulkanRenderer::createTextureSampler()
     {
         throw std::runtime_error("failed to create texture sampler!");
     }
+
+    mDeletionStack.AddFunction([this]() { vkDestroySampler(mDevice, mTextureSampler, nullptr); });
 }
 
 void VulkanRenderer::createDepthResources()
@@ -860,6 +900,66 @@ void VulkanRenderer::loadModel()
             modelIndecies.push_back(modelIndecies.size());
         }
     }
+}
+
+void VulkanRenderer::initImgui()
+{
+    //  create descriptor pool just for imgui
+    VkDescriptorPool imguiDescPool;
+    VkDescriptorPoolSize poolSizes[] = {
+        {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1},
+    };
+    VkDescriptorPoolCreateInfo poolInfo = {};
+    poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+    poolInfo.maxSets = 1;
+    poolInfo.poolSizeCount = (uint32_t)IM_ARRAYSIZE(poolSizes);
+    poolInfo.pPoolSizes = poolSizes;
+    VK_HARD_CHECK(vkCreateDescriptorPool(mDevice, &poolInfo, nullptr, &imguiDescPool));
+
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+    //  enable keyboard and gamepad controls
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
+
+    ImGui::StyleColorsDark();
+    // ImGui::StyleColorsLight();
+
+    // Setup Platform/Renderer backends
+    ImGui_ImplGlfw_InitForVulkan(mWindow, true);
+    ImGui_ImplVulkan_InitInfo initInfo = {};
+    initInfo.Instance = mInstance;
+    initInfo.PhysicalDevice = mPhysicalDevice;
+    initInfo.Device = mDevice;
+    initInfo.QueueFamily = mQueueFamilyIndices.graphicsFamily.value();
+    initInfo.Queue = mGraphicsQueue;
+    initInfo.DescriptorPool = imguiDescPool;
+    initInfo.MinImageCount = mSwapChainImages.size();
+    initInfo.ImageCount = mSwapChainImages.size();
+    initInfo.UseDynamicRendering = true;
+    initInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+    initInfo.PipelineRenderingCreateInfo = {.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO};
+    initInfo.PipelineRenderingCreateInfo.colorAttachmentCount = 1;
+    initInfo.PipelineRenderingCreateInfo.pColorAttachmentFormats = &mSwapChainImageFormat;
+    ImGui_ImplVulkan_Init(&initInfo);
+    ImGui_ImplVulkan_CreateFontsTexture();
+
+    mDeletionStack.AddFunction([this, imguiDescPool]() { vkDestroyDescriptorPool(mDevice, imguiDescPool, nullptr); });
+    mDeletionStack.AddFunction([]() { ImGui_ImplVulkan_Shutdown(); });
+}
+
+void VulkanRenderer::renderImgui(VkCommandBuffer commandBuffer, VkImageView targetImageView)
+{
+    VkRenderingAttachmentInfo colorAttachment =
+        makeColorAttachmentInfo(targetImageView, nullptr, VK_IMAGE_LAYOUT_GENERAL);
+    VkRenderingInfo renderInfo = makeRenderingInfo(mSwapChainExtent, &colorAttachment, nullptr);
+
+    vkCmdBeginRendering(commandBuffer, &renderInfo);
+
+    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
+
+    vkCmdEndRendering(commandBuffer);
 }
 
 void VulkanRenderer::cleanUpSwapChain()

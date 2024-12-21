@@ -21,7 +21,7 @@ void Engine::run()
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
     /* Create a windowed mode window and its OpenGL context */
-    window = glfwCreateWindow(960, 540, "Bunny Engine", NULL, NULL);
+    window = glfwCreateWindow(1280, 720, "Bunny Engine", NULL, NULL);
     if (!window)
     {
         glfwTerminate();
