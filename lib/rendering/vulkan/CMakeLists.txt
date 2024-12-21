@@ -29,8 +29,6 @@ target_sources(VulkanRenderer
         src/VulkanRendererFactory.cpp
 )
 
-find_package(Vulkan REQUIRED)
-
 target_compile_definitions(VulkanRenderer PUBLIC GLFW_INCLUDE_VULKAN)
 
 target_include_directories(VulkanRenderer PUBLIC "./headers")
@@ -47,5 +45,6 @@ target_link_libraries(VulkanRenderer
         vk-bootstrap::vk-bootstrap
         fmt::fmt
         vma
+        imgui
     )
     

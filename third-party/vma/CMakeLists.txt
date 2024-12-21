@@ -9,7 +9,6 @@ target_sources(vma
         src/vk_mem_alloc.cpp
 )
 
-find_package(Vulkan REQUIRED)
 target_include_directories(vma PRIVATE "${Vulkan_INCLUDE_DIRS}")
 
 target_include_directories(vma PUBLIC ./headers)

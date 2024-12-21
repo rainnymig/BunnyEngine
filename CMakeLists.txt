@@ -8,6 +8,9 @@ project(BunnyEngine
 
 set (CMAKE_CXX_STANDARD 20)
 
+# Vulkan
+find_package(Vulkan REQUIRED)
+
 # Third Parties
 # GLFW
 add_subdirectory("./third-party/glfw")
@@ -43,7 +46,8 @@ target_sources(imgui
         "third-party/imgui/backends/imgui_impl_vulkan.cpp"
         "third-party/imgui/backends/imgui_impl_glfw.cpp"
 )
-target_include_directories(imgui PUBLIC "third-party/imgui/")
+target_include_directories(imgui PUBLIC "third-party/imgui/" "third-party/imgui/backends")
+target_link_libraries(imgui PUBLIC Vulkan::Vulkan glfw)
 
 # Bunny stuff
 add_subdirectory("./lib/time")
