@@ -30,6 +30,20 @@ FetchContent_MakeAvailable(fetch_vk_bootstrap)
 add_subdirectory("./third-party/vma")
 # fmt
 add_subdirectory("./third-party/fmt")
+# imgui
+add_library(imgui)
+target_sources(imgui 
+    PRIVATE
+        "third-party/imgui/imgui.h"
+        "third-party/imgui/imgui.cpp"
+        "third-party/imgui/imgui_demo.cpp"
+        "third-party/imgui/imgui_draw.cpp"
+        "third-party/imgui/imgui_widgets.cpp"
+        "third-party/imgui/imgui_tables.cpp" 
+        "third-party/imgui/backends/imgui_impl_vulkan.cpp"
+        "third-party/imgui/backends/imgui_impl_glfw.cpp"
+)
+target_include_directories(imgui PUBLIC "third-party/imgui/")
 
 # Bunny stuff
 add_subdirectory("./lib/time")
