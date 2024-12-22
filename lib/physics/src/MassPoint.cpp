@@ -1,6 +1,7 @@
 #include "MassPoint.h"
 
 #include <cassert>
+#include <cmath>
 
 void Bunny::Physics::MassPoint::update(float duration)
 {
@@ -12,11 +13,11 @@ void Bunny::Physics::MassPoint::update(float duration)
 
     assert(duration > 0);
 
-    mPosition.addScaled(mVelocity, duration);
+    mPosition += mVelocity * duration;
 
     Vector3 resultingAcceleration = mAcceleration;
 
-    mVelocity.addScaled(resultingAcceleration, duration);
+    mVelocity += resultingAcceleration * duration;
 
     //  add damping to reduce numeric instability
     mVelocity = mVelocity * std::pow(getLinearMotionDamping(), duration);
