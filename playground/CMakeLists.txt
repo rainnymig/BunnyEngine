@@ -1,5 +1,5 @@
-add_executable(playground)
+add_executable(Playground)
 
-target_sources(playground PUBLIC main.cpp)
+target_sources(Playground PUBLIC main.cpp)
 
-target_link_libraries(playground PRIVATE glm fmt::fmt)
+target_link_libraries(Playground PRIVATE glm fmt::fmt)

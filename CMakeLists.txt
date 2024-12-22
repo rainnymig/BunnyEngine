@@ -50,6 +50,7 @@ target_include_directories(imgui PUBLIC "third-party/imgui/" "third-party/imgui/
 target_link_libraries(imgui PUBLIC Vulkan::Vulkan glfw)
 
 # Bunny stuff
+add_subdirectory("./lib/base")
 add_subdirectory("./lib/time")
 add_subdirectory("./lib/rendering/renderer")
 add_subdirectory("./lib/rendering/vulkan")

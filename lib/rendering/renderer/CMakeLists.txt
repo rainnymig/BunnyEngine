@@ -1,3 +1,13 @@
-add_library(Renderer INTERFACE)
+add_library(Renderer)
 
-target_include_directories(Renderer INTERFACE ./includes)
+target_sources(Renderer
+    PUBLIC
+        headers/Camera.h
+        headers/Renderer.h
+    PRIVATE
+        src/Camera.cpp
+)
+
+target_include_directories(Renderer PUBLIC ./headers)
+
+target_link_libraries(Renderer PUBLIC glm Base)

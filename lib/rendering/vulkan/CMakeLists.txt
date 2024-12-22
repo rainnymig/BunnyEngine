@@ -4,7 +4,6 @@ target_sources(VulkanRenderer
     PUBLIC
         headers/VulkanRendererFactory.h
     PRIVATE
-        headers/Camera.h
         headers/Descriptor.h
         headers/ErrorCheck.h
         headers/Fundamentals.h
@@ -18,7 +17,6 @@ target_sources(VulkanRenderer
         headers/Utils.h
         headers/Vertex.h
         headers/VulkanRenderer.h
-        src/Camera.cpp
         src/Descriptor.cpp
         src/Helper.cpp
         src/Mesh.cpp
