@@ -12,7 +12,7 @@ struct MaterialPipeline
 
 struct MaterialInstance
 {
-    MaterialPipeline* mBaseMaterial;
+    MaterialPipeline* mpBaseMaterial;
     VkDescriptorSet mDescriptorSet;
 };
 } // namespace Bunny::Render

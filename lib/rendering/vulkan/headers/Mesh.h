@@ -1,37 +1,33 @@
 #pragma once
 
-#include <vulkan/vulkan.h>
+#include "Fundamentals.h"
+#include "Material.h"
 
-#include <string_view>
+#include <vulkan/vulkan.h>
+#include <string>
 
 namespace Bunny::Render
 {
-class Mesh
+
+struct Surface
 {
-  public:
-    struct RenderBuffer
-    {
-        VkBuffer mVertexBuffer;
-        VkBuffer mIndexBuffer;
-    };
-
-    ~Mesh();
-
-    RenderBuffer getRenderBuffer() const { return mRenderBuffer; }
-
-  protected:
-    void destroyBuffers();
-
-    RenderBuffer mRenderBuffer{nullptr, nullptr};
-    VkDeviceMemory mVertexBufferMemory;
-    VkDeviceMemory mIndexBufferMemory;
-    VkDevice mDevice;
+    uint32_t mStartIndex;
+    uint32_t mCount;
+    MaterialInstance mMaterial;
 };
 
-class ModelMesh : public Mesh
+struct Mesh
 {
-  public:
-    bool loadFromFile(std::string_view filePath, VkDevice device, VkPhysicalDevice physicalDevice);
+    std::string mName;
+    std::vector<Surface> mSurfaces;
+    AllocatedBuffer mVertexBuffer;
+    AllocatedBuffer mIndexBuffer;
+};
+
+struct MeshAssetsBank
+{
+    std::vector<Mesh> mMeshes;
+    std::vector<MaterialInstance> mMaterials;
 };
 
 } // namespace Bunny::Render
