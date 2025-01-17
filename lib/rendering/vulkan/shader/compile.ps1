@@ -1,2 +1,4 @@
 glslc.exe ./basic.vert -o basic_vert.spv
 glslc.exe ./basic.frag -o basic_frag.spv
+glslc.exe ./basicUpdated.vert -o basic_updated_vert.spv
+glslc.exe ./basicUpdated.frag -o basic_updated_frag.spv
