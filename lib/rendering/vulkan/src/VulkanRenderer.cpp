@@ -178,16 +178,6 @@ void VulkanRenderer::render()
 
         VkRenderingInfo renderInfo = makeRenderingInfo(mSwapChainExtent, &colorAttachment, &depthAttachment);
 
-        vkCmdBeginRendering(cmdBuf, &renderInfo);
-
-        //  bind vertex buffer
-        VkBuffer vertexBuffers[] = {mVertexBuffer};
-        VkDeviceSize offsets[] = {0};
-        vkCmdBindVertexBuffers(cmdBuf, 0, 1, vertexBuffers, offsets);
-
-        //  bind index buffer
-        vkCmdBindIndexBuffer(cmdBuf, mIndexBuffer, 0, VK_INDEX_TYPE_UINT32);
-
         //  update dynamic states (viewport, scissors)
         VkViewport viewport{};
         viewport.x = 0.0f;
@@ -203,12 +193,25 @@ void VulkanRenderer::render()
         scissor.extent = mSwapChainExtent;
         vkCmdSetScissor(cmdBuf, 0, 1, &scissor);
 
-        //  bind descriptor sets
-        vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout, 0, 1,
-            &mDescriptorSets[mCurrentFrameId], 0, nullptr);
+        vkCmdBeginRendering(cmdBuf, &renderInfo);
 
-        //  draw!!
-        vkCmdDrawIndexed(cmdBuf, static_cast<uint32_t>(modelIndecies.size()), 1, 0, 0, 0);
+        //  here begins the rendering of objects
+        {
+            //  bind vertex buffer
+            VkBuffer vertexBuffers[] = {mVertexBuffer};
+            VkDeviceSize offsets[] = {0};
+            vkCmdBindVertexBuffers(cmdBuf, 0, 1, vertexBuffers, offsets);
+
+            //  bind index buffer
+            vkCmdBindIndexBuffer(cmdBuf, mIndexBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+            //  bind descriptor sets
+            vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout, 0, 1,
+                &mDescriptorSets[mCurrentFrameId], 0, nullptr);
+
+            //  draw!!
+            vkCmdDrawIndexed(cmdBuf, static_cast<uint32_t>(modelIndecies.size()), 1, 0, 0, 0);
+        }
 
         vkCmdEndRendering(cmdBuf);
 
