@@ -3,23 +3,20 @@
 #include "Transform.h"
 
 #include <vulkan/vulkan.h>
+#include <string_view>
+#include <vector>
+#include <unordered_map>
 
 namespace Bunny::Render
 {
+
+class Mesh;
+class MeshAssetsBank;
+
 class IRendenrable
 {
   public:
     virtual void render(VkCommandBuffer commandBuffer) = 0;
-};
-
-class Scene : public IRendenrable
-{
-  public:
-    virtual void render(VkCommandBuffer commandBuffer) override;
-};
-
-class GameObject
-{
 };
 
 class RenderComponent : public IRendenrable
@@ -28,8 +25,6 @@ class RenderComponent : public IRendenrable
     Base::Transform mTransform;
     bool mIsStatic = true;
 };
-
-class Mesh;
 
 class MeshRenderComponent : public RenderComponent
 {
@@ -44,6 +39,30 @@ class MeshRenderComponent : public RenderComponent
 
     virtual void render(VkCommandBuffer commandBuffer) override;
     const Mesh* mMesh = nullptr;
+};
+
+class Node
+{
+    public:
+    Base::Transform mTransform;
+    std::vector<Node*> mChildren;
+    Node* mParent;
+    RenderComponent* mRenderer;
+};
+
+class Scene : public IRendenrable
+{
+  public:
+    explicit Scene(MeshAssetsBank* bank);
+
+    bool loadFromGltfFile(std::string_view filePath);
+
+    virtual void render(VkCommandBuffer commandBuffer) override;
+
+  private:
+    MeshAssetsBank* mMeshAssetsBank;
+    std::unordered_map<size_t, Node> mNodes;
+    std::vector<Node*> mRootNodes;
 };
 
 } // namespace Bunny::Render

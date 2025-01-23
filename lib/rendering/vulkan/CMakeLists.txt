@@ -46,5 +46,6 @@ target_link_libraries(VulkanRenderer
         fmt::fmt
         vma
         imgui
+        fastgltf::fastgltf
     )
     
