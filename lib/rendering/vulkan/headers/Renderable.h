@@ -6,23 +6,25 @@
 #include <string_view>
 #include <vector>
 #include <unordered_map>
+#include <memory>
 
 namespace Bunny::Render
 {
 
 class Mesh;
 class MeshAssetsBank;
+class VulkanRenderer;
+class Node;
 
 class IRendenrable
 {
   public:
-    virtual void render(VkCommandBuffer commandBuffer) = 0;
+    virtual void render(VkCommandBuffer commandBuffer, const glm::mat4& parentTransformMatrix) const = 0;
 };
 
 class RenderComponent : public IRendenrable
 {
   public:
-    Base::Transform mTransform;
     bool mIsStatic = true;
 };
 
@@ -35,19 +37,22 @@ class MeshRenderComponent : public RenderComponent
         glm::mat4 invTransModel;
     };
 
-    explicit MeshRenderComponent(const Mesh* mesh);
+    explicit MeshRenderComponent(const Mesh* mesh, const Node* owner);
 
-    virtual void render(VkCommandBuffer commandBuffer) override;
+    virtual void render(VkCommandBuffer commandBuffer, const glm::mat4& parentTransformMatrix) const override;
     const Mesh* mMesh = nullptr;
+    const Node* mOwner = nullptr;
 };
 
-class Node
+class Node : public IRendenrable
 {
-    public:
+  public:
     Base::Transform mTransform;
     std::vector<Node*> mChildren;
     Node* mParent;
-    RenderComponent* mRenderer;
+    std::unique_ptr<RenderComponent> mRenderComponent;
+
+    virtual void render(VkCommandBuffer commandBuffer, const glm::mat4& parentTransformMatrix) const override;
 };
 
 class Scene : public IRendenrable
@@ -55,14 +60,14 @@ class Scene : public IRendenrable
   public:
     explicit Scene(MeshAssetsBank* bank);
 
-    bool loadFromGltfFile(std::string_view filePath);
+    bool loadFromGltfFile(std::string_view filePath, VulkanRenderer* renderer);
 
-    virtual void render(VkCommandBuffer commandBuffer) override;
+    virtual void render(VkCommandBuffer commandBuffer, const glm::mat4& parentTransformMatrix) const override;
 
   private:
     MeshAssetsBank* mMeshAssetsBank;
     std::unordered_map<size_t, Node> mNodes;
-    std::vector<Node*> mRootNodes;
+    std::vector<const Node*> mRootNodes;
 };
 
 } // namespace Bunny::Render

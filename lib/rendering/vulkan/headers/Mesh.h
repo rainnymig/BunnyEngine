@@ -6,6 +6,7 @@
 #include <vulkan/vulkan.h>
 #include <string>
 #include <unordered_map>
+#include <memory>
 
 namespace Bunny::Render
 {
@@ -27,7 +28,7 @@ struct Mesh
 
 struct MeshAssetsBank
 {
-    std::unordered_map<size_t, Mesh> mMeshes;
+    std::unordered_map<size_t, std::unique_ptr<Mesh>> mMeshes;
 };
 
 } // namespace Bunny::Render
