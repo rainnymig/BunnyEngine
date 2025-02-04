@@ -4,9 +4,12 @@
 #include "Vertex.h"
 #include "ErrorCheck.h"
 #include "PipelineBuilder.h"
+#include "Mesh.h"
 
-// #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+
+#define VMA_IMPLEMENTATION
+#include <vk_mem_alloc.h>
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -284,6 +287,45 @@ void VulkanRenderer::cleanUp()
 void VulkanRenderer::setFrameBufferResized()
 {
     mFrameBufferResized = true;
+}
+
+void VulkanRenderer::createAndMapMeshBuffers(Mesh* mesh, std::span<NormalVertex> vertices, std::span<uint32_t> indices)
+{
+    const size_t vertexBufferSize = vertices.size() * sizeof(NormalVertex);
+    const size_t indexBufferSize = indices.size() * sizeof(uint32_t);
+
+    //  create vertex and index buffer
+    mesh->mVertexBuffer = createBuffer(vertexBufferSize,
+        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
+    mesh->mIndexBuffer = createBuffer(indexBufferSize,
+        VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
+
+    //  create staging buffer, map the vertex and index data into it,
+    //  then transfer to the actual vertex and index buffer
+    AllocatedBuffer stagingBuffer =
+        createBuffer(vertexBufferSize + indexBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
+
+    void* data = stagingBuffer.mAllocation->GetMappedData();
+    memcpy(data, vertices.data(), vertexBufferSize);
+    memcpy((char*)data + vertexBufferSize, indices.data(), indexBufferSize);
+
+    submitImmediateCommands([&](VkCommandBuffer commandBuffer) {
+        VkBufferCopy vertexCopy{0};
+        vertexCopy.dstOffset = 0;
+        vertexCopy.srcOffset = 0;
+        vertexCopy.size = vertexBufferSize;
+
+        vkCmdCopyBuffer(commandBuffer, stagingBuffer.mBuffer, mesh->mVertexBuffer.mBuffer, 1, &vertexCopy);
+
+        VkBufferCopy indexCopy{0};
+        indexCopy.dstOffset = 0;
+        indexCopy.srcOffset = vertexBufferSize;
+        indexCopy.size = indexBufferSize;
+
+        vkCmdCopyBuffer(commandBuffer, stagingBuffer.mBuffer, mesh->mIndexBuffer.mBuffer, 1, &indexCopy);
+    });
+
+    destroyBuffer(stagingBuffer);
 }
 
 void VulkanRenderer::createSurface()
@@ -963,6 +1005,11 @@ void VulkanRenderer::renderImgui(VkCommandBuffer commandBuffer, VkImageView targ
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
 
     vkCmdEndRendering(commandBuffer);
+}
+
+void VulkanRenderer::destroyBuffer(const AllocatedBuffer& buffer)
+{
+    vmaDestroyBuffer(mAllocator, buffer.mBuffer, buffer.mAllocation);
 }
 
 void VulkanRenderer::cleanUpSwapChain()

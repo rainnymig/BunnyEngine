@@ -7,6 +7,7 @@
 #include "QueueFamilyIndices.h"
 #include "SwapChainSupportDetails.h"
 #include "Utils.h"
+#include "Vertex.h"
 
 #include <vulkan/vulkan.h>
 #include <vk_mem_alloc.h>
@@ -14,9 +15,12 @@
 #include <vector>
 #include <array>
 #include <functional>
+#include <span>
 
 namespace Bunny::Render
 {
+
+class Mesh;
 
 constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -30,6 +34,8 @@ class VulkanRenderer : public Renderer
     virtual void cleanUp() override;
 
     void setFrameBufferResized();
+
+    void createAndMapMeshBuffers(Mesh* mesh, std::span<NormalVertex> vertices, std::span<uint32_t> indices);
 
   private:
     void createSurface();
@@ -60,6 +66,7 @@ class VulkanRenderer : public Renderer
     void loadModel();
     void initImgui();
     void renderImgui(VkCommandBuffer commandBuffer, VkImageView targetImageView);
+    void destroyBuffer(const AllocatedBuffer& buffer);
 
     void cleanUpSwapChain();
 
