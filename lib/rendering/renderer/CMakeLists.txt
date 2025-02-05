@@ -3,9 +3,11 @@ add_library(Renderer)
 target_sources(Renderer
     PUBLIC
         headers/Camera.h
+        headers/Light.h
         headers/Renderer.h
     PRIVATE
         src/Camera.cpp
+        src/Light.cpp
 )
 
 target_include_directories(Renderer PUBLIC ./headers)
