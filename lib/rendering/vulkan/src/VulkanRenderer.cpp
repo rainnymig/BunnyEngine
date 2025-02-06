@@ -5,6 +5,8 @@
 #include "ErrorCheck.h"
 #include "PipelineBuilder.h"
 #include "Mesh.h"
+#include "Shader.h"
+#include "Error.h"
 
 #include <GLFW/glfw3.h>
 
@@ -89,7 +91,7 @@ namespace Bunny::Render
 void VulkanRenderer::initialize()
 {
     initVulkan();
-    createSwapChain();
+    initSwapChain();
     createDepthResources();
     createDescriptorSetLayout();
     createGraphicsPipeline();
@@ -126,7 +128,7 @@ void VulkanRenderer::render()
     }
     else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
     {
-        throw std::runtime_error("failed to acquire swap chain image!");
+        PRINT_AND_RETURN("failed to acquire swap chain image!");
     }
 
     //  reset fence only after image is successfully acquired
@@ -163,7 +165,7 @@ void VulkanRenderer::render()
 
         if (vkBeginCommandBuffer(cmdBuf, &beginInfo) != VK_SUCCESS)
         {
-            throw std::runtime_error("failed to begin recording command buffer!");
+            PRINT_AND_RETURN("failed to begin recording command buffer!");
         }
 
         //  bind graphics pipeline
@@ -226,7 +228,7 @@ void VulkanRenderer::render()
         //  end command buffer
         if (vkEndCommandBuffer(cmdBuf) != VK_SUCCESS)
         {
-            throw std::runtime_error("failed to record command buffer!");
+            PRINT_AND_RETURN("failed to record command buffer!");
         }
     }
 
@@ -246,7 +248,7 @@ void VulkanRenderer::render()
 
     if (vkQueueSubmit(mGraphicsQueue, 1, &submitInfo, mInFlightFences[mCurrentFrameId]) != VK_SUCCESS)
     {
-        throw std::runtime_error("failed to submit draw command buffer!");
+        PRINT_AND_RETURN("failed to submit draw command buffer!");
     }
 
     //  present!
@@ -270,7 +272,7 @@ void VulkanRenderer::render()
     }
     else if (result != VK_SUCCESS)
     {
-        throw std::runtime_error("failed to present swap chain image!");
+        PRINT_AND_RETURN("failed to present swap chain image!");
     }
 
     mCurrentFrameId = (mCurrentFrameId + 1) % MAX_FRAMES_IN_FLIGHT;
@@ -412,6 +414,12 @@ void VulkanRenderer::initVulkan()
     mDeletionStack.AddFunction([this]() { vmaDestroyAllocator(mAllocator); });
 }
 
+void VulkanRenderer::initSwapChain()
+{
+    createSwapChain();
+    mDeletionStack.AddFunction([this]() { cleanUpSwapChain(); });
+}
+
 void VulkanRenderer::createSwapChain()
 {
     SwapChainSupportDetails swapChainSupport = querySwapChainSupport(mPhysicalDevice, mSurface);
@@ -435,8 +443,6 @@ void VulkanRenderer::createSwapChain()
     mSwapChainImages = vkbSwapchain.get_images().value();
     mSwapChainImageViews = vkbSwapchain.get_image_views().value();
     mSwapChainImageFormat = surfaceFormat.format;
-
-    mDeletionStack.AddFunction([this]() { cleanUpSwapChain(); });
 }
 
 void VulkanRenderer::createImageViews()
@@ -452,11 +458,8 @@ void VulkanRenderer::createImageViews()
 void VulkanRenderer::createGraphicsPipeline()
 {
     //  load shader from hardcoded path for now
-    std::vector<std::byte> vertexShaderCode = readShaderFile("./basic_vert.spv");
-    std::vector<std::byte> fragmentShaderCode = readShaderFile("./basic_frag.spv");
-
-    VkShaderModule vertexShaderModule = createShaderModule(vertexShaderCode);
-    VkShaderModule fragmentShaderModule = createShaderModule(fragmentShaderCode);
+    Shader vertexShader("./basic_vert.spv", mDevice);
+    Shader fragmentShader("./basic_frag.spv", mDevice);
 
     //  pipeline layout
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
@@ -476,7 +479,7 @@ void VulkanRenderer::createGraphicsPipeline()
     auto attributeDescriptions = BasicVertex::getAttributeDescriptions();
 
     PipelineBuilder builder;
-    builder.setShaders(vertexShaderModule, fragmentShaderModule);
+    builder.setShaders(vertexShader.getShaderModule(), fragmentShader.getShaderModule());
     builder.setVertexInput(attributeDescriptions.data(), attributeDescriptions.size(), &bindingDescription, 1);
     builder.setInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
     builder.setPolygonMode(VK_POLYGON_MODE_FILL);
@@ -494,10 +497,6 @@ void VulkanRenderer::createGraphicsPipeline()
         vkDestroyPipeline(mDevice, mGraphicsPipeline, nullptr);
         vkDestroyPipelineLayout(mDevice, mPipelineLayout, nullptr);
     });
-
-    //  clean up shaders
-    vkDestroyShaderModule(mDevice, vertexShaderModule, nullptr);
-    vkDestroyShaderModule(mDevice, fragmentShaderModule, nullptr);
 }
 
 void VulkanRenderer::createCommand()
@@ -585,7 +584,6 @@ void VulkanRenderer::recreateSwapChain()
     cleanUpSwapChain();
 
     createSwapChain();
-    createImageViews();
     createDepthResources();
 }
 
@@ -832,9 +830,6 @@ void VulkanRenderer::createTextureImage()
         mTextureImage, mTextureImageMemory);
 
     //  transition the image layout for copying into
-    // immediateTransitionImageLayout(
-    //     mTextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-
     submitImmediateCommands([this](VkCommandBuffer commandBuffer) {
         transitionImageLayout(commandBuffer, mTextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED,
             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
@@ -844,9 +839,6 @@ void VulkanRenderer::createTextureImage()
     copyBufferToImage(stagingBuffer, mTextureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
 
     //  transition the image layout for optimal sampling in shader
-    // immediateTransitionImageLayout(mTextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-    //     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
     submitImmediateCommands([this](VkCommandBuffer commandBuffer) {
         transitionImageLayout(commandBuffer, mTextureImage, VK_FORMAT_R8G8B8A8_SRGB,
             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
@@ -1018,10 +1010,10 @@ void VulkanRenderer::cleanUpSwapChain()
     vkDestroyImage(mDevice, mDepthImage, nullptr);
     vkFreeMemory(mDevice, mDepthImageMemory, nullptr);
 
-    for (auto framebuffer : mSwapChainFramebuffers)
-    {
-        vkDestroyFramebuffer(mDevice, framebuffer, nullptr);
-    }
+    // for (auto framebuffer : mSwapChainFramebuffers)
+    // {
+    //     vkDestroyFramebuffer(mDevice, framebuffer, nullptr);
+    // }
     for (auto imageView : mSwapChainImageViews)
     {
         vkDestroyImageView(mDevice, imageView, nullptr);
@@ -1112,55 +1104,6 @@ VkExtent2D VulkanRenderer::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capa
 
         return actualExtent;
     }
-}
-
-QueueFamilyIndices VulkanRenderer::findQueueFamilies(VkPhysicalDevice device) const
-{
-    QueueFamilyIndices indices;
-
-    uint32_t queueFamilyCount = 0;
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
-
-    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
-
-    int i = 0;
-    for (const auto& queueFamily : queueFamilies)
-    {
-        if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
-        {
-            indices.graphicsFamily = i;
-        }
-
-        VkBool32 presentSupport = false;
-        vkGetPhysicalDeviceSurfaceSupportKHR(device, i, mSurface, &presentSupport);
-        if (presentSupport)
-        {
-            indices.presentFamily = i;
-        }
-
-        if (indices.isComplete())
-        {
-            break;
-        }
-        i++;
-    }
-
-    return indices;
-}
-
-VkShaderModule VulkanRenderer::createShaderModule(const std::vector<std::byte>& code) const
-{
-    VkShaderModuleCreateInfo createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    createInfo.codeSize = code.size();
-    createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
-    VkShaderModule shaderModule;
-    if (vkCreateShaderModule(mDevice, &createInfo, nullptr, &shaderModule) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to create shader module!");
-    }
-    return shaderModule;
 }
 
 uint32_t VulkanRenderer::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) const
