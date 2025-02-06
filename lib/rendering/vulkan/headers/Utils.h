@@ -11,19 +11,19 @@ class FunctionStack
 {
   public:
     //  add a function to the queue
-    void AddFunction(std::function<void(Args...)>&& func) { mFunctionQueue.push_back(std::move(func)); }
+    void AddFunction(std::function<void(Args...)>&& func) { mFuncStack.push_back(std::move(func)); }
 
     //  run all functions in reverse order of adding and flush the queue
     void Flush(Args... args)
     {
-        while (!mFunctionQueue.empty())
+        while (!mFuncStack.empty())
         {
-            mFunctionQueue.back()(args...);
-            mFunctionQueue.pop_back();
+            mFuncStack.back()(args...);
+            mFuncStack.pop_back();
         }
     }
 
   private:
-    std::deque<std::function<void(Args...)>> mFunctionQueue;
+    std::deque<std::function<void(Args...)>> mFuncStack;
 };
 } // namespace Bunny::Utils

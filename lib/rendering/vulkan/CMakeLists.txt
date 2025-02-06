@@ -18,6 +18,7 @@ target_sources(VulkanRenderer
         headers/Utils.h
         headers/Vertex.h
         headers/VulkanRenderer.h
+        headers/VulkanRendererNext.h
         src/Descriptor.cpp
         src/Helper.cpp
         src/Mesh.cpp
@@ -27,6 +28,7 @@ target_sources(VulkanRenderer
         src/Utils.cpp
         src/VulkanRenderer.cpp
         src/VulkanRendererFactory.cpp
+        src/VulkanRendererNext.cpp
 )
 
 target_compile_definitions(VulkanRenderer PUBLIC GLFW_INCLUDE_VULKAN)
