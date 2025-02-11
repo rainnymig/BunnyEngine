@@ -14,7 +14,7 @@ namespace Bunny::Render
 struct Surface
 {
     uint32_t mStartIndex;
-    uint32_t mCount;
+    uint32_t mIndexCount;
     MaterialInstance mMaterial;
 };
 

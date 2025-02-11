@@ -8,6 +8,7 @@
 #include "SwapChainSupportDetails.h"
 #include "Utils.h"
 #include "Vertex.h"
+#include "BaseVulkanRenderer.h"
 
 #include <vulkan/vulkan.h>
 #include <vk_mem_alloc.h>
@@ -24,7 +25,7 @@ class Mesh;
 
 constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 2;
 
-class VulkanRenderer : public Renderer
+class VulkanRenderer : public BaseVulkanRenderer
 {
   public:
     VulkanRenderer(GLFWwindow* window);
@@ -35,7 +36,8 @@ class VulkanRenderer : public Renderer
 
     void setFrameBufferResized();
 
-    void createAndMapMeshBuffers(Mesh* mesh, std::span<NormalVertex> vertices, std::span<uint32_t> indices);
+    virtual void createAndMapMeshBuffers(
+        Mesh* mesh, std::span<NormalVertex> vertices, std::span<uint32_t> indices) override;
 
   private:
     void createSurface();

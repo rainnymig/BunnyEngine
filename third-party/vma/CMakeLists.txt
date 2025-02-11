@@ -1,6 +1,6 @@
 add_library(vma)
 
-# set_target_properties(vma PROPERTIES LINKER_LANGUAGE CXX)
+set_target_properties(vma PROPERTIES LINKER_LANGUAGE CXX)
 
 target_sources(vma
     PUBLIC

@@ -3,6 +3,7 @@ add_library(VulkanRenderer)
 target_sources(VulkanRenderer
     PUBLIC
         headers/VulkanRendererFactory.h
+        headers/BaseVulkanRenderer.h
     PRIVATE
         headers/Descriptor.h
         headers/ErrorCheck.h
@@ -26,6 +27,7 @@ target_sources(VulkanRenderer
         src/Renderable.cpp
         src/Shader.cpp
         src/Utils.cpp
+        src/Vertex.cpp
         src/VulkanRenderer.cpp
         src/VulkanRendererFactory.cpp
         src/VulkanRendererNext.cpp
