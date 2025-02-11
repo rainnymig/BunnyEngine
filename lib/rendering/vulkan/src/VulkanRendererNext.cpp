@@ -88,6 +88,48 @@ void VulkanRendererNext::cleanUp()
     mDeletionStack.Flush();
 }
 
+void VulkanRendererNext::createAndMapMeshBuffers(
+    Mesh* mesh, std::span<NormalVertex> vertices, std::span<uint32_t> indices)
+{
+    const size_t vertexBufferSize = vertices.size() * sizeof(NormalVertex);
+    const size_t indexBufferSize = indices.size() * sizeof(uint32_t);
+
+    //  create vertex and index buffer
+    mesh->mVertexBuffer = createBuffer(vertexBufferSize,
+        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
+    mesh->mIndexBuffer = createBuffer(indexBufferSize,
+        VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
+
+    //  create staging buffer, map the vertex and index data into it,
+    //  then transfer to the actual vertex and index buffer
+    AllocatedBuffer stagingBuffer =
+        createBuffer(vertexBufferSize + indexBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
+
+    void* mappedData;
+    vmaMapMemory(mAllocator, stagingBuffer.mAllocation, &mappedData);
+    memcpy(mappedData, vertices.data(), vertexBufferSize);
+    memcpy((char*)mappedData + vertexBufferSize, indices.data(), indexBufferSize);
+
+    submitImmediateCommands([&](VkCommandBuffer commandBuffer) {
+        VkBufferCopy vertexCopy{0};
+        vertexCopy.dstOffset = 0;
+        vertexCopy.srcOffset = 0;
+        vertexCopy.size = vertexBufferSize;
+
+        vkCmdCopyBuffer(commandBuffer, stagingBuffer.mBuffer, mesh->mVertexBuffer.mBuffer, 1, &vertexCopy);
+
+        VkBufferCopy indexCopy{0};
+        indexCopy.dstOffset = 0;
+        indexCopy.srcOffset = vertexBufferSize;
+        indexCopy.size = indexBufferSize;
+
+        vkCmdCopyBuffer(commandBuffer, stagingBuffer.mBuffer, mesh->mIndexBuffer.mBuffer, 1, &indexCopy);
+    });
+
+    vmaUnmapMemory(mAllocator, stagingBuffer.mAllocation);
+    destroyBuffer(stagingBuffer);
+}
+
 void VulkanRendererNext::initVulkan()
 {
     vkb::InstanceBuilder builder;
@@ -438,6 +480,11 @@ AllocatedBuffer VulkanRendererNext::createBuffer(
         mAllocator, &bufferInfo, &vmaInfo, &newBuffer.mBuffer, &newBuffer.mAllocation, &newBuffer.mAllocationInfo));
 
     return newBuffer;
+}
+
+void VulkanRendererNext::destroyBuffer(const AllocatedBuffer& buffer)
+{
+    vmaDestroyBuffer(mAllocator, buffer.mBuffer, buffer.mAllocation);
 }
 
 void VulkanRendererNext::createGraphicsCommand()

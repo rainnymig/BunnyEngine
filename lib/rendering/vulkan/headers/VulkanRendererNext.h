@@ -7,6 +7,7 @@
 #include "SwapChainSupportDetails.h"
 #include "Utils.h"
 #include "Vertex.h"
+#include "BaseVulkanRenderer.h"
 
 #include <vulkan/vulkan.h>
 #include <vk_mem_alloc.h>
@@ -19,7 +20,7 @@
 
 namespace Bunny::Render
 {
-class VulkanRendererNext : public Renderer
+class VulkanRendererNext : public BaseVulkanRenderer
 {
   public:
 #pragma region publicFunctions
@@ -29,6 +30,9 @@ class VulkanRendererNext : public Renderer
     virtual void initialize() override;
     virtual void render() override;
     virtual void cleanUp() override;
+
+    virtual void createAndMapMeshBuffers(
+        Mesh* mesh, std::span<NormalVertex> vertices, std::span<uint32_t> indices) override;
 
 #pragma endregion publicFunctions
 
@@ -53,6 +57,7 @@ class VulkanRendererNext : public Renderer
     VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) const;
 
     AllocatedBuffer createBuffer(VkDeviceSize size, VkBufferUsageFlags bufferUsage, VmaMemoryUsage memoryUsage) const;
+    void destroyBuffer(const AllocatedBuffer& buffer);
 
     void createGraphicsCommand();
     void createImmediateCommand();

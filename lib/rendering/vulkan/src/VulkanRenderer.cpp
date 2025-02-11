@@ -10,7 +10,6 @@
 
 #include <GLFW/glfw3.h>
 
-#define VMA_IMPLEMENTATION
 #include <vk_mem_alloc.h>
 
 #define GLM_FORCE_RADIANS
@@ -307,9 +306,10 @@ void VulkanRenderer::createAndMapMeshBuffers(Mesh* mesh, std::span<NormalVertex>
     AllocatedBuffer stagingBuffer =
         createBuffer(vertexBufferSize + indexBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
 
-    void* data = stagingBuffer.mAllocation->GetMappedData();
-    memcpy(data, vertices.data(), vertexBufferSize);
-    memcpy((char*)data + vertexBufferSize, indices.data(), indexBufferSize);
+    void* mappedData;
+    vmaMapMemory(mAllocator, stagingBuffer.mAllocation, &mappedData);
+    memcpy(mappedData, vertices.data(), vertexBufferSize);
+    memcpy((char*)mappedData + vertexBufferSize, indices.data(), indexBufferSize);
 
     submitImmediateCommands([&](VkCommandBuffer commandBuffer) {
         VkBufferCopy vertexCopy{0};
@@ -327,6 +327,7 @@ void VulkanRenderer::createAndMapMeshBuffers(Mesh* mesh, std::span<NormalVertex>
         vkCmdCopyBuffer(commandBuffer, stagingBuffer.mBuffer, mesh->mIndexBuffer.mBuffer, 1, &indexCopy);
     });
 
+    vmaUnmapMemory(mAllocator, stagingBuffer.mAllocation);
     destroyBuffer(stagingBuffer);
 }
 

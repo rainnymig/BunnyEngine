@@ -66,6 +66,13 @@ struct NormalVertex
     glm::vec4 mColor;
     glm::vec2 mTexCoord;
 
+    struct Hash
+    {
+        size_t operator()(const NormalVertex& v) const;
+    };
+
+    bool operator==(const NormalVertex& rhs) const { return memcmp(this, &rhs, sizeof(NormalVertex)) == 0; }
+
     static constexpr std::array<VkVertexInputAttributeDescription, 4> getAttributeDescriptions()
     {
         std::array<VkVertexInputAttributeDescription, 4> attributeDescriptions{};

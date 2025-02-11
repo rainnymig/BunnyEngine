@@ -3,6 +3,7 @@
 #include "Mesh.h"
 #include "Vertex.h"
 #include "VulkanRenderer.h"
+#include "Transform.h"
 
 #include <glm/mat4x4.hpp>
 #include <glm/ext/matrix_transform.hpp>
@@ -14,11 +15,78 @@
 
 namespace Bunny::Render
 {
-Scene::Scene(MeshAssetsBank* bank) : mMeshAssetsBank(bank)
+void Scene::render(VkCommandBuffer commandBuffer, const glm::mat4& parentTransformMatrix) const
+{
+    for (const Node* rootNode : mRootNodes)
+    {
+        rootNode->render(commandBuffer, parentTransformMatrix);
+    }
+}
+
+void Scene::findRootNodes()
+{
+    mRootNodes.clear();
+
+    for (const auto& entry : mNodes)
+    {
+        if (entry.second.mParent == nullptr)
+        {
+            mRootNodes.push_back(&entry.second);
+        }
+    }
+}
+
+MeshRenderComponent::MeshRenderComponent(const Mesh* mesh, const Node* owner) : mMesh(mesh), mOwner(owner)
 {
 }
 
-bool Scene::loadFromGltfFile(std::string_view filePath, VulkanRenderer* renderer)
+void MeshRenderComponent::render(VkCommandBuffer commandBuffer, const glm::mat4& parentTransformMatrix) const
+{
+    //  calculate transform matrix
+    // glm::mat4 translateMat = glm::translate(glm::mat4(1.0f), mOwner->mTransform.mPosition);
+    // glm::mat4 rotationMat = glm::toMat4(mOwner->mTransform.mRotation);
+    // glm::mat4 scaleMat = glm::scale(glm::mat4(1.0f), mOwner->mTransform.mScale);
+
+    glm::mat4 modelMat = parentTransformMatrix * mOwner->mTransform.mMatrix;
+    glm::mat4 invTransMat = glm::inverse(glm::transpose(modelMat));
+
+    //  bind buffers
+    VkBuffer vertexBuffers[] = {mMesh->mVertexBuffer.mBuffer};
+    VkDeviceSize offsets[] = {0};
+    vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+
+    vkCmdBindIndexBuffer(commandBuffer, mMesh->mIndexBuffer.mBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+    RenderPushConstant pushConst{.model = modelMat, .invTransModel = invTransMat};
+
+    //  draw!!
+    for (const auto& surface : mMesh->mSurfaces)
+    {
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, surface.mMaterial.mpBaseMaterial->mPipiline);
+        vkCmdPushConstants(commandBuffer, surface.mMaterial.mpBaseMaterial->mPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT,
+            0, sizeof(RenderPushConstant), &pushConst);
+        vkCmdDrawIndexed(commandBuffer, surface.mIndexCount, 1, surface.mStartIndex, 0, 0);
+    }
+}
+
+void Node::render(VkCommandBuffer commandBuffer, const glm::mat4& parentTransformMatrix) const
+{
+    //  render self if render component exists
+    if (mRenderComponent != nullptr)
+    {
+        mRenderComponent->render(commandBuffer, parentTransformMatrix);
+    }
+
+    //  render children
+    glm::mat4 transformMat = parentTransformMatrix * mTransform.mMatrix;
+    for (const Node* child : mChildren)
+    {
+        child->render(commandBuffer, transformMat);
+    }
+}
+
+bool SceneInitializer::loadFromGltfFile(
+    std::string_view filePath, BaseVulkanRenderer* renderer, Scene* scene, MeshAssetsBank* meshAssetsBank)
 {
     std::filesystem::path path(filePath);
     constexpr auto gltfOptions = fastgltf::Options::DontRequireValidAssetMember | fastgltf::Options::AllowDouble |
@@ -44,9 +112,9 @@ bool Scene::loadFromGltfFile(std::string_view filePath, VulkanRenderer* renderer
     for (fastgltf::Mesh& mesh : gltf.meshes)
     {
         //  temp: use index as key
-        const auto id = mMeshAssetsBank->mMeshes.size();
-        mMeshAssetsBank->mMeshes[id] = std::make_unique<Mesh>();
-        std::unique_ptr<Mesh>& newMesh = mMeshAssetsBank->mMeshes.at(id);
+        const auto id = meshAssetsBank->mMeshes.size();
+        meshAssetsBank->mMeshes[id] = std::make_unique<Mesh>();
+        std::unique_ptr<Mesh>& newMesh = meshAssetsBank->mMeshes.at(id);
         newMesh->mName = mesh.name;
 
         indices.clear();
@@ -63,7 +131,7 @@ bool Scene::loadFromGltfFile(std::string_view filePath, VulkanRenderer* renderer
             //  load indices
             {
                 fastgltf::Accessor& indexAccessor = gltf.accessors[primitive.indicesAccessor.value()];
-                newSurface.mCount = indexAccessor.count;
+                newSurface.mIndexCount = indexAccessor.count;
 
                 indices.reserve(indices.size() + indexAccessor.count);
 
@@ -128,8 +196,8 @@ bool Scene::loadFromGltfFile(std::string_view filePath, VulkanRenderer* renderer
     //  load nodes
     for (const fastgltf::Node& node : gltf.nodes)
     {
-        const auto id = mNodes.size();
-        Node& newSceneNode = mNodes[id];
+        const auto id = scene->mNodes.size();
+        Node& newSceneNode = scene->mNodes[id];
 
         //  load node (local) transform
         std::visit(fastgltf::visitor{[&newSceneNode](fastgltf::TRS trs) {
@@ -153,7 +221,7 @@ bool Scene::loadFromGltfFile(std::string_view filePath, VulkanRenderer* renderer
         if (node.meshIndex.has_value())
         {
             newSceneNode.mRenderComponent = std::make_unique<MeshRenderComponent>(
-                mMeshAssetsBank->mMeshes.at(node.meshIndex.value()).get(), &newSceneNode);
+                meshAssetsBank->mMeshes.at(node.meshIndex.value()).get(), &newSceneNode);
         }
     }
 
@@ -161,82 +229,182 @@ bool Scene::loadFromGltfFile(std::string_view filePath, VulkanRenderer* renderer
     for (int i = 0; i < gltf.nodes.size(); i++)
     {
         fastgltf::Node& node = gltf.nodes[i];
-        Node& sceneNode = mNodes.at(i);
+        Node& sceneNode = scene->mNodes.at(i);
 
         for (auto& c : node.children)
         {
-            sceneNode.mChildren.push_back(&mNodes[c]);
-            mNodes[c].mParent = &sceneNode;
+            sceneNode.mChildren.push_back(&scene->mNodes[c]);
+            scene->mNodes[c].mParent = &sceneNode;
         }
     }
 
     //  find root nodes, which are nodes that have no parent
-    for (const auto& entry : mNodes)
-    {
-        if (entry.second.mParent == nullptr)
-        {
-            mRootNodes.push_back(&entry.second);
-        }
-    }
+    scene->findRootNodes();
 
     return true;
 }
 
-void Scene::render(VkCommandBuffer commandBuffer, const glm::mat4& parentTransformMatrix) const
+bool SceneInitializer::makeExampleScene(BaseVulkanRenderer* renderer, Scene* scene, MeshAssetsBank* meshAssetBank)
 {
-    for (const Node* rootNode : mRootNodes)
+    //  vecters to hold indices and vertices for creating buffers
+    // std::vector<uint32_t> indices;
+    // std::vector<NormalVertex> vertices;
+    // std::unordered_map<NormalVertex, uint32_t, NormalVertex::Hash> vertexToIndexMap;
+
+    //  create meshes and save them in the mesh asset bank
+    const Mesh* cubeMesh = createCubeMeshToBank(meshAssetBank, renderer);
+
+    //  create scene structure
+    //  create grid of cubes to fill the scene
+
+    constexpr int resolution = 10;
+    constexpr float gap = 2;
+    glm::vec3 pos{-gap * resolution / 2, -gap * resolution / 2, -gap * resolution / 2};
+    scene->mNodes.clear();
+    size_t idx = 0;
+    for (int z = 0; z < resolution; z++)
     {
-        rootNode->render(commandBuffer, parentTransformMatrix);
+        for (int y = 0; y < resolution; y++)
+        {
+            for (int x = 0; x < resolution; x++)
+            {
+                Node& newNode = scene->mNodes[idx++];
+                newNode.mTransform = Base::Transform{
+                    pos + glm::vec3{x * gap, y * gap, z * gap},
+                      {0,       0,       0      },
+                      {1,       1,       1      }
+                };
+                newNode.mRenderComponent = std::make_unique<MeshRenderComponent>(cubeMesh, &newNode);
+            }
+        }
+    }
+
+    scene->findRootNodes();
+
+    return true;
+}
+
+void SceneInitializer::addVertex(const glm::vec3& position, const glm::vec3& normal, const glm::vec4& color,
+    const glm::vec2& texCoord, std::vector<uint32_t>& indices, std::vector<NormalVertex>& vertices,
+    std::unordered_map<NormalVertex, uint32_t, NormalVertex::Hash>& vertexToIndexMap)
+{
+    NormalVertex newVertex{.mPosition = position, .mNormal = normal, .mColor = color, .mTexCoord = texCoord};
+
+    const auto verIdxPair = vertexToIndexMap.find(newVertex);
+    if (verIdxPair != vertexToIndexMap.end())
+    {
+        indices.push_back(verIdxPair->second);
+    }
+    else
+    {
+        uint32_t newIndex = vertices.size();
+        vertices.emplace_back(newVertex);
+        indices.emplace_back(newIndex);
+        vertexToIndexMap[newVertex] = newIndex;
     }
 }
 
-MeshRenderComponent::MeshRenderComponent(const Mesh* mesh, const Node* owner) : mMesh(mesh), mOwner(owner)
+void SceneInitializer::addTriangle(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3,
+    const glm::vec4& color, const glm::vec2& texCoordBase, const float scale, std::vector<uint32_t>& indices,
+    std::vector<NormalVertex>& vertices,
+    std::unordered_map<NormalVertex, uint32_t, NormalVertex::Hash>& vertexToIndexMap)
 {
+    //  p1 - - p3 - u
+    //  |     /
+    //  |   /
+    //  | /
+    //  p2
+    //  |
+    //  v
+
+    glm::vec3 v12 = p2 - p1;
+    glm::vec3 v13 = p3 - p1;
+    glm::vec3 normal = glm::normalize(glm::cross(v12, v13));
+
+    glm::vec2 tex1 = texCoordBase;
+    glm::vec2 tex2 = texCoordBase + glm::vec2{0, scale};
+    glm::vec2 tex3 = texCoordBase + glm::vec2{scale, 0};
+
+    addVertex(p1, normal, color, tex1, indices, vertices, vertexToIndexMap);
+    addVertex(p2, normal, color, tex2, indices, vertices, vertexToIndexMap);
+    addVertex(p3, normal, color, tex3, indices, vertices, vertexToIndexMap);
 }
 
-void MeshRenderComponent::render(VkCommandBuffer commandBuffer, const glm::mat4& parentTransformMatrix) const
+void SceneInitializer::addQuad(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3, const glm::vec3& p4,
+    const glm::vec4& color, const glm::vec2& texCoordBase, const float scale, std::vector<uint32_t>& indices,
+    std::vector<NormalVertex>& vertices,
+    std::unordered_map<NormalVertex, uint32_t, NormalVertex::Hash>& vertexToIndexMap)
 {
-    //  calculate transform matrix
-    // glm::mat4 translateMat = glm::translate(glm::mat4(1.0f), mOwner->mTransform.mPosition);
-    // glm::mat4 rotationMat = glm::toMat4(mOwner->mTransform.mRotation);
-    // glm::mat4 scaleMat = glm::scale(glm::mat4(1.0f), mOwner->mTransform.mScale);
+    //  p1 - - p4 - u
+    //  |     / |
+    //  |   /   |
+    //  | /     |
+    //  p2 - - p3
+    //  |
+    //  v
 
-    glm::mat4 modelMat = parentTransformMatrix * mOwner->mTransform.mMatrix;
-    glm::mat4 invTransMat = glm::inverse(glm::transpose(modelMat));
+    glm::vec3 v12 = p2 - p1;
+    glm::vec3 v14 = p4 - p1;
+    glm::vec3 normal = glm::normalize(glm::cross(v12, v14));
 
-    //  bind buffers
-    VkBuffer vertexBuffers[] = {mMesh->mVertexBuffer.mBuffer};
-    VkDeviceSize offsets[] = {0};
-    vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+    glm::vec2 tex1 = texCoordBase;
+    glm::vec2 tex2 = texCoordBase + glm::vec2{0, scale};
+    glm::vec2 tex3 = texCoordBase + glm::vec2{scale, scale};
+    glm::vec2 tex4 = texCoordBase + glm::vec2{scale, 0};
 
-    vkCmdBindIndexBuffer(commandBuffer, mMesh->mIndexBuffer.mBuffer, 0, VK_INDEX_TYPE_UINT32);
+    addVertex(p1, normal, color, tex1, indices, vertices, vertexToIndexMap);
+    addVertex(p2, normal, color, tex2, indices, vertices, vertexToIndexMap);
+    addVertex(p4, normal, color, tex4, indices, vertices, vertexToIndexMap);
 
-    RenderPushConstant pushConst{.model = modelMat, .invTransModel = invTransMat};
-
-    //  draw!!
-    for (const auto& surface : mMesh->mSurfaces)
-    {
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, surface.mMaterial.mpBaseMaterial->mPipiline);
-        vkCmdPushConstants(commandBuffer, surface.mMaterial.mpBaseMaterial->mPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT,
-            0, sizeof(RenderPushConstant), &pushConst);
-        vkCmdDrawIndexed(commandBuffer, surface.mCount, 1, surface.mStartIndex, 0, 0);
-    }
+    addVertex(p4, normal, color, tex4, indices, vertices, vertexToIndexMap);
+    addVertex(p2, normal, color, tex2, indices, vertices, vertexToIndexMap);
+    addVertex(p3, normal, color, tex3, indices, vertices, vertexToIndexMap);
 }
 
-void Node::render(VkCommandBuffer commandBuffer, const glm::mat4& parentTransformMatrix) const
+Mesh* SceneInitializer::createCubeMeshToBank(MeshAssetsBank* bank, BaseVulkanRenderer* renderer)
 {
-    //  render self if render component exists
-    if (mRenderComponent != nullptr)
-    {
-        mRenderComponent->render(commandBuffer, parentTransformMatrix);
-    }
+    const auto id = bank->mMeshes.size();
+    bank->mMeshes[id] = std::make_unique<Mesh>();
+    Mesh* newMesh = bank->mMeshes.at(id).get();
+    newMesh->mName = "Cube";
 
-    //  render children
-    glm::mat4 transformMat = parentTransformMatrix * mTransform.mMatrix;
-    for (const Node* child : mChildren)
-    {
-        child->render(commandBuffer, transformMat);
-    }
+    newMesh->mSurfaces.resize(1);
+    Surface& cubeSurface = newMesh->mSurfaces[0];
+    cubeSurface.mStartIndex = 0;
+
+    std::vector<uint32_t> indices;
+    std::vector<NormalVertex> vertices;
+    std::unordered_map<NormalVertex, uint32_t, NormalVertex::Hash> vertexToIndexMap;
+
+    constexpr glm::vec4 red{1.0f, 0.0, 0.0, 1.0};
+    constexpr glm::vec4 green{1.0f, 0.0, 0.0, 1.0};
+    constexpr glm::vec4 blue{1.0f, 0.0, 0.0, 1.0};
+    constexpr glm::vec4 yellow{1.0f, 1.0, 0.0, 1.0};
+    constexpr glm::vec4 fuchsia{1.0f, 0.0, 1.0, 1.0};
+    constexpr glm::vec4 aqua{0.0f, 1.0, 1.0, 1.0};
+    //  front   -z
+    addQuad({-0.5, 0.5, -0.5}, {-0.5, -0.5, -0.5}, {0.5, -0.5, -0.5}, {0.5, 0.5, -0.5}, aqua, {0, 0}, 1, indices,
+        vertices, vertexToIndexMap);
+    //  right   +x
+    addQuad({0.5, 0.5, -0.5}, {0.5, -0.5, -0.5}, {0.5, -0.5, 0.5}, {0.5, 0.5, 0.5}, red, {0, 0}, 1, indices, vertices,
+        vertexToIndexMap);
+    //  up      +y
+    addQuad({-0.5, 0.5, 0.5}, {-0.5, 0.5, -0.5}, {0.5, 0.5, -0.5}, {0.5, 0.5, 0.5}, green, {0, 0}, 1, indices, vertices,
+        vertexToIndexMap);
+    //  left    -x
+    addQuad({-0.5, 0.5, 0.5}, {-0.5, -0.5, 0.5}, {-0.5, -0.5, -0.5}, {-0.5, 0.5, -0.5}, yellow, {0, 0}, 1, indices,
+        vertices, vertexToIndexMap);
+    //  bottom  -y
+    addQuad({-0.5, -0.5, -0.5}, {-0.5, -0.5, 0.5}, {0.5, -0.5, 0.5}, {0.5, -0.5, -0.5}, fuchsia, {0, 0}, 1, indices,
+        vertices, vertexToIndexMap);
+    //  back    +z
+    addQuad({0.5, 0.5, 0.5}, {0.5, -0.5, 0.5}, {-0.5, -0.5, 0.5}, {-0.5, 0.5, 0.5}, blue, {0, 0}, 1, indices, vertices,
+        vertexToIndexMap);
+
+    cubeSurface.mIndexCount = indices.size();
+    renderer->createAndMapMeshBuffers(newMesh, vertices, indices);
+
+    return newMesh;
 }
 
 } // namespace Bunny::Render
