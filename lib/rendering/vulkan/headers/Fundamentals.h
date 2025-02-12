@@ -11,7 +11,7 @@ struct AllocatedImage
     VkImage mImage;
     VkImageView mImageView;
     VmaAllocation mAllocation;
-    VkExtent3D mExtend;
+    VkExtent3D mExtent;
     VkFormat mFormat;
 };
 
