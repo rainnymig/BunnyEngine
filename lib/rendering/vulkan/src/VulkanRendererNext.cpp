@@ -96,19 +96,17 @@ void VulkanRendererNext::createAndMapMeshBuffers(
 
     //  create vertex and index buffer
     mesh->mVertexBuffer = createBuffer(vertexBufferSize,
-        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
+        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_ALLOCATION_CREATE_MAPPED_BIT);
     mesh->mIndexBuffer = createBuffer(indexBufferSize,
-        VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
+        VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_ALLOCATION_CREATE_MAPPED_BIT);
 
     //  create staging buffer, map the vertex and index data into it,
     //  then transfer to the actual vertex and index buffer
-    AllocatedBuffer stagingBuffer =
-        createBuffer(vertexBufferSize + indexBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
+    AllocatedBuffer stagingBuffer = createBuffer(vertexBufferSize + indexBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
 
-    void* mappedData;
-    vmaMapMemory(mAllocator, stagingBuffer.mAllocation, &mappedData);
-    memcpy(mappedData, vertices.data(), vertexBufferSize);
-    memcpy((char*)mappedData + vertexBufferSize, indices.data(), indexBufferSize);
+    memcpy(stagingBuffer.mAllocationInfo.pMappedData, vertices.data(), vertexBufferSize);
+    memcpy((char*)stagingBuffer.mAllocationInfo.pMappedData + vertexBufferSize, indices.data(), indexBufferSize);
 
     submitImmediateCommands([&](VkCommandBuffer commandBuffer) {
         VkBufferCopy vertexCopy{0};
@@ -126,7 +124,6 @@ void VulkanRendererNext::createAndMapMeshBuffers(
         vkCmdCopyBuffer(commandBuffer, stagingBuffer.mBuffer, mesh->mIndexBuffer.mBuffer, 1, &indexCopy);
     });
 
-    vmaUnmapMemory(mAllocator, stagingBuffer.mAllocation);
     destroyBuffer(stagingBuffer);
 }
 
@@ -372,6 +369,28 @@ void VulkanRendererNext::destroySwapChain()
     vkDestroySwapchainKHR(mDevice, mSwapChain, nullptr);
 }
 
+void VulkanRendererNext::createDepthResource()
+{
+    VkFormat depthFormat = findDepthFormat();
+    if (depthFormat == VK_FORMAT_UNDEFINED)
+    {
+        PRINT_AND_ABORT("Can not find suitable depth image format");
+    }
+
+    mDepthImage = createImage({mSwapChainExtent.width, mSwapChainExtent.height, 1}, depthFormat,
+        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_IMAGE_ASPECT_DEPTH_BIT);
+
+    // createImage(mSwapChainExtent.width, mSwapChainExtent.height, mDepthImageFormat, VK_IMAGE_TILING_OPTIMAL,
+    //     VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, mDepthImage,
+    //     mDepthImageMemory);
+    // mDepthImageView = createImageView(mDepthImage, mDepthImageFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+}
+
+void VulkanRendererNext::destroyDepthResource()
+{
+    vmaDestroyImage(mAllocator, mDepthImage.mImage, mDepthImage.mAllocation);
+}
+
 SwapChainSupportDetails VulkanRendererNext::querySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface) const
 {
     SwapChainSupportDetails details;
@@ -459,7 +478,7 @@ VkExtent2D VulkanRendererNext::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& 
 }
 
 AllocatedBuffer VulkanRendererNext::createBuffer(
-    VkDeviceSize size, VkBufferUsageFlags bufferUsage, VmaMemoryUsage memoryUsage) const
+    VkDeviceSize size, VkBufferUsageFlags bufferUsage, VmaAllocationCreateFlags vmaCreateFlags) const
 {
     AllocatedBuffer newBuffer;
 
@@ -472,8 +491,8 @@ AllocatedBuffer VulkanRendererNext::createBuffer(
     };
 
     VmaAllocationCreateInfo vmaInfo{
-        .flags = VMA_ALLOCATION_CREATE_MAPPED_BIT,
-        .usage = memoryUsage,
+        .flags = vmaCreateFlags,
+        .usage = VMA_MEMORY_USAGE_AUTO,
     };
 
     VK_HARD_CHECK(vmaCreateBuffer(
@@ -485,6 +504,82 @@ AllocatedBuffer VulkanRendererNext::createBuffer(
 void VulkanRendererNext::destroyBuffer(const AllocatedBuffer& buffer)
 {
     vmaDestroyBuffer(mAllocator, buffer.mBuffer, buffer.mAllocation);
+}
+
+AllocatedImage VulkanRendererNext::createImage(
+    VkExtent3D size, VkFormat format, VkImageUsageFlags usage, VkImageAspectFlags aspectFlags)
+{
+    AllocatedImage newImage;
+    newImage.mFormat = format;
+    newImage.mExtent = size;
+
+    VkImageCreateInfo imgCreateInfo = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
+    imgCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+    imgCreateInfo.extent = size;
+    imgCreateInfo.mipLevels = 1;
+    imgCreateInfo.arrayLayers = 1;
+    imgCreateInfo.format = format;
+    imgCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+    imgCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    imgCreateInfo.usage = usage;
+    imgCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    imgCreateInfo.pNext = nullptr;
+
+    VmaAllocationCreateInfo allocCreateInfo = {};
+    allocCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
+    allocCreateInfo.flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
+    allocCreateInfo.priority = 1;
+
+    VK_HARD_CHECK(
+        vmaCreateImage(mAllocator, &imgCreateInfo, &allocCreateInfo, &newImage.mImage, &newImage.mAllocation, nullptr));
+
+    VkImageViewCreateInfo viewCreateInfo = {.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
+    viewCreateInfo.pNext = nullptr;
+    viewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    viewCreateInfo.image = newImage.mImage;
+    viewCreateInfo.format = format;
+    viewCreateInfo.subresourceRange.baseMipLevel = 0;
+    viewCreateInfo.subresourceRange.levelCount = 1;
+    viewCreateInfo.subresourceRange.baseArrayLayer = 0;
+    viewCreateInfo.subresourceRange.layerCount = 1;
+    viewCreateInfo.subresourceRange.aspectMask = aspectFlags;
+
+    VK_HARD_CHECK(vkCreateImageView(mDevice, &viewCreateInfo, nullptr, &newImage.mImageView));
+
+    return newImage;
+}
+
+AllocatedImage VulkanRendererNext::createImageAndMapData(
+    void* data, VkExtent3D size, VkFormat format, VkImageUsageFlags usage, VkImageAspectFlags aspectFlags)
+{
+    return AllocatedImage();
+}
+
+VkFormat VulkanRendererNext::findSupportedFormat(
+    std::span<VkFormat> candidates, VkImageTiling tiling, VkFormatFeatureFlags features) const
+{
+    for (VkFormat format : candidates)
+    {
+        VkFormatProperties props;
+        vkGetPhysicalDeviceFormatProperties(mPhysicalDevice, format, &props);
+
+        if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features)
+        {
+            return format;
+        }
+        else if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features)
+        {
+            return format;
+        }
+    }
+
+    return VK_FORMAT_UNDEFINED;
+}
+
+VkFormat VulkanRendererNext::findDepthFormat() const
+{
+    std::array<VkFormat, 3> candidates{VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT};
+    return findSupportedFormat(candidates, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 }
 
 void VulkanRendererNext::createGraphicsCommand()

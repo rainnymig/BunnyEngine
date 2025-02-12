@@ -6,7 +6,7 @@ namespace Bunny::Render
 {
 struct DirectionalLight
 {
-    glm::vec3 mColor;
     glm::vec3 mDirection;
+    glm::vec3 mColor;
 };
 } // namespace Bunny::Render

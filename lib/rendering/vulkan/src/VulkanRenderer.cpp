@@ -306,10 +306,8 @@ void VulkanRenderer::createAndMapMeshBuffers(Mesh* mesh, std::span<NormalVertex>
     AllocatedBuffer stagingBuffer =
         createBuffer(vertexBufferSize + indexBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
 
-    void* mappedData;
-    vmaMapMemory(mAllocator, stagingBuffer.mAllocation, &mappedData);
-    memcpy(mappedData, vertices.data(), vertexBufferSize);
-    memcpy((char*)mappedData + vertexBufferSize, indices.data(), indexBufferSize);
+    memcpy(stagingBuffer.mAllocationInfo.pMappedData, vertices.data(), vertexBufferSize);
+    memcpy((char*)stagingBuffer.mAllocationInfo.pMappedData + vertexBufferSize, indices.data(), indexBufferSize);
 
     submitImmediateCommands([&](VkCommandBuffer commandBuffer) {
         VkBufferCopy vertexCopy{0};
@@ -327,7 +325,6 @@ void VulkanRenderer::createAndMapMeshBuffers(Mesh* mesh, std::span<NormalVertex>
         vkCmdCopyBuffer(commandBuffer, stagingBuffer.mBuffer, mesh->mIndexBuffer.mBuffer, 1, &indexCopy);
     });
 
-    vmaUnmapMemory(mAllocator, stagingBuffer.mAllocation);
     destroyBuffer(stagingBuffer);
 }
 

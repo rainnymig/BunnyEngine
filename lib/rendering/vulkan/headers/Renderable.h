@@ -4,6 +4,8 @@
 
 #include "Vertex.h"
 #include "BaseVulkanRenderer.h"
+#include "Camera.h"
+#include "Light.h"
 
 #include <vulkan/vulkan.h>
 #include <string_view>
@@ -94,6 +96,8 @@ class Scene : public IRendenrable
 
     std::unordered_map<size_t, Node> mNodes;
     std::vector<const Node*> mRootNodes;
+    std::vector<DirectionalLight> mLights;
+    Camera mCamera;
 };
 
 } // namespace Bunny::Render

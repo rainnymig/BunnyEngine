@@ -51,13 +51,26 @@ class VulkanRendererNext : public BaseVulkanRenderer
     void recreateSwapChain();
     void destroySwapChain();
 
+    void createDepthResource();
+    void destroyDepthResource();
+
     SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface) const;
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) const;
     VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) const;
     VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) const;
 
-    AllocatedBuffer createBuffer(VkDeviceSize size, VkBufferUsageFlags bufferUsage, VmaMemoryUsage memoryUsage) const;
+    AllocatedBuffer createBuffer(
+        VkDeviceSize size, VkBufferUsageFlags bufferUsage, VmaAllocationCreateFlags vmaCreateFlags) const;
     void destroyBuffer(const AllocatedBuffer& buffer);
+
+    AllocatedImage createImage(
+        VkExtent3D size, VkFormat format, VkImageUsageFlags usage, VkImageAspectFlags aspectFlags);
+    AllocatedImage createImageAndMapData(
+        void* data, VkExtent3D size, VkFormat format, VkImageUsageFlags usage, VkImageAspectFlags aspectFlags);
+
+    VkFormat findSupportedFormat(
+        std::span<VkFormat> candidates, VkImageTiling tiling, VkFormatFeatureFlags features) const;
+    VkFormat findDepthFormat() const;
 
     void createGraphicsCommand();
     void createImmediateCommand();
@@ -87,6 +100,8 @@ class VulkanRendererNext : public BaseVulkanRenderer
     std::vector<VkImageView> mSwapChainImageViews;
     VkFormat mSwapChainImageFormat;
     VkExtent2D mSwapChainExtent;
+
+    AllocatedImage mDepthImage;
 
     VkQueue mGraphicsQueue;
     VkQueue mPresentQueue;

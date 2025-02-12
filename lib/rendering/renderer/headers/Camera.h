@@ -12,7 +12,7 @@ class Camera
 {
   public:
     //  fov angle is in vertical direction, is radians
-    Camera(const glm::vec3& lookFrom = {0, 0, 0}, const glm::vec3& lookAt = {0, 0, 0}, float fov = glm::radians(45.0f),
+    Camera(const glm::vec3& lookFrom = {0, 5, 10}, const glm::vec3& lookAt = {0, 0, 0}, float fov = glm::radians(45.0f),
         float aspectRatio = 16.0f / 9.0f);
 
     inline glm::mat4 getViewProjMatrix() const;

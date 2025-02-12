@@ -241,6 +241,16 @@ bool SceneInitializer::loadFromGltfFile(
     //  find root nodes, which are nodes that have no parent
     scene->findRootNodes();
 
+    //  config camera
+    //  will use default one here
+
+    //  create lights
+    scene->mLights.push_back(DirectionalLight{
+        .mDirection = glm::normalize(glm::vec3{-1, -1, 1}
+          ),
+        .mColor = {1,  1,  1},
+    });
+
     return true;
 }
 
@@ -280,6 +290,16 @@ bool SceneInitializer::makeExampleScene(BaseVulkanRenderer* renderer, Scene* sce
     }
 
     scene->findRootNodes();
+
+    //  config camera
+    //  will use default one here
+
+    //  create lights
+    scene->mLights.push_back(DirectionalLight{
+        .mDirection = glm::normalize(glm::vec3{-1, -1, 1}
+          ),
+        .mColor = {1,  1,  1},
+    });
 
     return true;
 }
