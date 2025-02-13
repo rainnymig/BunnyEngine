@@ -22,6 +22,7 @@ target_sources(VulkanRenderer
         headers/VulkanRendererNext.h
         src/Descriptor.cpp
         src/Helper.cpp
+        src/Material.cpp
         src/Mesh.cpp
         src/PipelineBuilder.cpp
         src/Renderable.cpp
