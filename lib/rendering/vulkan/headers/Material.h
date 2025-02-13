@@ -15,4 +15,11 @@ struct MaterialInstance
     MaterialPipeline* mpBaseMaterial;
     VkDescriptorSet mDescriptorSet;
 };
+
+class BasicBlinnPhongMaterial
+{
+  public:
+  private:
+    MaterialPipeline mPipeline;
+};
 } // namespace Bunny::Render

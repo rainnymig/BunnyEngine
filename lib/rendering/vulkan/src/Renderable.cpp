@@ -17,6 +17,10 @@ namespace Bunny::Render
 {
 void Scene::render(VkCommandBuffer commandBuffer, const glm::mat4& parentTransformMatrix) const
 {
+    //  handle camera data
+
+    //  handle lights data
+
     for (const Node* rootNode : mRootNodes)
     {
         rootNode->render(commandBuffer, parentTransformMatrix);
@@ -42,11 +46,6 @@ MeshRenderComponent::MeshRenderComponent(const Mesh* mesh, const Node* owner) : 
 
 void MeshRenderComponent::render(VkCommandBuffer commandBuffer, const glm::mat4& parentTransformMatrix) const
 {
-    //  calculate transform matrix
-    // glm::mat4 translateMat = glm::translate(glm::mat4(1.0f), mOwner->mTransform.mPosition);
-    // glm::mat4 rotationMat = glm::toMat4(mOwner->mTransform.mRotation);
-    // glm::mat4 scaleMat = glm::scale(glm::mat4(1.0f), mOwner->mTransform.mScale);
-
     glm::mat4 modelMat = parentTransformMatrix * mOwner->mTransform.mMatrix;
     glm::mat4 invTransMat = glm::inverse(glm::transpose(modelMat));
 

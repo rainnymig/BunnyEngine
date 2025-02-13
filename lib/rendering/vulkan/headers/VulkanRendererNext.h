@@ -43,6 +43,7 @@ class VulkanRendererNext : public BaseVulkanRenderer
     void initSwapChain();
     void initCommand();
     void initSyncObjects();
+    void initDepthResources();
     void initImgui();
 
     void renderImgui(VkCommandBuffer commandBuffer, VkImageView targetImageView);
@@ -63,8 +64,8 @@ class VulkanRendererNext : public BaseVulkanRenderer
         VkDeviceSize size, VkBufferUsageFlags bufferUsage, VmaAllocationCreateFlags vmaCreateFlags) const;
     void destroyBuffer(const AllocatedBuffer& buffer);
 
-    AllocatedImage createImage(
-        VkExtent3D size, VkFormat format, VkImageUsageFlags usage, VkImageAspectFlags aspectFlags);
+    AllocatedImage createImage(VkExtent3D size, VkFormat format, VkImageUsageFlags usage,
+        VkImageAspectFlags aspectFlags, VkImageLayout layout = VK_IMAGE_LAYOUT_UNDEFINED);
     AllocatedImage createImageAndMapData(
         void* data, VkExtent3D size, VkFormat format, VkImageUsageFlags usage, VkImageAspectFlags aspectFlags);
 

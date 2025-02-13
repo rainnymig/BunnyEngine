@@ -45,6 +45,7 @@ void VulkanRendererNext::initialize()
     initVulkan();
     initSwapChain();
     initCommand();
+    initDepthResources();
     initSyncObjects();
     initImgui();
 }
@@ -251,6 +252,12 @@ void VulkanRendererNext::initSyncObjects()
     mDeletionStack.AddFunction([this]() { vkDestroyFence(mDevice, mImmediateFence, nullptr); });
 }
 
+void VulkanRendererNext::initDepthResources()
+{
+    createDepthResource();
+    mDeletionStack.AddFunction([this]() { destroyDepthResource(); });
+}
+
 void VulkanRendererNext::initImgui()
 {
     //  create descriptor pool just for imgui
@@ -350,10 +357,11 @@ void VulkanRendererNext::recreateSwapChain()
 
     vkDeviceWaitIdle(mDevice);
 
+    destroyDepthResource();
     destroySwapChain();
 
     createSwapChain();
-    // createDepthResources();
+    createDepthResource();
 }
 
 void VulkanRendererNext::destroySwapChain()
@@ -378,16 +386,13 @@ void VulkanRendererNext::createDepthResource()
     }
 
     mDepthImage = createImage({mSwapChainExtent.width, mSwapChainExtent.height, 1}, depthFormat,
-        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_IMAGE_ASPECT_DEPTH_BIT);
-
-    // createImage(mSwapChainExtent.width, mSwapChainExtent.height, mDepthImageFormat, VK_IMAGE_TILING_OPTIMAL,
-    //     VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, mDepthImage,
-    //     mDepthImageMemory);
-    // mDepthImageView = createImageView(mDepthImage, mDepthImageFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_IMAGE_ASPECT_DEPTH_BIT,
+        VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 }
 
 void VulkanRendererNext::destroyDepthResource()
 {
+    vkDestroyImageView(mDevice, mDepthImage.mImageView, nullptr);
     vmaDestroyImage(mAllocator, mDepthImage.mImage, mDepthImage.mAllocation);
 }
 
@@ -507,7 +512,7 @@ void VulkanRendererNext::destroyBuffer(const AllocatedBuffer& buffer)
 }
 
 AllocatedImage VulkanRendererNext::createImage(
-    VkExtent3D size, VkFormat format, VkImageUsageFlags usage, VkImageAspectFlags aspectFlags)
+    VkExtent3D size, VkFormat format, VkImageUsageFlags usage, VkImageAspectFlags aspectFlags, VkImageLayout layout)
 {
     AllocatedImage newImage;
     newImage.mFormat = format;
@@ -520,7 +525,7 @@ AllocatedImage VulkanRendererNext::createImage(
     imgCreateInfo.arrayLayers = 1;
     imgCreateInfo.format = format;
     imgCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-    imgCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    imgCreateInfo.initialLayout = layout;
     imgCreateInfo.usage = usage;
     imgCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
     imgCreateInfo.pNext = nullptr;
