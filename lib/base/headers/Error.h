@@ -1,5 +1,7 @@
 #pragma once
 
+#include <fmt/core.h>
+
 #define PRINT_AND_ABORT(message)                                                                                       \
     {                                                                                                                  \
         fmt::print("Fatal error: {}, aborting!", message);                                                             \

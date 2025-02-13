@@ -127,7 +127,7 @@ void VulkanRenderer::render()
     }
     else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
     {
-        PRINT_AND_RETURN("failed to acquire swap chain image!");
+        PRINT_AND_RETURN("failed to acquire swap chain image!")
     }
 
     //  reset fence only after image is successfully acquired
@@ -164,7 +164,7 @@ void VulkanRenderer::render()
 
         if (vkBeginCommandBuffer(cmdBuf, &beginInfo) != VK_SUCCESS)
         {
-            PRINT_AND_RETURN("failed to begin recording command buffer!");
+            PRINT_AND_RETURN("failed to begin recording command buffer!")
         }
 
         //  bind graphics pipeline
@@ -227,7 +227,7 @@ void VulkanRenderer::render()
         //  end command buffer
         if (vkEndCommandBuffer(cmdBuf) != VK_SUCCESS)
         {
-            PRINT_AND_RETURN("failed to record command buffer!");
+            PRINT_AND_RETURN("failed to record command buffer!")
         }
     }
 
@@ -247,7 +247,7 @@ void VulkanRenderer::render()
 
     if (vkQueueSubmit(mGraphicsQueue, 1, &submitInfo, mInFlightFences[mCurrentFrameId]) != VK_SUCCESS)
     {
-        PRINT_AND_RETURN("failed to submit draw command buffer!");
+        PRINT_AND_RETURN("failed to submit draw command buffer!")
     }
 
     //  present!
@@ -271,7 +271,7 @@ void VulkanRenderer::render()
     }
     else if (result != VK_SUCCESS)
     {
-        PRINT_AND_RETURN("failed to present swap chain image!");
+        PRINT_AND_RETURN("failed to present swap chain image!")
     }
 
     mCurrentFrameId = (mCurrentFrameId + 1) % MAX_FRAMES_IN_FLIGHT;

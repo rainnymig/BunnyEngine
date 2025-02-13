@@ -68,7 +68,7 @@ void VulkanRendererNext::render()
     }
     else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
     {
-        PRINT_AND_RETURN("failed to acquire swap chain image!");
+        PRINT_AND_RETURN("failed to acquire swap chain image!")
     }
 
     //  reset fence only after image is successfully acquired

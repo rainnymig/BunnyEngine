@@ -1,5 +1,7 @@
 #include "Shader.h"
 
+#include "Error.h"
+
 #include <fstream>
 
 namespace Bunny::Render
@@ -17,14 +19,16 @@ Shader::~Shader()
 
 std::vector<std::byte> Shader::readShaderFile(std::string_view path)
 {
+    std::vector<std::byte> buffer;
+
     std::ifstream shaderFile(path.data(), std::ios::ate | std::ios::binary);
     if (!shaderFile.is_open())
     {
-        throw std::runtime_error("can't open shader file.");
+        PRINT_AND_RETURN_VALUE("Can not open shader file!", buffer);
     }
 
     size_t fileSize = (size_t)shaderFile.tellg();
-    std::vector<std::byte> buffer(fileSize);
+    buffer.resize(fileSize);
     shaderFile.seekg(0);
     shaderFile.read((char*)buffer.data(), fileSize);
 
@@ -34,6 +38,11 @@ std::vector<std::byte> Shader::readShaderFile(std::string_view path)
 
 void Shader::createShaderModule(const std::vector<std::byte>& code, VkDevice device)
 {
+    if (code.empty()) 
+    {
+        PRINT_AND_RETURN("Shader code is empty!")
+    }
+
     VkShaderModuleCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
     createInfo.codeSize = code.size();
@@ -42,7 +51,7 @@ void Shader::createShaderModule(const std::vector<std::byte>& code, VkDevice dev
     VkShaderModule shaderModule = nullptr;
     if (vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS)
     {
-        throw std::runtime_error("failed to create shader module!");
+        PRINT_AND_RETURN("failed to create shader module!")
     }
 
     mShaderModule = shaderModule;

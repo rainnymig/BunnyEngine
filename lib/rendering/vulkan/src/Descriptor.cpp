@@ -18,7 +18,7 @@ void DescriptorLayoutBuilder::Clear()
     mBindings.clear();
 }
 
-VkDescriptorSetLayout DescriptorLayoutBuilder::Build(VkDevice device) const
+VkDescriptorSetLayout DescriptorLayoutBuilder::Build(VkDevice device, void* pNext, VkDescriptorSetLayoutCreateFlags layoutCreateFlags) const
 {
     VkDescriptorSetLayout layout = nullptr;
 
@@ -27,10 +27,11 @@ VkDescriptorSetLayout DescriptorLayoutBuilder::Build(VkDevice device) const
         return layout;
     }
 
-    VkDescriptorSetLayoutCreateInfo layoutInfo{};
-    layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    VkDescriptorSetLayoutCreateInfo layoutInfo{.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
     layoutInfo.bindingCount = static_cast<uint32_t>(mBindings.size());
     layoutInfo.pBindings = mBindings.data();
+    layoutInfo.flags = layoutCreateFlags;
+    layoutInfo.pNext = pNext;
 
     VK_HARD_CHECK(vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &layout));
 

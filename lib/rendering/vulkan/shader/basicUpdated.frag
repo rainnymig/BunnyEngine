@@ -8,8 +8,9 @@ struct Light
 
 layout(set = 0, binding = 1) uniform LightData 
 {
-    Light lights[];
     vec3 cameraPos;
+    float lightCount;
+    Light lights[];
 } lightData;
 
 layout (location = 0) in vec3 normal;

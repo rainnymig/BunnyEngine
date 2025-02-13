@@ -13,7 +13,7 @@ class DescriptorLayoutBuilder
   public:
     void AddBinding(VkDescriptorSetLayoutBinding binding);
     void Clear();
-    VkDescriptorSetLayout Build(VkDevice device) const;
+    VkDescriptorSetLayout Build(VkDevice device, void* pNext = nullptr, VkDescriptorSetLayoutCreateFlags layoutCreateFlags = 0) const;
 
   private:
     std::vector<VkDescriptorSetLayoutBinding> mBindings;
