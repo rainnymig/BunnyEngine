@@ -22,8 +22,10 @@ struct MaterialInstance
 class BasicBlinnPhongMaterial
 {
   public:
-    void buildPipeline(VkDevice device);
+    void buildPipeline(VkDevice device, VkFormat colorAttachmentFormat, VkFormat depthFormat);
     void cleanupPipeline();
+
+    MaterialInstance createInstance();
 
   private:
     static constexpr std::string_view VERTEX_SHADER_PATH {"./basic_updated_vert.spv"};
