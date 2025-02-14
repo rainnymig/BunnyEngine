@@ -1,5 +1,16 @@
 #version 450
 
+
+/*//////
+
+TODO: uniform buffers should be divided into different sets
+a set for material stuff (so that Material can create descriptor sets for material overrides)
+a set for model and/or scene stuff
+
+//////*/
+
+
+
 /*  buffer layouts  */
 layout(set = 0, binding = 0) uniform SceneData 
 {
