@@ -61,7 +61,7 @@ void MeshRenderComponent::render(VkCommandBuffer commandBuffer, const glm::mat4&
     //  draw!!
     for (const auto& surface : mMesh->mSurfaces)
     {
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, surface.mMaterial.mpBaseMaterial->mPipiline);
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, surface.mMaterial.mpBaseMaterial->mPipeline);
         vkCmdPushConstants(commandBuffer, surface.mMaterial.mpBaseMaterial->mPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT,
             0, sizeof(RenderPushConstant), &pushConst);
         vkCmdDrawIndexed(commandBuffer, surface.mIndexCount, 1, surface.mStartIndex, 0, 0);

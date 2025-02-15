@@ -9,30 +9,110 @@
 
 namespace Bunny::Render
 {
-void BasicBlinnPhongMaterial::buildPipeline(VkDevice device, VkFormat colorAttachmentFormat, VkFormat depthFormat)
+
+void BasicBlinnPhongMaterial::cleanupPipeline()
+{
+    if (mDevice == nullptr)
+    {
+        return;
+    }
+
+    // mDescriptorAllocator.DestroyPools(mDevice);
+    vkDestroyPipeline(mDevice, mPipeline.mPipeline, nullptr);
+    // vkDestroyDescriptorSetLayout(mDevice, mDescriptorSetLayout, nullptr);
+}
+
+MaterialInstance BasicBlinnPhongMaterial::makeInstance()
+{
+    MaterialInstance newInstance;
+
+    newInstance.mpBaseMaterial = &mPipeline;
+    // mDescriptorAllocator.Allocate(mDevice, &mDescriptorSetLayout, &newInstance.mDescriptorSet);
+
+    return newInstance;
+}
+
+// void BasicBlinnPhongMaterial::buildDescriptorSetLayout(VkDevice device)
+// {
+//     DescriptorLayoutBuilder builder;
+
+//     //  Note: currently both bindings are in the same set
+//     //  might consider spliting them into two sets
+//     //  so one can be bound at scene level (mvp matrix)
+//     //  and here only deal with material stuff (lighting, texture)
+
+//     //  NOTE AGAIN !!IMPORTANT!!: here includes descriptors for both scene and material related stuff
+//     //  this is needed because the whole graphics pipeline is created here
+//     //  but when actually allocating desc sets material should only allocate material desc sets
+//     //  scene desc sets should be allocated outside (maybe in scene)
+//     {
+//         VkDescriptorSetLayoutBinding uniformBufferLayout{};
+//         uniformBufferLayout.binding = 0;
+//         uniformBufferLayout.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+//         uniformBufferLayout.descriptorCount = 1;
+//         uniformBufferLayout.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+//         uniformBufferLayout.pImmutableSamplers = nullptr;
+//         builder.AddBinding(uniformBufferLayout);
+//     }
+//     {
+//         VkDescriptorSetLayoutBinding uniformBufferLayout{};
+//         uniformBufferLayout.binding = 1;
+//         uniformBufferLayout.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+//         uniformBufferLayout.descriptorCount = 1;
+//         uniformBufferLayout.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+//         uniformBufferLayout.pImmutableSamplers = nullptr;
+//         builder.AddBinding(uniformBufferLayout);
+//     }
+
+//     mDescriptorSetLayout = builder.Build(mDevice);
+// }
+
+std::unique_ptr<BasicBlinnPhongMaterial> BasicBlinnPhongMaterial::Builder::buildMaterial(VkDevice device) const
 {
     assert(device != nullptr);
 
-    mDevice = device;
+    std::unique_ptr<BasicBlinnPhongMaterial> material = std::make_unique<BasicBlinnPhongMaterial>(CARROT, device);
+
+    material->mPipeline = buildPipeline(device);
+
+    //  no material descriptor required for now
+    //  init descriptor allocator
+    // constexpr size_t MAX_SETS = 2; //   should be max frames inflight
+    // DescriptorAllocator::PoolSize poolSizes[] = {
+    //     {.mType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .mRatio = 2},
+    // };
+    // material->mDescriptorAllocator.Init(device, MAX_SETS, poolSizes);
+
+    return std::move(material);
+}
+
+MaterialPipeline BasicBlinnPhongMaterial::Builder::buildPipeline(VkDevice device) const
+{
+    VkPipeline pipeline;
+    VkPipelineLayout pipelineLayout;
 
     //  load shader file
     Shader vertexShader(VERTEX_SHADER_PATH, device);
     Shader fragmentShader(FRAGMENT_SHADER_PATH, device);
 
     //  build pipeline
-    //  build descriptor set layout
-    buildDescriptorSetLayout(device);
+
+    //  no material descriptor required for now
+    //  build material descriptor set layout
+    // buildDescriptorSetLayout(device);
+
+    VkDescriptorSetLayout layouts[] = {mSceneDescSetLayout, mObjectDescSetLayout};
 
     //  pipeline layout
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 1;                  // Optional
-    pipelineLayoutInfo.pSetLayouts = &mDescriptorSetLayout; // Optional
-    pipelineLayoutInfo.pushConstantRangeCount = 0;          // Optional
-    pipelineLayoutInfo.pPushConstantRanges = nullptr;       // Optional
+    pipelineLayoutInfo.setLayoutCount = 2;
+    pipelineLayoutInfo.pSetLayouts = layouts;
+    pipelineLayoutInfo.pushConstantRangeCount = mPushConstantRanges.size();
+    pipelineLayoutInfo.pPushConstantRanges = mPushConstantRanges.empty() ? nullptr : mPushConstantRanges.data();
 
-    VK_HARD_CHECK(vkCreatePipelineLayout(mDevice, &pipelineLayoutInfo, nullptr, &mPipeline.mPipelineLayout));
-    
+    VK_HARD_CHECK(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout));
+
     //  vertex info
     auto bindingDescription = getBindingDescription<NormalVertex>(0, VertexInputRate::Vertex);
     auto attributeDescriptions = NormalVertex::getAttributeDescriptions();
@@ -46,75 +126,13 @@ void BasicBlinnPhongMaterial::buildPipeline(VkDevice device, VkFormat colorAttac
     builder.setMultisamplingNone();
     builder.disableBlending(); //  opaque pipeline
     builder.enableDepthTest(VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL);
-    builder.setColorAttachmentFormat(colorAttachmentFormat);
-    builder.setDepthFormat(depthFormat);
-    builder.setPipelineLayout(mPipeline.mPipelineLayout);
+    builder.setColorAttachmentFormat(mColorFormat);
+    builder.setDepthFormat(mDepthFormat);
+    builder.setPipelineLayout(pipelineLayout);
 
-    mPipeline.mPipiline = builder.build(mDevice);
+    pipeline = builder.build(device);
 
-    //  init descriptor allocator
-    constexpr size_t MAX_SETS = 2; //   should be max frames inflight
-    DescriptorAllocator::PoolSize poolSizes[] = {
-        {.mType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         .mRatio = 2},
-    };
-    mDescriptorAllocator.Init(mDevice, MAX_SETS, poolSizes);
-}
-
-void BasicBlinnPhongMaterial::cleanupPipeline()
-{
-    if (mDevice == nullptr)
-    {
-        return;
-    }
-
-    mDescriptorAllocator.DestroyPools(mDevice);
-    vkDestroyPipeline(mDevice, mPipeline.mPipiline, nullptr);
-    vkDestroyDescriptorSetLayout(mDevice, mDescriptorSetLayout, nullptr);
-}
-
-MaterialInstance BasicBlinnPhongMaterial::createInstance()
-{
-    MaterialInstance newInstance;
-
-    newInstance.mpBaseMaterial = &mPipeline;
-    mDescriptorAllocator.Allocate(mDevice, &mDescriptorSetLayout, &newInstance.mDescriptorSet);
-
-    return newInstance;
-}
-
-void BasicBlinnPhongMaterial::buildDescriptorSetLayout(VkDevice device)
-{
-    DescriptorLayoutBuilder builder;
-
-    //  Note: currently both bindings are in the same set
-    //  might consider spliting them into two sets
-    //  so one can be bound at scene level (mvp matrix)
-    //  and here only deal with material stuff (lighting, texture)
-
-    //  NOTE AGAIN !!IMPORTANT!!: here includes descriptors for both scene and material related stuff
-    //  this is needed because the whole graphics pipeline is created here
-    //  but when actually allocating desc sets material should only allocate material desc sets
-    //  scene desc sets should be allocated outside (maybe in scene)
-    {
-        VkDescriptorSetLayoutBinding uniformBufferLayout{};
-        uniformBufferLayout.binding = 0;
-        uniformBufferLayout.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        uniformBufferLayout.descriptorCount = 1;
-        uniformBufferLayout.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-        uniformBufferLayout.pImmutableSamplers = nullptr;
-        builder.AddBinding(uniformBufferLayout);
-    }
-    {
-        VkDescriptorSetLayoutBinding uniformBufferLayout{};
-        uniformBufferLayout.binding = 1;
-        uniformBufferLayout.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        uniformBufferLayout.descriptorCount = 1;
-        uniformBufferLayout.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-        uniformBufferLayout.pImmutableSamplers = nullptr;
-        builder.AddBinding(uniformBufferLayout);
-    }
-
-    mDescriptorSetLayout = builder.Build(mDevice);
+    return MaterialPipeline{.mPipeline = pipeline, .mPipelineLayout = pipelineLayout};
 }
 
 } // namespace Bunny::Render
