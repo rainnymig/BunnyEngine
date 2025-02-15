@@ -2,6 +2,7 @@ add_library(Base)
 
 target_sources(Base
     PUBLIC
+        headers/BunnyGuard.h
         headers/Error.h
         headers/Transform.h
     PRIVATE
@@ -10,4 +11,4 @@ target_sources(Base
 
 target_include_directories(Base PUBLIC ./headers)
 
-target_link_libraries(Base PUBLIC glm, fmt::fmt)
+target_link_libraries(Base PUBLIC glm fmt::fmt)

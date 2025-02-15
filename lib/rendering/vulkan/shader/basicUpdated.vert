@@ -3,9 +3,10 @@
 
 /*//////
 
-TODO: uniform buffers should be divided into different sets
-a set for material stuff (so that Material can create descriptor sets for material overrides)
-a set for model and/or scene stuff
+Descriptor Sets:
+set 1: scene data
+set 2: object data
+set 3: material data
 
 //////*/
 
@@ -19,7 +20,7 @@ layout(set = 0, binding = 0) uniform SceneData
     mat4 viewProj;
 } sceneData;
 
-layout(push_constant) uniform ObjectData 
+layout(set = 1, binding = 0) uniform ObjectData 
 {
     mat4 model;
     mat4 invTransModel;
