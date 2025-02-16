@@ -20,6 +20,7 @@ target_sources(VulkanRenderer
         headers/Vertex.h
         headers/VulkanRenderer.h
         headers/VulkanRendererNext.h
+        src/BaseVulkanRenderer.cpp
         src/Descriptor.cpp
         src/Helper.cpp
         src/Material.cpp

@@ -52,6 +52,7 @@ class BasicBlinnPhongMaterial
     BasicBlinnPhongMaterial(Base::BunnyGuard<Builder> guard, VkDevice device) : mDevice(device) {};
     void cleanupPipeline();
 
+    constexpr std::string_view getName() const { return "Basic Blinn Phong"; }
     MaterialInstance makeInstance();
 
   private:

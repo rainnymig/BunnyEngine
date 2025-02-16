@@ -26,6 +26,12 @@ layout(set = 1, binding = 0) uniform ObjectData
     mat4 invTransModel;
 } objectData;
 
+layout( push_constant ) uniform PushConsts
+{
+    mat4 model;
+    mat4 invTransModel;
+} pushConsts;
+
 /*  input layouts   */
 layout (location = 0) in vec3 position;
 layout (location = 1) in vec3 normal;
@@ -42,9 +48,9 @@ void main()
 {
     vec4 pos = vec4(position, 1);
 
-    outNormal = normalize((objectData.invTransModel*vec4(normal, 0)).xyz);
+    outNormal = normalize((pushConsts.invTransModel*vec4(normal, 0)).xyz);
     outColor = color.xyz;
-    vec4 worldPos = objectData.model * pos;
+    vec4 worldPos = pushConsts.model * pos;
     outFragPos = worldPos.xyz;
     outUV = uv;
 

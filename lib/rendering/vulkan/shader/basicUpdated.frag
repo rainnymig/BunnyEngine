@@ -6,11 +6,13 @@ struct Light
     vec3 color;
 };
 
+#define MAX_LIGHT_COUNT 8
+
 layout(set = 0, binding = 1) uniform LightData 
 {
     vec3 cameraPos;
-    float lightCount;
-    Light lights[];
+    uint lightCount;
+    Light lights[MAX_LIGHT_COUNT];
 } lightData;
 
 layout (location = 0) in vec3 normal;
@@ -45,6 +47,7 @@ void main()
 
 
     //  combined
-    vec3 result = (ambientColor + diffuseColor + specularColor) * color;
+    //vec3 result = (ambientColor + diffuseColor + specularColor) * color;
+    vec3 result = color;
     outColor = vec4(result, 1.0f);
 }

@@ -8,6 +8,9 @@
 #include "Utils.h"
 #include "Vertex.h"
 #include "BaseVulkanRenderer.h"
+#include "Material.h"
+#include "Renderable.h"
+#include "Mesh.h"
 
 #include <vulkan/vulkan.h>
 #include <vk_mem_alloc.h>
@@ -34,6 +37,14 @@ class VulkanRendererNext : public BaseVulkanRenderer
     virtual void createAndMapMeshBuffers(
         Mesh* mesh, std::span<NormalVertex> vertices, std::span<uint32_t> indices) override;
 
+    virtual AllocatedBuffer createBuffer(VkDeviceSize size, VkBufferUsageFlags bufferUsage,
+        VmaAllocationCreateFlags vmaCreateFlags, VmaMemoryUsage vmaUsage) const override;
+    virtual void destroyBuffer(const AllocatedBuffer& buffer) const override;
+
+    virtual uint32_t getCurrentFrameId() const override;
+
+    virtual BasicBlinnPhongMaterial* getMaterial() const override;
+
 #pragma endregion publicFunctions
 
   private:
@@ -45,6 +56,9 @@ class VulkanRendererNext : public BaseVulkanRenderer
     void initSyncObjects();
     void initDepthResources();
     void initImgui();
+    void initAssetBank();
+    void initScene();
+    void initMaterials();
 
     void renderImgui(VkCommandBuffer commandBuffer, VkImageView targetImageView);
 
@@ -59,10 +73,6 @@ class VulkanRendererNext : public BaseVulkanRenderer
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) const;
     VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) const;
     VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) const;
-
-    AllocatedBuffer createBuffer(
-        VkDeviceSize size, VkBufferUsageFlags bufferUsage, VmaAllocationCreateFlags vmaCreateFlags) const;
-    void destroyBuffer(const AllocatedBuffer& buffer);
 
     AllocatedImage createImage(VkExtent3D size, VkFormat format, VkImageUsageFlags usage,
         VkImageAspectFlags aspectFlags, VkImageLayout layout = VK_IMAGE_LAYOUT_UNDEFINED);
@@ -86,12 +96,11 @@ class VulkanRendererNext : public BaseVulkanRenderer
     //  window
     class GLFWwindow* mWindow;
 
-    //  frame
-    static constexpr size_t MAX_FRAMES_IN_FLIGHT = 2;
-
     //  vulkan stuffs
     VkInstance mInstance;
+#ifdef _DEBUG
     VkDebugUtilsMessengerEXT mDebugMessenger;
+#endif
     VkPhysicalDevice mPhysicalDevice = VK_NULL_HANDLE;
     VkDevice mDevice;
 
@@ -128,6 +137,11 @@ class VulkanRendererNext : public BaseVulkanRenderer
 
     //  multi frame inflight objects
     uint32_t mCurrentFrameId = 0;
+
+    //  scene and material - maybe move them to separate class later?
+    Scene mScene;
+    std::unique_ptr<MeshAssetsBank> mMeshAssetBank;
+    std::unique_ptr<BasicBlinnPhongMaterial> mBlinnPhongMaterial;
 
     //  explicitly handle window (framebuffer) resize
     bool mFrameBufferResized = false;
