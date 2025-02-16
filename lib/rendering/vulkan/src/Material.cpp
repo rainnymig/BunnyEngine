@@ -17,17 +17,20 @@ void BasicBlinnPhongMaterial::cleanupPipeline()
         return;
     }
 
-    // mDescriptorAllocator.DestroyPools(mDevice);
+    // mDescriptorAllocator.destroyPools(mDevice);
     vkDestroyPipeline(mDevice, mPipeline.mPipeline, nullptr);
+    vkDestroyPipelineLayout(mDevice, mPipeline.mPipelineLayout, nullptr);
     // vkDestroyDescriptorSetLayout(mDevice, mDescriptorSetLayout, nullptr);
 }
 
 MaterialInstance BasicBlinnPhongMaterial::makeInstance()
 {
+    //  Note: maybe create instance cache instead of recreating every time
+
     MaterialInstance newInstance;
 
     newInstance.mpBaseMaterial = &mPipeline;
-    // mDescriptorAllocator.Allocate(mDevice, &mDescriptorSetLayout, &newInstance.mDescriptorSet);
+    // mDescriptorAllocator.allocate(mDevice, &mDescriptorSetLayout, &newInstance.mDescriptorSet);
 
     return newInstance;
 }
@@ -52,7 +55,7 @@ MaterialInstance BasicBlinnPhongMaterial::makeInstance()
 //         uniformBufferLayout.descriptorCount = 1;
 //         uniformBufferLayout.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 //         uniformBufferLayout.pImmutableSamplers = nullptr;
-//         builder.AddBinding(uniformBufferLayout);
+//         builder.addBinding(uniformBufferLayout);
 //     }
 //     {
 //         VkDescriptorSetLayoutBinding uniformBufferLayout{};
@@ -61,7 +64,7 @@ MaterialInstance BasicBlinnPhongMaterial::makeInstance()
 //         uniformBufferLayout.descriptorCount = 1;
 //         uniformBufferLayout.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 //         uniformBufferLayout.pImmutableSamplers = nullptr;
-//         builder.AddBinding(uniformBufferLayout);
+//         builder.addBinding(uniformBufferLayout);
 //     }
 
 //     mDescriptorSetLayout = builder.Build(mDevice);

@@ -23,8 +23,6 @@ namespace Bunny::Render
 
 class Mesh;
 
-constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 2;
-
 class VulkanRenderer : public BaseVulkanRenderer
 {
   public:
@@ -38,6 +36,10 @@ class VulkanRenderer : public BaseVulkanRenderer
 
     virtual void createAndMapMeshBuffers(
         Mesh* mesh, std::span<NormalVertex> vertices, std::span<uint32_t> indices) override;
+
+    virtual void destroyBuffer(const AllocatedBuffer& buffer) const override;
+
+    virtual uint32_t getCurrentFrameId() const override;
 
   private:
     void createSurface();
@@ -69,7 +71,6 @@ class VulkanRenderer : public BaseVulkanRenderer
     void loadModel();
     void initImgui();
     void renderImgui(VkCommandBuffer commandBuffer, VkImageView targetImageView);
-    void destroyBuffer(const AllocatedBuffer& buffer);
 
     void cleanUpSwapChain();
 
@@ -96,7 +97,9 @@ class VulkanRenderer : public BaseVulkanRenderer
 
     //  vulkan rendering objects
     VkInstance mInstance;
+#ifdef _DEBUG
     VkDebugUtilsMessengerEXT mDebugMessenger;
+#endif
     VkPhysicalDevice mPhysicalDevice = VK_NULL_HANDLE;
     VkDevice mDevice;
     QueueFamilyIndices mQueueFamilyIndices;

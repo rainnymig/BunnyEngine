@@ -341,24 +341,33 @@ void VulkanRenderer::initVulkan()
 {
     vkb::InstanceBuilder builder;
 
-    constexpr bool useValidationLayers = true;
-
     //  create VkInstance
     //  make the vulkan instance, with basic debug features
-    auto instanceBuildResult = builder.set_app_name("BunnyEngine")
-                                   .request_validation_layers(useValidationLayers)
+    auto instanceBuildResult = builder
+                                   .set_app_name("BunnyEngine")
+#ifdef _DEBUG
+                                   .request_validation_layers(true)
                                    .enable_validation_layers(true)
                                    .use_default_debug_messenger()
+#else
+                                   .request_validation_layers(false)
+                                   .enable_validation_layers(false)
+#endif
                                    .require_api_version(1, 3, 0)
                                    .build();
 
     vkb::Instance vkbInstance = instanceBuildResult.value();
     mInstance = vkbInstance.instance;
+
+#ifdef _DEBUG
     mDebugMessenger = vkbInstance.debug_messenger;
+#endif
 
     mDeletionStack.AddFunction([this]() { vkDestroyInstance(mInstance, nullptr); });
-    mDeletionStack.AddFunction([this]() { DestroyDebugUtilsMessengerEXT(mInstance, mDebugMessenger, nullptr); });
 
+#ifdef _DEBUG
+    mDeletionStack.AddFunction([this]() { DestroyDebugUtilsMessengerEXT(mInstance, mDebugMessenger, nullptr); });
+#endif
     //  creat VkSurface
     createSurface();
 
@@ -712,7 +721,7 @@ void VulkanRenderer::createDescriptorSetLayout()
         uniformBufferLayout.descriptorCount = 1;
         uniformBufferLayout.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
         uniformBufferLayout.pImmutableSamplers = nullptr;
-        builder.AddBinding(uniformBufferLayout);
+        builder.addBinding(uniformBufferLayout);
     }
     {
         VkDescriptorSetLayoutBinding samplerLayout{};
@@ -721,10 +730,10 @@ void VulkanRenderer::createDescriptorSetLayout()
         samplerLayout.descriptorCount = 1;
         samplerLayout.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
         samplerLayout.pImmutableSamplers = nullptr;
-        builder.AddBinding(samplerLayout);
+        builder.addBinding(samplerLayout);
     }
 
-    mDescriptorSetLayout = builder.Build(mDevice);
+    mDescriptorSetLayout = builder.build(mDevice);
 
     mDeletionStack.AddFunction([this]() { vkDestroyDescriptorSetLayout(mDevice, mDescriptorSetLayout, nullptr); });
 }
@@ -735,9 +744,9 @@ void VulkanRenderer::createDescriptorAllocator()
         {.mType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         .mRatio = 1},
         {.mType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .mRatio = 1}
     };
-    mDescriptorAllocator.Init(mDevice, MAX_FRAMES_IN_FLIGHT, poolSizes);
+    mDescriptorAllocator.init(mDevice, MAX_FRAMES_IN_FLIGHT, poolSizes);
 
-    mDeletionStack.AddFunction([this]() { mDescriptorAllocator.DestroyPools(mDevice); });
+    mDeletionStack.AddFunction([this]() { mDescriptorAllocator.destroyPools(mDevice); });
 }
 
 void VulkanRenderer::createDescriptorSets()
@@ -745,16 +754,16 @@ void VulkanRenderer::createDescriptorSets()
     //  allocator descriptor sets
     std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, mDescriptorSetLayout);
     mDescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
-    mDescriptorAllocator.Allocate(mDevice, layouts.data(), mDescriptorSets.data(), MAX_FRAMES_IN_FLIGHT);
+    mDescriptorAllocator.allocate(mDevice, layouts.data(), mDescriptorSets.data(), MAX_FRAMES_IN_FLIGHT);
 
     //  fill descriptors
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
     {
         DescriptorWriter writer;
-        writer.WriteBuffer(0, mUniformBuffers[i], sizeof(UniformBufferObject), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-        writer.WriteImage(1, mTextureImageView, mTextureSampler, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        writer.writeBuffer(0, mUniformBuffers[i], sizeof(UniformBufferObject), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+        writer.writeImage(1, mTextureImageView, mTextureSampler, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
             VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-        writer.UpdateSet(mDevice, mDescriptorSets[i]);
+        writer.updateSet(mDevice, mDescriptorSets[i]);
     }
 }
 
@@ -997,9 +1006,14 @@ void VulkanRenderer::renderImgui(VkCommandBuffer commandBuffer, VkImageView targ
     vkCmdEndRendering(commandBuffer);
 }
 
-void VulkanRenderer::destroyBuffer(const AllocatedBuffer& buffer)
+void VulkanRenderer::destroyBuffer(const AllocatedBuffer& buffer) const
 {
     vmaDestroyBuffer(mAllocator, buffer.mBuffer, buffer.mAllocation);
+}
+
+uint32_t VulkanRenderer::getCurrentFrameId() const
+{
+    return mCurrentFrameId;
 }
 
 void VulkanRenderer::cleanUpSwapChain()

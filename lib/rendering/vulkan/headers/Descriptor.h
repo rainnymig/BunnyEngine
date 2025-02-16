@@ -11,9 +11,10 @@ namespace Bunny::Render
 class DescriptorLayoutBuilder
 {
   public:
-    void AddBinding(VkDescriptorSetLayoutBinding binding);
-    void Clear();
-    VkDescriptorSetLayout Build(VkDevice device, void* pNext = nullptr, VkDescriptorSetLayoutCreateFlags layoutCreateFlags = 0) const;
+    void addBinding(VkDescriptorSetLayoutBinding binding);
+    void clear();
+    VkDescriptorSetLayout build(
+        VkDevice device, void* pNext = nullptr, VkDescriptorSetLayoutCreateFlags layoutCreateFlags = 0) const;
 
   private:
     std::vector<VkDescriptorSetLayoutBinding> mBindings;
@@ -31,15 +32,15 @@ class DescriptorAllocator
         uint32_t mRatio;
     };
 
-    void Init(VkDevice device, uint32_t maxSets, std::span<PoolSize> poolSizes);
-    void Allocate(VkDevice device, VkDescriptorSetLayout* pLayout, VkDescriptorSet* pDescSet, uint32_t count = 1,
+    void init(VkDevice device, uint32_t maxSets, std::span<PoolSize> poolSizes);
+    void allocate(VkDevice device, VkDescriptorSetLayout* pLayout, VkDescriptorSet* pDescSet, uint32_t count = 1,
         void* pNext = nullptr);
-    void ClearPools(VkDevice device);
-    void DestroyPools(VkDevice device);
+    void clearPools(VkDevice device);
+    void destroyPools(VkDevice device);
 
   private:
-    VkDescriptorPool GetPool(VkDevice device);
-    VkDescriptorPool CreatePool(VkDevice device);
+    VkDescriptorPool getPool(VkDevice device);
+    VkDescriptorPool createPool(VkDevice device);
 
     std::vector<VkDescriptorPool> mFullPools;
     std::vector<VkDescriptorPool> mReadyPools;
@@ -53,12 +54,12 @@ class DescriptorAllocator
 class DescriptorWriter
 {
   public:
-    void Clear();
-    void WriteImage(
+    void clear();
+    void writeImage(
         uint32_t binding, VkImageView imageView, VkSampler sampler, VkImageLayout layout, VkDescriptorType type);
-    void WriteBuffer(uint32_t binding, VkBuffer buffer, size_t size, size_t offset, VkDescriptorType type);
+    void writeBuffer(uint32_t binding, VkBuffer buffer, size_t size, size_t offset, VkDescriptorType type);
 
-    void UpdateSet(VkDevice device, VkDescriptorSet descriptorSet);
+    void updateSet(VkDevice device, VkDescriptorSet descriptorSet);
 
   private:
     std::deque<VkDescriptorImageInfo> mImageInfos;

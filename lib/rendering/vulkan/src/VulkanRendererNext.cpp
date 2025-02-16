@@ -45,9 +45,21 @@ void VulkanRendererNext::initialize()
     initVulkan();
     initSwapChain();
     initCommand();
-    initDepthResources();
     initSyncObjects();
+    initDepthResources();
     initImgui();
+
+    initAssetBank();
+
+    //  these are needed by initMaterials so run first
+    //  need clean up later
+    mScene.setDevice(mDevice);
+    mScene.setRenderer(this);
+    mScene.buildDescriptorSetLayout();
+    mScene.initDescriptorAllocator();
+
+    initMaterials();
+    initScene();
 }
 
 void VulkanRendererNext::render()
@@ -74,11 +86,103 @@ void VulkanRendererNext::render()
     //  reset fence only after image is successfully acquired
     vkResetFences(mDevice, 1, &mInFlightFences[mCurrentFrameId]);
 
+    VkCommandBuffer cmdBuf = mCommandBuffers[mCurrentFrameId];
+    //  reset and command buffer
+    vkResetCommandBuffer(cmdBuf, 0);
+
+    //  begin command buffer
+    VkCommandBufferBeginInfo beginInfo{};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = 0;                  // Optional
+    beginInfo.pInheritanceInfo = nullptr; // Optional
+
+    VK_HARD_CHECK(vkBeginCommandBuffer(cmdBuf, &beginInfo))
+
+    transitionImageLayout(cmdBuf, mSwapChainImages[imageIndex], mSwapChainImageFormat, VK_IMAGE_LAYOUT_UNDEFINED,
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+    VkClearValue colorClearValue = {
+        .color = {0.0f, 0.0f, 0.0f, 1.0f}
+    };
+    VkRenderingAttachmentInfo colorAttachment =
+        makeColorAttachmentInfo(mSwapChainImageViews[imageIndex], &colorClearValue);
+    VkRenderingAttachmentInfo depthAttachment = makeDepthAttachmentInfo(mDepthImage.mImageView);
+
+    VkRenderingInfo renderInfo = makeRenderingInfo(mSwapChainExtent, &colorAttachment, &depthAttachment);
+
+    //  update dynamic states (viewport, scissors)
+    VkViewport viewport{};
+    viewport.x = 0.0f;
+    viewport.y = 0.0f;
+    viewport.width = static_cast<float>(mSwapChainExtent.width);
+    viewport.height = static_cast<float>(mSwapChainExtent.height);
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+    vkCmdSetViewport(cmdBuf, 0, 1, &viewport);
+
+    VkRect2D scissor{};
+    scissor.offset = {0, 0};
+    scissor.extent = mSwapChainExtent;
+    vkCmdSetScissor(cmdBuf, 0, 1, &scissor);
+
+    //  begin render
+    vkCmdBeginRendering(cmdBuf, &renderInfo);
+
     //  run render passes
+    mScene.render(cmdBuf, glm::mat4(1.0f));
+
+    //  end render
+    vkCmdEndRendering(cmdBuf);
 
     //  run render ui
 
+    transitionImageLayout(cmdBuf, mSwapChainImages[imageIndex], mSwapChainImageFormat,
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+
+    //  end command buffer
+    VK_HARD_CHECK(vkEndCommandBuffer(cmdBuf))
+
+    //  submit the command buffer
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    VkSemaphore waitSemaphores[] = {mImageAvailableSemaphores[mCurrentFrameId]};
+    VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+    submitInfo.waitSemaphoreCount = 1;
+    submitInfo.pWaitSemaphores = waitSemaphores;
+    submitInfo.pWaitDstStageMask = waitStages;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &mCommandBuffers[mCurrentFrameId];
+    VkSemaphore signalSemaphores[] = {mRenderFinishedSemaphores[mCurrentFrameId]};
+    submitInfo.signalSemaphoreCount = 1;
+    submitInfo.pSignalSemaphores = signalSemaphores;
+
+    VK_HARD_CHECK(vkQueueSubmit(mGraphicsQueue, 1, &submitInfo, mInFlightFences[mCurrentFrameId]))
+
     //  present
+    VkPresentInfoKHR presentInfo{};
+    presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+
+    presentInfo.waitSemaphoreCount = 1;
+    presentInfo.pWaitSemaphores = signalSemaphores;
+    VkSwapchainKHR swapChains[] = {mSwapChain};
+    presentInfo.swapchainCount = 1;
+    presentInfo.pSwapchains = swapChains;
+    presentInfo.pImageIndices = &imageIndex;
+    presentInfo.pResults = nullptr; // Optional
+    result = vkQueuePresentKHR(mPresentQueue, &presentInfo);
+
+    //  recreate swap chain when necessary
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || mFrameBufferResized)
+    {
+        mFrameBufferResized = false;
+        recreateSwapChain();
+    }
+    else if (result != VK_SUCCESS)
+    {
+        PRINT_AND_RETURN("failed to present swap chain image!")
+    }
+
+    mCurrentFrameId = (mCurrentFrameId + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
 void VulkanRendererNext::cleanUp()
@@ -96,15 +200,18 @@ void VulkanRendererNext::createAndMapMeshBuffers(
     const size_t indexBufferSize = indices.size() * sizeof(uint32_t);
 
     //  create vertex and index buffer
-    mesh->mVertexBuffer = createBuffer(vertexBufferSize,
-        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_ALLOCATION_CREATE_MAPPED_BIT);
-    mesh->mIndexBuffer = createBuffer(indexBufferSize,
-        VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_ALLOCATION_CREATE_MAPPED_BIT);
+    mesh->mVertexBuffer =
+        createBuffer(vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+            VMA_ALLOCATION_CREATE_MAPPED_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
+    mesh->mIndexBuffer =
+        createBuffer(indexBufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+            VMA_ALLOCATION_CREATE_MAPPED_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
 
     //  create staging buffer, map the vertex and index data into it,
     //  then transfer to the actual vertex and index buffer
     AllocatedBuffer stagingBuffer = createBuffer(vertexBufferSize + indexBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-        VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
+        VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+        VMA_MEMORY_USAGE_CPU_ONLY);
 
     memcpy(stagingBuffer.mAllocationInfo.pMappedData, vertices.data(), vertexBufferSize);
     memcpy((char*)stagingBuffer.mAllocationInfo.pMappedData + vertexBufferSize, indices.data(), indexBufferSize);
@@ -132,23 +239,31 @@ void VulkanRendererNext::initVulkan()
 {
     vkb::InstanceBuilder builder;
 
-    constexpr bool useValidationLayers = true;
-
     //  create VkInstance
     //  make the vulkan instance, with basic debug features
-    auto instanceBuildResult = builder.set_app_name("BunnyEngine")
-                                   .request_validation_layers(useValidationLayers)
+    auto instanceBuildResult = builder
+                                   .set_app_name("BunnyEngine")
+#ifdef _DEBUG
+                                   .request_validation_layers(true)
                                    .enable_validation_layers(true)
                                    .use_default_debug_messenger()
+#else
+                                   .request_validation_layers(false)
+                                   .enable_validation_layers(false)
+#endif
                                    .require_api_version(1, 3, 0)
                                    .build();
 
     vkb::Instance vkbInstance = instanceBuildResult.value();
     mInstance = vkbInstance.instance;
+#ifdef _DEBUG
     mDebugMessenger = vkbInstance.debug_messenger;
+#endif
 
     mDeletionStack.AddFunction([this]() { vkDestroyInstance(mInstance, nullptr); });
+#ifdef _DEBUG
     mDeletionStack.AddFunction([this]() { vkb::destroy_debug_utils_messenger(mInstance, mDebugMessenger); });
+#endif
 
     //  creat VkSurface
     if (const auto result = glfwCreateWindowSurface(mInstance, mWindow, nullptr, &mSurface); result != VK_SUCCESS)
@@ -305,6 +420,41 @@ void VulkanRendererNext::initImgui()
     mDeletionStack.AddFunction([]() { ImGui_ImplVulkan_Shutdown(); });
 }
 
+void VulkanRendererNext::initAssetBank()
+{
+    mMeshAssetBank = std::make_unique<MeshAssetsBank>(this);
+    mDeletionStack.AddFunction([this]() { mMeshAssetBank->destroyBank(); });
+}
+
+void VulkanRendererNext::initScene()
+{
+    SceneInitializer::makeExampleScene(this, &mScene, mMeshAssetBank.get());
+    mScene.initBuffers();
+
+    mDeletionStack.AddFunction([this]() { mScene.destroyScene(); });
+}
+
+void VulkanRendererNext::initMaterials()
+{
+    BasicBlinnPhongMaterial::Builder builder;
+
+    builder.setColorAttachmentFormat(mSwapChainImageFormat);
+    builder.setDepthFormat(mDepthImage.mFormat);
+    builder.setSceneDescriptorSetLayout(mScene.getSceneDescSetLayout());
+    builder.setObjectDescriptorSetLayout(mScene.getObjectDescSetLayout());
+
+    VkPushConstantRange pushConstRange;
+    pushConstRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    pushConstRange.size = sizeof(ObjectData);
+    pushConstRange.offset = 0;
+    std::array<VkPushConstantRange, 1> ranges{pushConstRange};
+    builder.setPushConstantRanges(ranges);
+
+    mBlinnPhongMaterial = builder.buildMaterial(mDevice);
+
+    mDeletionStack.AddFunction([this]() { mBlinnPhongMaterial->cleanupPipeline(); });
+}
+
 void VulkanRendererNext::renderImgui(VkCommandBuffer commandBuffer, VkImageView targetImageView)
 {
     VkRenderingAttachmentInfo colorAttachment =
@@ -386,8 +536,13 @@ void VulkanRendererNext::createDepthResource()
     }
 
     mDepthImage = createImage({mSwapChainExtent.width, mSwapChainExtent.height, 1}, depthFormat,
-        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_IMAGE_ASPECT_DEPTH_BIT,
-        VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_LAYOUT_UNDEFINED);
+
+    //  transition the depth image layout
+    submitImmediateCommands([this](VkCommandBuffer cmdBuf) {
+        transitionImageLayout(cmdBuf, mDepthImage.mImage, mDepthImage.mFormat, VK_IMAGE_LAYOUT_UNDEFINED,
+            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+    });
 }
 
 void VulkanRendererNext::destroyDepthResource()
@@ -482,8 +637,8 @@ VkExtent2D VulkanRendererNext::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& 
     }
 }
 
-AllocatedBuffer VulkanRendererNext::createBuffer(
-    VkDeviceSize size, VkBufferUsageFlags bufferUsage, VmaAllocationCreateFlags vmaCreateFlags) const
+AllocatedBuffer VulkanRendererNext::createBuffer(VkDeviceSize size, VkBufferUsageFlags bufferUsage,
+    VmaAllocationCreateFlags vmaCreateFlags, VmaMemoryUsage vmaUsage) const
 {
     AllocatedBuffer newBuffer;
 
@@ -497,7 +652,7 @@ AllocatedBuffer VulkanRendererNext::createBuffer(
 
     VmaAllocationCreateInfo vmaInfo{
         .flags = vmaCreateFlags,
-        .usage = VMA_MEMORY_USAGE_AUTO,
+        .usage = vmaUsage,
     };
 
     VK_HARD_CHECK(vmaCreateBuffer(
@@ -506,9 +661,19 @@ AllocatedBuffer VulkanRendererNext::createBuffer(
     return newBuffer;
 }
 
-void VulkanRendererNext::destroyBuffer(const AllocatedBuffer& buffer)
+void VulkanRendererNext::destroyBuffer(const AllocatedBuffer& buffer) const
 {
     vmaDestroyBuffer(mAllocator, buffer.mBuffer, buffer.mAllocation);
+}
+
+uint32_t VulkanRendererNext::getCurrentFrameId() const
+{
+    return mCurrentFrameId;
+}
+
+BasicBlinnPhongMaterial* VulkanRendererNext::getMaterial() const
+{
+    return mBlinnPhongMaterial.get();
 }
 
 AllocatedImage VulkanRendererNext::createImage(

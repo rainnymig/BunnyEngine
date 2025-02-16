@@ -13,25 +13,63 @@
 #include <fastgltf/tools.hpp>
 #include <fastgltf/util.hpp>
 
+#include <chrono>
+
 namespace Bunny::Render
 {
-void Scene::render(VkCommandBuffer commandBuffer, const glm::mat4& parentTransformMatrix) const
+void Scene::render(VkCommandBuffer commandBuffer, const glm::mat4& parentTransformMatrix)
 {
     //  handle camera data
-
     //  handle lights data
+    //  no change
 
-    for (const Node* rootNode : mRootNodes)
+    // clear desc pools to free all previous descriptor sets
+    mDescriptorAllocators[mRenderer->getCurrentFrameId()].clearPools(mDevice);
+
+    // VkDescriptorSetLayout descLayouts[] = {mSceneDescSetLayout, mObjectDescSetLayout};
+    // std::array<VkDescriptorSet, 2> descSets{mSceneDescriptorSets[mRenderer->getCurrentFrameId()],
+    //     nullptr}; //  scene (including scene data and light data) and objects
+    mDescriptorAllocators[mRenderer->getCurrentFrameId()].allocate(
+        mDevice, &mSceneDescSetLayout, &mSceneDescriptorSets[mRenderer->getCurrentFrameId()], 1, nullptr);
+
+    {
+        DescriptorWriter writer;
+        writer.writeBuffer(0, mSceneDataBuffer.mBuffer, sizeof(SceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+        writer.writeBuffer(1, mLightDataBuffer.mBuffer, sizeof(LightData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+        writer.updateSet(mDevice, mSceneDescriptorSets[mRenderer->getCurrentFrameId()]);
+    }
+
+    for (Node* rootNode : mRootNodes)
     {
         rootNode->render(commandBuffer, parentTransformMatrix);
     }
+}
+
+void Scene::update()
+{
+    // static auto startTime = std::chrono::high_resolution_clock::now();
+    // auto currentTime = std::chrono::high_resolution_clock::now();
+    // float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+}
+
+void Scene::destroyScene()
+{
+    mRenderer->destroyBuffer(mSceneDataBuffer);
+    mRenderer->destroyBuffer(mLightDataBuffer);
+    mRenderer->destroyBuffer(mObjectDataBuffer);
+    for (DescriptorAllocator& alloc : mDescriptorAllocators)
+    {
+        alloc.destroyPools(mDevice);
+    }
+    vkDestroyDescriptorSetLayout(mDevice, mSceneDescSetLayout, nullptr);
+    vkDestroyDescriptorSetLayout(mDevice, mObjectDescSetLayout, nullptr);
 }
 
 void Scene::findRootNodes()
 {
     mRootNodes.clear();
 
-    for (const auto& entry : mNodes)
+    for (auto& entry : mNodes)
     {
         if (entry.second.mParent == nullptr)
         {
@@ -40,11 +78,98 @@ void Scene::findRootNodes()
     }
 }
 
+void Scene::buildDescriptorSetLayout()
+{
+    DescriptorLayoutBuilder builder;
+
+    //  scene set
+    {
+        VkDescriptorSetLayoutBinding uniformBufferLayout{};
+        uniformBufferLayout.binding = 0;
+        uniformBufferLayout.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        uniformBufferLayout.descriptorCount = 1;
+        uniformBufferLayout.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        uniformBufferLayout.pImmutableSamplers = nullptr;
+        builder.addBinding(uniformBufferLayout);
+    }
+    {
+        VkDescriptorSetLayoutBinding uniformBufferLayout{};
+        uniformBufferLayout.binding = 1;
+        uniformBufferLayout.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        uniformBufferLayout.descriptorCount = 1;
+        uniformBufferLayout.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        uniformBufferLayout.pImmutableSamplers = nullptr;
+        builder.addBinding(uniformBufferLayout);
+    }
+    mSceneDescSetLayout = builder.build(mDevice);
+
+    builder.clear();
+
+    //  object set
+    {
+        VkDescriptorSetLayoutBinding uniformBufferLayout{};
+        uniformBufferLayout.binding = 0;
+        uniformBufferLayout.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        uniformBufferLayout.descriptorCount = 1;
+        uniformBufferLayout.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        uniformBufferLayout.pImmutableSamplers = nullptr;
+        builder.addBinding(uniformBufferLayout);
+    }
+    mObjectDescSetLayout = builder.build(mDevice);
+}
+
+void Scene::initDescriptorAllocator()
+{
+    constexpr size_t MAX_SETS = 6;
+    DescriptorAllocator::PoolSize poolSizes[] = {
+        {.mType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .mRatio = 3},
+    };
+    for (DescriptorAllocator& alloc : mDescriptorAllocators)
+    {
+        alloc.init(mDevice, MAX_SETS, poolSizes);
+    }
+}
+
+void Scene::initBuffers()
+{
+    //  create buffers
+    mSceneDataBuffer = mRenderer->createBuffer(sizeof(SceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+        VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+        VMA_MEMORY_USAGE_AUTO);
+    mLightDataBuffer = mRenderer->createBuffer(sizeof(LightData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+        VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+        VMA_MEMORY_USAGE_AUTO);
+    mObjectDataBuffer = mRenderer->createBuffer(sizeof(ObjectData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+        VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+        VMA_MEMORY_USAGE_AUTO);
+
+    //  fill buffer data which is fixed from start and do not change
+    {
+        SceneData sceneData{.mViewMatrix = mCamera.getViewMatrix(),
+            .mProjMatrix = mCamera.getProjMatrix(),
+            .mViewProjMatrix = mCamera.getViewProjMatrix()};
+
+        void* mappedSceneData = mSceneDataBuffer.mAllocationInfo.pMappedData;
+        memcpy(mappedSceneData, &sceneData, sizeof(SceneData));
+    }
+    {
+        uint32_t lightCount = std::min(LightData::MAX_LIGHT_COUNT, mLights.size());
+        LightData lightData{
+            .mCameraPos = mCamera.getPosition(),
+            .mLightCount = lightCount,
+        };
+        memcpy(lightData.mLights, mLights.data(), lightCount * sizeof(DirectionalLight));
+
+        void* mappedSceneData = mLightDataBuffer.mAllocationInfo.pMappedData;
+        memcpy(mappedSceneData, &lightData, sizeof(LightData));
+    }
+}
+
 MeshRenderComponent::MeshRenderComponent(const Mesh* mesh, const Node* owner) : mMesh(mesh), mOwner(owner)
 {
 }
 
-void MeshRenderComponent::render(VkCommandBuffer commandBuffer, const glm::mat4& parentTransformMatrix) const
+void MeshRenderComponent::render(VkCommandBuffer commandBuffer, const glm::mat4& parentTransformMatrix)
 {
     glm::mat4 modelMat = parentTransformMatrix * mOwner->mTransform.mMatrix;
     glm::mat4 invTransMat = glm::inverse(glm::transpose(modelMat));
@@ -53,22 +178,28 @@ void MeshRenderComponent::render(VkCommandBuffer commandBuffer, const glm::mat4&
     VkBuffer vertexBuffers[] = {mMesh->mVertexBuffer.mBuffer};
     VkDeviceSize offsets[] = {0};
     vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-
     vkCmdBindIndexBuffer(commandBuffer, mMesh->mIndexBuffer.mBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-    RenderPushConstant pushConst{.model = modelMat, .invTransModel = invTransMat};
+    ObjectData pushConst{.model = modelMat, .invTransModel = invTransMat};
 
     //  draw!!
     for (const auto& surface : mMesh->mSurfaces)
     {
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, surface.mMaterial.mpBaseMaterial->mPipeline);
+
+        //  bind scene data
+        //  should optimize this later to not re-bind
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+            surface.mMaterial.mpBaseMaterial->mPipelineLayout, 0, 1,
+            &(mOwner->mScene->mSceneDescriptorSets[mOwner->mScene->mRenderer->getCurrentFrameId()]), 0, nullptr);
+
         vkCmdPushConstants(commandBuffer, surface.mMaterial.mpBaseMaterial->mPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT,
-            0, sizeof(RenderPushConstant), &pushConst);
+            0, sizeof(ObjectData), &pushConst);
         vkCmdDrawIndexed(commandBuffer, surface.mIndexCount, 1, surface.mStartIndex, 0, 0);
     }
 }
 
-void Node::render(VkCommandBuffer commandBuffer, const glm::mat4& parentTransformMatrix) const
+void Node::render(VkCommandBuffer commandBuffer, const glm::mat4& parentTransformMatrix)
 {
     //  render self if render component exists
     if (mRenderComponent != nullptr)
@@ -78,7 +209,7 @@ void Node::render(VkCommandBuffer commandBuffer, const glm::mat4& parentTransfor
 
     //  render children
     glm::mat4 transformMat = parentTransformMatrix * mTransform.mMatrix;
-    for (const Node* child : mChildren)
+    for (Node* child : mChildren)
     {
         child->render(commandBuffer, transformMat);
     }
@@ -183,7 +314,7 @@ bool SceneInitializer::loadFromGltfFile(
             }
 
             //  load material
-            //  TBD
+            newSurface.mMaterial = renderer->getMaterial()->makeInstance();
 
             newMesh->mSurfaces.push_back(newSurface);
         }
@@ -197,6 +328,7 @@ bool SceneInitializer::loadFromGltfFile(
     {
         const auto id = scene->mNodes.size();
         Node& newSceneNode = scene->mNodes[id];
+        newSceneNode.mScene = scene;
 
         //  load node (local) transform
         std::visit(fastgltf::visitor{[&newSceneNode](fastgltf::TRS trs) {
@@ -266,7 +398,7 @@ bool SceneInitializer::makeExampleScene(BaseVulkanRenderer* renderer, Scene* sce
     //  create scene structure
     //  create grid of cubes to fill the scene
 
-    constexpr int resolution = 10;
+    constexpr int resolution = 2;
     constexpr float gap = 2;
     glm::vec3 pos{-gap * resolution / 2, -gap * resolution / 2, -gap * resolution / 2};
     scene->mNodes.clear();
@@ -278,6 +410,7 @@ bool SceneInitializer::makeExampleScene(BaseVulkanRenderer* renderer, Scene* sce
             for (int x = 0; x < resolution; x++)
             {
                 Node& newNode = scene->mNodes[idx++];
+                newNode.mScene = scene;
                 newNode.mTransform = Base::Transform{
                     pos + glm::vec3{x * gap, y * gap, z * gap},
                       {0,       0,       0      },
@@ -291,7 +424,7 @@ bool SceneInitializer::makeExampleScene(BaseVulkanRenderer* renderer, Scene* sce
     scene->findRootNodes();
 
     //  config camera
-    //  will use default one here
+    scene->mCamera = Camera(glm::vec3{8, 0, 0});
 
     //  create lights
     scene->mLights.push_back(DirectionalLight{
@@ -389,6 +522,7 @@ Mesh* SceneInitializer::createCubeMeshToBank(MeshAssetsBank* bank, BaseVulkanRen
 
     newMesh->mSurfaces.resize(1);
     Surface& cubeSurface = newMesh->mSurfaces[0];
+    cubeSurface.mMaterial = renderer->getMaterial()->makeInstance();
     cubeSurface.mStartIndex = 0;
 
     std::vector<uint32_t> indices;
@@ -396,8 +530,8 @@ Mesh* SceneInitializer::createCubeMeshToBank(MeshAssetsBank* bank, BaseVulkanRen
     std::unordered_map<NormalVertex, uint32_t, NormalVertex::Hash> vertexToIndexMap;
 
     constexpr glm::vec4 red{1.0f, 0.0, 0.0, 1.0};
-    constexpr glm::vec4 green{1.0f, 0.0, 0.0, 1.0};
-    constexpr glm::vec4 blue{1.0f, 0.0, 0.0, 1.0};
+    constexpr glm::vec4 green{0.0f, 1.0, 0.0, 1.0};
+    constexpr glm::vec4 blue{0.0f, 0.0, 1.0, 1.0};
     constexpr glm::vec4 yellow{1.0f, 1.0, 0.0, 1.0};
     constexpr glm::vec4 fuchsia{1.0f, 0.0, 1.0, 1.0};
     constexpr glm::vec4 aqua{0.0f, 1.0, 1.0, 1.0};

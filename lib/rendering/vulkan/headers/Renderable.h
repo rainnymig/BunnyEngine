@@ -6,12 +6,14 @@
 #include "BaseVulkanRenderer.h"
 #include "Camera.h"
 #include "Light.h"
+#include "Descriptor.h"
 
 #include <vulkan/vulkan.h>
 #include <string_view>
 #include <vector>
 #include <unordered_map>
 #include <memory>
+#include <array>
 
 namespace Bunny::Render
 {
@@ -20,11 +22,12 @@ class Mesh;
 class MeshAssetsBank;
 class VulkanRenderer;
 class Node;
+class Scene;
 
 class IRendenrable
 {
   public:
-    virtual void render(VkCommandBuffer commandBuffer, const glm::mat4& parentTransformMatrix) const = 0;
+    virtual void render(VkCommandBuffer commandBuffer, const glm::mat4& parentTransformMatrix) = 0;
 };
 
 class RenderComponent : public IRendenrable
@@ -36,15 +39,9 @@ class RenderComponent : public IRendenrable
 class MeshRenderComponent : public RenderComponent
 {
   public:
-    struct RenderPushConstant
-    {
-        glm::mat4 model;
-        glm::mat4 invTransModel;
-    };
-
     explicit MeshRenderComponent(const Mesh* mesh, const Node* owner);
 
-    virtual void render(VkCommandBuffer commandBuffer, const glm::mat4& parentTransformMatrix) const override;
+    virtual void render(VkCommandBuffer commandBuffer, const glm::mat4& parentTransformMatrix) override;
     const Mesh* mMesh = nullptr;
     const Node* mOwner = nullptr;
 };
@@ -55,9 +52,10 @@ class Node : public IRendenrable
     Base::Transform mTransform;
     std::vector<Node*> mChildren;
     Node* mParent;
+    Scene* mScene;
     std::unique_ptr<RenderComponent> mRenderComponent;
 
-    virtual void render(VkCommandBuffer commandBuffer, const glm::mat4& parentTransformMatrix) const override;
+    virtual void render(VkCommandBuffer commandBuffer, const glm::mat4& parentTransformMatrix) override;
 };
 
 class Scene;
@@ -85,19 +83,65 @@ class SceneInitializer
     static Mesh* createCubeMeshToBank(MeshAssetsBank* bank, BaseVulkanRenderer* renderer);
 };
 
+struct SceneData
+{
+    glm::mat4x4 mViewMatrix;
+    glm::mat4x4 mProjMatrix;
+    glm::mat4x4 mViewProjMatrix;
+};
+
+struct LightData
+{
+    static constexpr size_t MAX_LIGHT_COUNT = 8;
+    glm::vec3 mCameraPos;
+    uint32_t mLightCount;
+    DirectionalLight mLights[MAX_LIGHT_COUNT];
+};
+
+struct ObjectData
+{
+    glm::mat4 model;
+    glm::mat4 invTransModel;
+};
+
 class Scene : public IRendenrable
 {
   public:
     friend SceneInitializer;
-    virtual void render(VkCommandBuffer commandBuffer, const glm::mat4& parentTransformMatrix) const override;
+    friend Node;
+    friend MeshRenderComponent;
+
+    virtual void render(VkCommandBuffer commandBuffer, const glm::mat4& parentTransformMatrix) override;
+    void update(); //  most likely temp, will make proper update later
+
+    void setDevice(VkDevice device) { mDevice = device; }
+    void setRenderer(const BaseVulkanRenderer* renderer) { mRenderer = renderer; }
+    void destroyScene();
+    void buildDescriptorSetLayout();
+    void initDescriptorAllocator();
+    void initBuffers();
+    VkDescriptorSetLayout getSceneDescSetLayout() const { return mSceneDescSetLayout; }
+    VkDescriptorSetLayout getObjectDescSetLayout() const { return mObjectDescSetLayout; }
 
   private:
     void findRootNodes();
 
     std::unordered_map<size_t, Node> mNodes;
-    std::vector<const Node*> mRootNodes;
+    std::vector<Node*> mRootNodes;
     std::vector<DirectionalLight> mLights;
     Camera mCamera;
+
+    std::array<DescriptorAllocator, MAX_FRAMES_IN_FLIGHT> mDescriptorAllocators;
+    std::array<VkDescriptorSet, MAX_FRAMES_IN_FLIGHT> mSceneDescriptorSets;
+    VkDescriptorSetLayout mSceneDescSetLayout;
+    VkDescriptorSetLayout mObjectDescSetLayout;
+    VkDevice mDevice = nullptr;
+    const BaseVulkanRenderer* mRenderer = nullptr;
+
+    //  use separate buffer for now, may merge in the future
+    AllocatedBuffer mSceneDataBuffer;
+    AllocatedBuffer mLightDataBuffer;
+    AllocatedBuffer mObjectDataBuffer;
 };
 
 } // namespace Bunny::Render

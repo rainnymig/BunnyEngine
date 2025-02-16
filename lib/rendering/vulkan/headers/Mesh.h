@@ -2,6 +2,7 @@
 
 #include "Fundamentals.h"
 #include "Material.h"
+#include "BaseVulkanRenderer.h"
 
 #include <vulkan/vulkan.h>
 #include <string>
@@ -28,7 +29,11 @@ struct Mesh
 
 struct MeshAssetsBank
 {
+    explicit MeshAssetsBank(const BaseVulkanRenderer* renderer) : mRenderer(renderer) {}
+    void destroyBank();
+
     std::unordered_map<size_t, std::unique_ptr<Mesh>> mMeshes;
+    const BaseVulkanRenderer* mRenderer = nullptr;
 };
 
 } // namespace Bunny::Render
