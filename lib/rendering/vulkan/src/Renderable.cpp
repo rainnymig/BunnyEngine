@@ -400,31 +400,54 @@ bool SceneInitializer::makeExampleScene(BaseVulkanRenderer* renderer, Scene* sce
 
     constexpr int resolution = 2;
     constexpr float gap = 2;
-    glm::vec3 pos{-gap * resolution / 2, -gap * resolution / 2, -gap * resolution / 2};
+    // glm::vec3 pos{-gap * resolution / 2, -gap * resolution / 2, -gap * resolution / 2};
+    // scene->mNodes.clear();
+    // size_t idx = 0;
+    // for (int z = 0; z < resolution; z++)
+    // {
+    //     for (int y = 0; y < resolution; y++)
+    //     {
+    //         for (int x = 0; x < resolution; x++)
+    //         {
+    //             Node& newNode = scene->mNodes[idx++];
+    //             newNode.mScene = scene;
+    //             newNode.mTransform = Base::Transform{
+    //                 pos + glm::vec3{x * gap, y * gap, z * gap},
+    //                   {0,       0,       0      },
+    //                   {1,       1,       1      }
+    //             };
+    //             newNode.mRenderComponent = std::make_unique<MeshRenderComponent>(cubeMesh, &newNode);
+    //         }
+    //     }
+    // }
+    std::vector<glm::vec3> positions{
+        {0, 0, 0},
+        {2, 0, 0},
+        {4, 0, 0},
+        {0, 2, 0},
+        {0, 4, 0},
+        {0, 6, 0},
+        {0, 0, 2},
+        {0, 0, 4},
+        {0, 0, 6},
+        {0, 0, 8}
+    };
     scene->mNodes.clear();
-    size_t idx = 0;
-    for (int z = 0; z < resolution; z++)
+    for (int idx = 0; idx < positions.size(); idx++)
     {
-        for (int y = 0; y < resolution; y++)
-        {
-            for (int x = 0; x < resolution; x++)
-            {
-                Node& newNode = scene->mNodes[idx++];
-                newNode.mScene = scene;
-                newNode.mTransform = Base::Transform{
-                    pos + glm::vec3{x * gap, y * gap, z * gap},
-                      {0,       0,       0      },
-                      {1,       1,       1      }
-                };
-                newNode.mRenderComponent = std::make_unique<MeshRenderComponent>(cubeMesh, &newNode);
-            }
-        }
+        Node& newNode = scene->mNodes[idx];
+        newNode.mScene = scene;
+        newNode.mTransform = Base::Transform{
+            positions[idx], {0, 0, 0},
+             {1, 1, 1}
+        };
+        newNode.mRenderComponent = std::make_unique<MeshRenderComponent>(cubeMesh, &newNode);
     }
 
     scene->findRootNodes();
 
     //  config camera
-    scene->mCamera = Camera(glm::vec3{8, 0, 0});
+    scene->mCamera = Camera(glm::vec3{0, 10, 5});
 
     //  create lights
     scene->mLights.push_back(DirectionalLight{
