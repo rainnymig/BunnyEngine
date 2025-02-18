@@ -447,7 +447,7 @@ bool SceneInitializer::makeExampleScene(BaseVulkanRenderer* renderer, Scene* sce
     scene->findRootNodes();
 
     //  config camera
-    scene->mCamera = Camera(glm::vec3{0, 10, 5});
+    scene->mCamera = Camera(glm::vec3{5, 5, -5});
 
     //  create lights
     scene->mLights.push_back(DirectionalLight{
