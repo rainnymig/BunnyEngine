@@ -55,3 +55,4 @@ target_link_libraries(VulkanRenderer
         fastgltf::fastgltf
     )
     
+add_compile_definitions(GLM_FORCE_DEPTH_ZERO_TO_ONE GLM_FORCE_RADIANS)
