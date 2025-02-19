@@ -2,6 +2,7 @@
 
 #include <type_traits>
 #include <cassert>
+#include <chrono>
 
 //  may need to handle cross platform in the future
 #include <windows.h>
@@ -14,10 +15,10 @@ template <typename TimeUnit = double>
 class ITTimer
 {
     //  get time since start to the current tick in seconds
-    virtual TimeUnit GetTime() const = 0;
+    virtual TimeUnit getTime() const = 0;
     //  get time since last tick to the current tick in seconds
-    virtual TimeUnit GetDeltaTime() const = 0;
-    virtual void Tick() = 0;
+    virtual TimeUnit getDeltaTime() const = 0;
+    virtual void tick() = 0;
 };
 
 template <typename TimeUnit = double>
@@ -28,17 +29,17 @@ class TWallClockTimer : public ITTimer<TimeUnit>
     TWallClockTimer()
     {
         BOOL result = QueryPerformanceFrequency(&mPerfFreq);
-        assert(result && mPerfFreq);
+        assert(result && mPerfFreq.QuadPart);
 
-        Start();
+        start();
     }
 
-    virtual TimeUnit GetTime() const override;
-    virtual TimeUnit GetDeltaTime() const override;
-    virtual void Tick() override;
+    virtual TimeUnit getTime() const override;
+    virtual TimeUnit getDeltaTime() const override;
+    virtual void tick() override;
 
   private:
-    void Start();
+    void start();
 
     LARGE_INTEGER mPerfFreq;
     LARGE_INTEGER mStartCount;
@@ -49,23 +50,23 @@ class TWallClockTimer : public ITTimer<TimeUnit>
 
 template <typename TimeUnit>
     requires std::is_floating_point_v<TimeUnit>
-inline TimeUnit TWallClockTimer<TimeUnit>::GetTime() const
+inline TimeUnit TWallClockTimer<TimeUnit>::getTime() const
 {
     LARGE_INTEGER accumulatedCount;
     accumulatedCount.QuadPart = mThisCount.QuadPart - mStartCount.QuadPart;
-    return static_cast<TimeUnit>(accumulatedCount.QuadPart) / mPerfFreq;
+    return static_cast<TimeUnit>(accumulatedCount.QuadPart) / static_cast<TimeUnit>(mPerfFreq.QuadPart);
 }
 
 template <typename TimeUnit>
     requires std::is_floating_point_v<TimeUnit>
-inline TimeUnit TWallClockTimer<TimeUnit>::GetDeltaTime() const
+inline TimeUnit TWallClockTimer<TimeUnit>::getDeltaTime() const
 {
     return mDeltaTime;
 }
 
 template <typename TimeUnit>
     requires std::is_floating_point_v<TimeUnit>
-inline void TWallClockTimer<TimeUnit>::Start()
+inline void TWallClockTimer<TimeUnit>::start()
 {
     QueryPerformanceCounter(&mStartCount);
     mPrevCount.QuadPart = mStartCount.QuadPart;
@@ -75,7 +76,7 @@ inline void TWallClockTimer<TimeUnit>::Start()
 
 template <typename TimeUnit>
     requires std::is_floating_point_v<TimeUnit>
-inline void TWallClockTimer<TimeUnit>::Tick()
+inline void TWallClockTimer<TimeUnit>::tick()
 {
     QueryPerformanceCounter(&mThisCount);
     LARGE_INTEGER deltaCount;
@@ -84,5 +85,32 @@ inline void TWallClockTimer<TimeUnit>::Tick()
 
     mPrevCount = mThisCount;
 }
+
+template <typename TimeUnit = double>
+    requires std::is_floating_point_v<TimeUnit>
+class BasicTimer : public ITTimer<TimeUnit>
+{
+  public:
+    void start()
+    {
+        mStartTimePoint = std::chrono::high_resolution_clock::now();
+        mLastTimePoint = mStartTimePoint;
+    }
+    virtual void tick() override
+    {
+        const auto currentTimePoint = std::chrono::high_resolution_clock::now();
+        mDeltaTime = currentTimePoint - mLastTimePoint;
+        mTime = currentTimePoint - mStartTimePoint;
+        mLastTimePoint = currentTimePoint;
+    }
+    virtual TimeUnit getTime() const override { return mTime.count(); }
+    virtual TimeUnit getDeltaTime() const override { return mDeltaTime.count(); }
+
+  private:
+    std::chrono::time_point<std::chrono::high_resolution_clock> mStartTimePoint;
+    std::chrono::time_point<std::chrono::high_resolution_clock> mLastTimePoint;
+    std::chrono::duration<TimeUnit> mTime{0};
+    std::chrono::duration<TimeUnit> mDeltaTime{0};
+};
 
 } // namespace Bunny::Utils

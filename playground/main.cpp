@@ -1,19 +1,25 @@
-#include <fmt/core.h>
-#include <glm/glm.hpp>
+#include "Timer.h"
 
-void printVec(const glm::vec3& v)
-{
-    fmt::print("({}, {}, {})\n", v.x, v.y, v.z);
-}
+#include <fmt/core.h>
+#include <thread>
+#include <chrono>
 
 int main()
 {
-    glm::vec3 v(1.0f, 2.0f, 3.0f);
-    printVec(v);
-    glm::vec3 v2 = v + 3.0f;
-    printVec(v2);
-    printVec(glm::cross(v, v2));
-    glm::vec3 v3 = v + 3.0f * v2;
-    printVec(v3);
+    using namespace std::chrono_literals;
+
+    Bunny::Utils::BasicTimer timer;
+    timer.start();
+
+    fmt::print("time now is {}, delta time is {}\n", timer.getTime(), timer.getDeltaTime());
+
+    std::this_thread::sleep_for(16ms);
+    timer.tick();
+    fmt::print("time now is {}, delta time is {}\n", timer.getTime(), timer.getDeltaTime());
+
+    std::this_thread::sleep_for(10ms);
+    timer.tick();
+    fmt::print("time now is {}, delta time is {}\n", timer.getTime(), timer.getDeltaTime());
+
     return 0;
 }
