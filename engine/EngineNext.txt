@@ -1,0 +1,49 @@
+void EngineMain()
+{
+    Config config(config_path);
+
+    Window window;
+    
+    RenderResources renderResources(window);
+    MaterialManager materialManager(renderResources);
+    TextureAssetManager textureAssetManager(renderResources);
+    MeshAssetManager meshAssetManager(renderResources);
+    //AudioAssetManager audioAssetManager;
+    Renderer renderer(renderResources);
+    InputManager inputManager;
+    Timer timer;
+
+    Game game;
+    renderer.setRenderPool(game.getRenderPool());
+
+    //  main game start
+    Thread gameThread(game.run);
+    Thread renderThread(renderer.run);
+    //  main game end
+
+    gameThread.join();
+    renderThread.join();
+
+    //  clean up
+
+    //  end
+}
+
+void Game::run()
+{
+    while(shouldRun)
+    {
+        timer.tick();
+        handleInput();
+        updateGameLogic(deltaTime);
+        renderer.triggerRender(deltaTime);
+    }
+}
+
+void Renderer::run()
+{
+    while(shouldRun)
+    {
+
+    }
+}
