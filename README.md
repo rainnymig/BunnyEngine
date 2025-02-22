@@ -16,6 +16,8 @@
 
 [imgui](https://github.com/ocornut/imgui) MIT license
 
+[inifile-cpp](https://github.com/Rookfighter/inifile-cpp) MIT license
+
 ### before build
 
 1. install vulkan sdk
