@@ -50,6 +50,8 @@ target_include_directories(imgui PUBLIC "third-party/imgui/" "third-party/imgui/
 target_link_libraries(imgui PUBLIC Vulkan::Vulkan glfw)
 # fastgltf
 add_subdirectory("./third-party/fastgltf")
+# inifile-cpp
+add_subdirectory("./third-party/inifile-cpp")
 
 # Bunny stuff
 add_subdirectory("./lib/base")
