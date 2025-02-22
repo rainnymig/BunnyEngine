@@ -1,6 +1,6 @@
 #pragma once
 
-#include <deque>
+#include <stack>
 #include <functional>
 
 namespace Bunny::Utils
@@ -11,19 +11,19 @@ class FunctionStack
 {
   public:
     //  add a function to the queue
-    void AddFunction(std::function<void(Args...)>&& func) { mFuncStack.push_back(std::move(func)); }
+    void AddFunction(std::function<void(Args...)>&& func) { mFuncStack.push(std::move(func)); }
 
     //  run all functions in reverse order of adding and flush the queue
     void Flush(Args... args)
     {
         while (!mFuncStack.empty())
         {
-            mFuncStack.back()(args...);
-            mFuncStack.pop_back();
+            mFuncStack.top()(args...);
+            mFuncStack.pop();
         }
     }
 
   private:
-    std::deque<std::function<void(Args...)>> mFuncStack;
+    std::stack<std::function<void(Args...)>> mFuncStack;
 };
 } // namespace Bunny::Utils
