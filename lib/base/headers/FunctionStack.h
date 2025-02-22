@@ -3,7 +3,7 @@
 #include <stack>
 #include <functional>
 
-namespace Bunny::Utils
+namespace Bunny::Base
 {
 
 template <typename... Args>
@@ -26,4 +26,4 @@ class FunctionStack
   private:
     std::stack<std::function<void(Args...)>> mFuncStack;
 };
-} // namespace Bunny::Utils
+} // namespace Bunny::Base

@@ -6,7 +6,7 @@
 #include "Fundamentals.h"
 #include "QueueFamilyIndices.h"
 #include "SwapChainSupportDetails.h"
-#include "Utils.h"
+#include "FunctionStack.h"
 #include "Vertex.h"
 #include "BaseVulkanRenderer.h"
 
@@ -126,7 +126,7 @@ class VulkanRenderer : public BaseVulkanRenderer
     VkFence mImmediateFence;
 
     //  deletion stack
-    Utils::FunctionStack<> mDeletionStack;
+    Base::FunctionStack<> mDeletionStack;
 
     //  memory allocation
     VmaAllocator mAllocator;

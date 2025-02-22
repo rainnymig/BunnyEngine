@@ -5,7 +5,7 @@
 #include "Descriptor.h"
 #include "Fundamentals.h"
 #include "SwapChainSupportDetails.h"
-#include "Utils.h"
+#include "FunctionStack.h"
 #include "Vertex.h"
 #include "BaseVulkanRenderer.h"
 #include "Material.h"
@@ -133,7 +133,7 @@ class VulkanRendererNext : public BaseVulkanRenderer
     VmaAllocator mAllocator;
 
     //  deletion stack
-    Utils::FunctionStack<> mDeletionStack;
+    Base::FunctionStack<> mDeletionStack;
 
     //  multi frame inflight objects
     uint32_t mCurrentFrameId = 0;
