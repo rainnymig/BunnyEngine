@@ -3,7 +3,9 @@ add_library(Base)
 target_sources(Base
     PUBLIC
         headers/BunnyGuard.h
+        headers/BunnyResult.h
         headers/Error.h
+        headers/FunctionStack.h
         headers/Transform.h
         headers/Window.h
     PRIVATE

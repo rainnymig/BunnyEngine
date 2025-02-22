@@ -16,6 +16,7 @@ int main(void)
 #endif
 
     Config config;
+    config.loadConfigFile("./config.ini");
 
     fmt::print("width is {}, fullscreen is {}\n", config.mWindowWidth, config.mIsFullScreen);
 

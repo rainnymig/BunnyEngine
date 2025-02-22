@@ -2,8 +2,9 @@ add_library(VulkanRenderer)
 
 target_sources(VulkanRenderer
     PUBLIC
-        headers/VulkanRendererFactory.h
         headers/BaseVulkanRenderer.h
+        headers/VulkanRendererFactory.h
+        headers/VulkanRenderResources.h
     PRIVATE
         headers/Descriptor.h
         headers/ErrorCheck.h
@@ -16,7 +17,6 @@ target_sources(VulkanRenderer
         headers/Renderable.h
         headers/Shader.h
         headers/SwapChainSupportDetails.h
-        headers/Utils.h
         headers/Vertex.h
         headers/VulkanRenderer.h
         headers/VulkanRendererNext.h
@@ -28,11 +28,11 @@ target_sources(VulkanRenderer
         src/PipelineBuilder.cpp
         src/Renderable.cpp
         src/Shader.cpp
-        src/Utils.cpp
         src/Vertex.cpp
         src/VulkanRenderer.cpp
         src/VulkanRendererFactory.cpp
         src/VulkanRendererNext.cpp
+        src/VulkanRenderResources.cpp
 )
 
 target_compile_definitions(VulkanRenderer PUBLIC GLFW_INCLUDE_VULKAN)
