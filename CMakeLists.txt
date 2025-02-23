@@ -52,6 +52,8 @@ target_link_libraries(imgui PUBLIC Vulkan::Vulkan glfw)
 add_subdirectory("./third-party/fastgltf")
 # inifile-cpp
 add_subdirectory("./third-party/inifile-cpp")
+# EnTT
+add_subdirectory("./third-party/entt")
 
 # Bunny stuff
 add_subdirectory("./lib/base")
