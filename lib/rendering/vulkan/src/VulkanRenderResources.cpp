@@ -129,6 +129,8 @@ BunnyResult VulkanRenderResources::initialize(Base::Window* window)
         vmaDestroyAllocator(mAllocator);
         mAllocator = nullptr;
     });
+
+    return BUNNY_HAPPY;
 }
 
 void VulkanRenderResources::cleanup()

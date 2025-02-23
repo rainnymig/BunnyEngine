@@ -2,6 +2,7 @@
 
 #include <fmt/core.h>
 #include <inicpp.h>
+#include <entt/entt.hpp>
 
 using namespace Bunny::Engine;
 
