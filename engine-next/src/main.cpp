@@ -1,5 +1,7 @@
 #include "Config.h"
 
+#include "Window.h"
+
 #include <fmt/core.h>
 #include <inicpp.h>
 #include <entt/entt.hpp>
@@ -17,9 +19,19 @@ int main(void)
 #endif
 
     Config config;
-    config.loadConfigFile("./config.ini");
+    // config.loadConfigFile("./config.ini");
 
-    fmt::print("width is {}, fullscreen is {}\n", config.mWindowWidth, config.mIsFullScreen);
+    Bunny::Base::Window window;
+    window.initialize(config.mWindowWidth, config.mWindowHeight, config.mIsFullScreen, config.mWindowName);
+
+    bool shouldRun = true;
+
+    while(shouldRun)
+    {
+        shouldRun = !window.processWindowEvent();
+    }
+
+    window.destroyAndTerminate();
 
     return 0;
 }

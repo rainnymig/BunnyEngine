@@ -1,14 +1,15 @@
 #pragma once
 
-#include <string_view>
+#include <string>
 
 namespace Bunny::Engine
 {
 class Config
 {
   public:
-    void loadConfigFile(std::string_view path);
+    void loadConfigFile(const std::string& path);
 
+    std::string mWindowName = "Bunny Engine";
     bool mIsFullScreen = false;
     int mWindowWidth = 1280;
     int mWindowHeight = 720;

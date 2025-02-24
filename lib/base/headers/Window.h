@@ -16,17 +16,17 @@ class Window
     //  create surface for Vulkan
     //  can have other overload in the future (e.g. for DirectX 12)
     BunnyResult createSurface(VkInstance instance, const VkAllocationCallbacks* allocator, VkSurfaceKHR* surface) const;
-
     void getFrameBufferSize(int& width, int& height) const;
-
     template <typename CallbackT>
     void registerFrameBufferResizeCallback(CallbackT&& callback)
     {
         glfwSetFramebufferSizeCallback(
             mWindow, [](GLFWwindow* window, int width, int height) { callback(width, height); });
     }
-
     void destroyAndTerminate();
+    
+    //  return true when window should close
+    bool processWindowEvent();
 
     ~Window();
 
