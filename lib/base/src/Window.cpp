@@ -52,6 +52,18 @@ void Window::destroyAndTerminate()
     }
 }
 
+bool Window::processWindowEvent()
+{
+    if (glfwWindowShouldClose(mWindow))
+    {
+        return true;
+    }
+
+    glfwPollEvents();
+
+    return false;
+}
+
 Window::~Window()
 {
     destroyAndTerminate();

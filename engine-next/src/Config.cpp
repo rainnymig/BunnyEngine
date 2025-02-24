@@ -2,16 +2,14 @@
 
 #include <inicpp.h>
 
-#include <string>
-
 namespace Bunny::Engine
 {
-void Config::loadConfigFile(std::string_view path)
+void Config::loadConfigFile(const std::string& path)
 {
-    std::string pathStr(path);
-    ini::IniFile loadedIni(pathStr);
+    ini::IniFile loadedIni(path);
 
     auto& basicSection = loadedIni["basic"];
+    mWindowName = basicSection["windowName"].as<std::string>();
     mIsFullScreen = basicSection["isFullscreen"].as<bool>();
     mWindowHeight = basicSection["windowHeight"].as<int>();
     mWindowWidth = basicSection["windowWidth"].as<int>();
