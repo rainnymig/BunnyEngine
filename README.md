@@ -18,6 +18,8 @@
 
 [inifile-cpp](https://github.com/Rookfighter/inifile-cpp) MIT license
 
+[EnTT](https://github.com/skypjack/entt) MIT license
+
 ### before build
 
 1. install vulkan sdk
