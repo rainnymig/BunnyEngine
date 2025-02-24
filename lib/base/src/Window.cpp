@@ -16,15 +16,15 @@ BunnyResult Window::initialize(int width, int height, bool isFullscreen, const s
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, isFullscreen ? GLFW_FALSE : GLFW_TRUE);
 
-    mWindow = glfwCreateWindow(width, height, name.c_str(), isFullscreen ? glfwGetPrimaryMonitor() : NULL, NULL);
-    if (!mWindow)
+    mGlfwWindow = glfwCreateWindow(width, height, name.c_str(), isFullscreen ? glfwGetPrimaryMonitor() : NULL, NULL);
+    if (!mGlfwWindow)
     {
         glfwTerminate();
         PRINT_AND_RETURN_VALUE("Failed to create glfw window.", BUNNY_SAD)
     }
 
     //  Make the window's context current
-    glfwMakeContextCurrent(mWindow);
+    glfwMakeContextCurrent(mGlfwWindow);
 
     return BUNNY_HAPPY;
 }
@@ -32,29 +32,29 @@ BunnyResult Window::initialize(int width, int height, bool isFullscreen, const s
 BunnyResult Window::createSurface(
     VkInstance instance, const VkAllocationCallbacks* allocator, VkSurfaceKHR* surface) const
 {
-    VkResult result = glfwCreateWindowSurface(instance, mWindow, allocator, surface);
+    VkResult result = glfwCreateWindowSurface(instance, mGlfwWindow, allocator, surface);
 
     return result == VK_SUCCESS ? BUNNY_HAPPY : BUNNY_SAD;
 }
 
 void Window::getFrameBufferSize(int& width, int& height) const
 {
-    glfwGetFramebufferSize(mWindow, &width, &height);
+    glfwGetFramebufferSize(mGlfwWindow, &width, &height);
 }
 
 void Window::destroyAndTerminate()
 {
-    if (mWindow != nullptr)
+    if (mGlfwWindow != nullptr)
     {
-        glfwDestroyWindow(mWindow);
+        glfwDestroyWindow(mGlfwWindow);
         glfwTerminate();
-        mWindow = nullptr;
+        mGlfwWindow = nullptr;
     }
 }
 
 bool Window::processWindowEvent()
 {
-    if (glfwWindowShouldClose(mWindow))
+    if (glfwWindowShouldClose(mGlfwWindow))
     {
         return true;
     }

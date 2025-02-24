@@ -1,6 +1,7 @@
 #include "Config.h"
 
 #include "Window.h"
+#include "Input.h"
 
 #include <fmt/core.h>
 #include <inicpp.h>
@@ -23,6 +24,9 @@ int main(void)
 
     Bunny::Base::Window window;
     window.initialize(config.mWindowWidth, config.mWindowHeight, config.mIsFullScreen, config.mWindowName);
+
+    Bunny::Base::InputManager inputManager;
+    inputManager.setupWithWindow(window);
 
     bool shouldRun = true;
 

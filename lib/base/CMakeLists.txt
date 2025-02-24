@@ -6,9 +6,11 @@ target_sources(Base
         headers/BunnyResult.h
         headers/Error.h
         headers/FunctionStack.h
+        headers/Input.h
         headers/Transform.h
         headers/Window.h
     PRIVATE
+        src/Input.cpp
         src/Transform.cpp
         src/Window.cpp
 )
