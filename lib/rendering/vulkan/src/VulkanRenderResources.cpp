@@ -1,13 +1,20 @@
 #include "VulkanRenderResources.h"
 
 #include "Error.h"
+#include "ErrorCheck.h"
+#include "Window.h"
+#include "Helper.h"
 
 #include <VkBootstrap.h>
+#include <cassert>
 
 namespace Bunny::Render
 {
 BunnyResult VulkanRenderResources::initialize(Base::Window* window)
 {
+    assert(window != nullptr);
+    mWindow = window;
+
     vkb::InstanceBuilder builder;
 
     //  create VkInstance
@@ -130,12 +137,177 @@ BunnyResult VulkanRenderResources::initialize(Base::Window* window)
         mAllocator = nullptr;
     });
 
+    //  create immedate command
+    createImmediateCommand();
+
     return BUNNY_HAPPY;
 }
 
 void VulkanRenderResources::cleanup()
 {
     mDeletionStack.Flush();
+}
+
+AllocatedBuffer VulkanRenderResources::createBuffer(VkDeviceSize size, VkBufferUsageFlags bufferUsage,
+    VmaAllocationCreateFlags vmaCreateFlags, VmaMemoryUsage vmaUsage) const
+{
+    AllocatedBuffer newBuffer;
+
+    VkBufferCreateInfo bufferInfo{
+        .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+        .pNext = nullptr,
+        .size = size,
+        .usage = bufferUsage,
+        .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+    };
+
+    VmaAllocationCreateInfo vmaInfo{
+        .flags = vmaCreateFlags,
+        .usage = vmaUsage,
+    };
+
+    VK_HARD_CHECK(vmaCreateBuffer(
+        mAllocator, &bufferInfo, &vmaInfo, &newBuffer.mBuffer, &newBuffer.mAllocation, &newBuffer.mAllocationInfo));
+
+    return newBuffer;
+}
+
+AllocatedImage VulkanRenderResources::createImage(
+    VkExtent3D size, VkFormat format, VkImageUsageFlags usage, VkImageAspectFlags aspectFlags, VkImageLayout layout)
+{
+    AllocatedImage newImage;
+    newImage.mFormat = format;
+    newImage.mExtent = size;
+
+    VkImageCreateInfo imgCreateInfo = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
+    imgCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+    imgCreateInfo.extent = size;
+    imgCreateInfo.mipLevels = 1;
+    imgCreateInfo.arrayLayers = 1;
+    imgCreateInfo.format = format;
+    imgCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+    imgCreateInfo.initialLayout = layout;
+    imgCreateInfo.usage = usage;
+    imgCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    imgCreateInfo.pNext = nullptr;
+
+    VmaAllocationCreateInfo allocCreateInfo = {};
+    allocCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
+    allocCreateInfo.flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
+    allocCreateInfo.priority = 1;
+
+    VK_HARD_CHECK(
+        vmaCreateImage(mAllocator, &imgCreateInfo, &allocCreateInfo, &newImage.mImage, &newImage.mAllocation, nullptr));
+
+    VkImageViewCreateInfo viewCreateInfo = {.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
+    viewCreateInfo.pNext = nullptr;
+    viewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    viewCreateInfo.image = newImage.mImage;
+    viewCreateInfo.format = format;
+    viewCreateInfo.subresourceRange.baseMipLevel = 0;
+    viewCreateInfo.subresourceRange.levelCount = 1;
+    viewCreateInfo.subresourceRange.baseArrayLayer = 0;
+    viewCreateInfo.subresourceRange.layerCount = 1;
+    viewCreateInfo.subresourceRange.aspectMask = aspectFlags;
+
+    VK_HARD_CHECK(vkCreateImageView(mDevice, &viewCreateInfo, nullptr, &newImage.mImageView));
+
+    return newImage;
+}
+
+void VulkanRenderResources::destroyBuffer(AllocatedBuffer& buffer) const
+{
+    vmaDestroyBuffer(mAllocator, buffer.mBuffer, buffer.mAllocation);
+    buffer.mBuffer = nullptr;
+    buffer.mAllocation = nullptr;
+}
+
+void VulkanRenderResources::destroyImage(AllocatedImage& image) const
+{
+    vkDestroyImageView(mDevice, image.mImageView, nullptr);
+    vmaDestroyImage(mAllocator, image.mImage, image.mAllocation);
+    image.mImageView = nullptr;
+    image.mImage = nullptr;
+    image.mAllocation = nullptr;
+}
+
+void VulkanRenderResources::transitionImageLayout(
+    VkCommandBuffer commandBuffer, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
+{
+    VkImageMemoryBarrier2 barrier{};
+    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
+    barrier.pNext = nullptr;
+
+    VkImageSubresourceRange range{
+        .baseMipLevel = 0,
+        .levelCount = 1,
+        .baseArrayLayer = 0,
+        .layerCount = 1,
+    };
+    if (newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+    {
+        range.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+
+        if (format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT)
+        {
+            range.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+        }
+    }
+    else
+    {
+        range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    }
+
+    barrier.subresourceRange = range;
+    barrier.image = image;
+    barrier.oldLayout = oldLayout;
+    barrier.newLayout = newLayout;
+    barrier.srcStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+    barrier.srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT;
+    barrier.dstStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+    barrier.dstAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT | VK_ACCESS_2_MEMORY_READ_BIT;
+
+    VkDependencyInfo depInfo{};
+    depInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+    depInfo.pNext = nullptr;
+
+    depInfo.imageMemoryBarrierCount = 1;
+    depInfo.pImageMemoryBarriers = &barrier;
+
+    vkCmdPipelineBarrier2(commandBuffer, &depInfo);
+}
+
+BunnyResult VulkanRenderResources::immediateTransitionImageLayout(
+    VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
+{
+    BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(startImmedidateCommand())
+
+    this->transitionImageLayout(mImmediateCommandBuffer, image, format, oldLayout, newLayout);
+
+    BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(endAndSubmitImmediateCommand())
+
+    return BUNNY_HAPPY;
+}
+
+VkFormat VulkanRenderResources::findSupportedFormat(
+    std::span<VkFormat> candidates, VkImageTiling tiling, VkFormatFeatureFlags features) const
+{
+    for (VkFormat format : candidates)
+    {
+        VkFormatProperties props;
+        vkGetPhysicalDeviceFormatProperties(mPhysicalDevice, format, &props);
+
+        if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features)
+        {
+            return format;
+        }
+        else if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features)
+        {
+            return format;
+        }
+    }
+
+    return VK_FORMAT_UNDEFINED;
 }
 
 VulkanRenderResources::~VulkanRenderResources()
@@ -154,6 +326,62 @@ BunnyResult VulkanRenderResources::getQueueFromDevice(Queue& queue, const vkb::D
         return BUNNY_HAPPY;
     }
     return BUNNY_SAD;
+}
+
+BunnyResult VulkanRenderResources::createImmediateCommand()
+{
+    assert(mGraphicQueue.mQueueFamilyIndex.has_value());
+
+    //  create command pool for graphics queue
+    VkCommandPoolCreateInfo poolInfo =
+    makeCommandPoolCreateInfo(mGraphicQueue.mQueueFamilyIndex.value(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+    VK_CHECK_OR_RETURN_BUNNY_SAD(vkCreateCommandPool(mDevice, &poolInfo, nullptr, &mImmediateCommandPool));
+
+    mDeletionStack.AddFunction([this]() { vkDestroyCommandPool(mDevice, mImmediateCommandPool, nullptr); });
+
+    //  create command buffer
+    VkCommandBufferAllocateInfo allocInfo = makeCommandBufferAllocateInfo(mImmediateCommandPool, 1);
+    VK_CHECK_OR_RETURN_BUNNY_SAD(vkAllocateCommandBuffers(mDevice, &allocInfo, &mImmediateCommandBuffer));
+
+    //  create immediate fence for synchronizing immediate command submits
+    VkFenceCreateInfo fenceInfo{};
+    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+    VK_CHECK_OR_RETURN_BUNNY_SAD(vkCreateFence(mDevice, &fenceInfo, nullptr, &mImmediateFence));
+
+    mDeletionStack.AddFunction([this]() { vkDestroyFence(mDevice, mImmediateFence, nullptr); });
+
+    return BUNNY_HAPPY;
+}
+
+BunnyResult VulkanRenderResources::startImmedidateCommand()
+{
+    VK_CHECK_OR_RETURN_BUNNY_SAD(vkResetFences(mDevice, 1, &mImmediateFence));
+    VK_CHECK_OR_RETURN_BUNNY_SAD(vkResetCommandBuffer(mImmediateCommandBuffer, 0));
+
+    VkCommandBufferBeginInfo beginInfo{};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+    VK_CHECK_OR_RETURN_BUNNY_SAD(vkBeginCommandBuffer(mImmediateCommandBuffer, &beginInfo));
+
+    return BUNNY_HAPPY;
+}
+
+BunnyResult VulkanRenderResources::endAndSubmitImmediateCommand()
+{
+    VK_CHECK_OR_RETURN_BUNNY_SAD(vkEndCommandBuffer(mImmediateCommandBuffer));
+
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &mImmediateCommandBuffer;
+
+    VK_CHECK_OR_RETURN_BUNNY_SAD(vkQueueSubmit(mGraphicQueue.mQueue, 1, &submitInfo, mImmediateFence));
+    VK_CHECK_OR_RETURN_BUNNY_SAD(vkWaitForFences(mDevice, 1, &mImmediateFence, true, 9999999999));
+
+    return BUNNY_HAPPY;
 }
 
 } // namespace Bunny::Render

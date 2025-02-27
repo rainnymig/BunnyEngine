@@ -20,7 +20,7 @@ int main()
 {
     using namespace std::chrono_literals;
 
-    Bunny::Utils::BasicTimer timer;
+    Bunny::Base::BasicTimer timer;
 
     const size_t num = 1000000;
 

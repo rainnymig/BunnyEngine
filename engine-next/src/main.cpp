@@ -2,6 +2,10 @@
 
 #include "Window.h"
 #include "Input.h"
+#include "Timer.h"
+#include "Error.h"
+#include "VulkanRenderResources.h"
+#include "VulkanGraphicsRenderer.h"
 
 #include <fmt/core.h>
 #include <inicpp.h>
@@ -28,12 +32,37 @@ int main(void)
     Bunny::Base::InputManager inputManager;
     inputManager.setupWithWindow(window);
 
+    Bunny::Render::VulkanRenderResources renderResources;
+    
+    if (!BUNNY_SUCCESS(renderResources.initialize(&window)))
+    {
+        PRINT_AND_ABORT("Fail to initialize render resources.")
+    }
+
+    Bunny::Render::VulkanGraphicsRenderer renderer(&renderResources);
+
+    if (!BUNNY_SUCCESS(renderer.initialize()))
+    {
+        PRINT_AND_ABORT("Fail to initialize graphics renderer.")
+    }
+
     bool shouldRun = true;
 
-    while(shouldRun)
+    Bunny::Base::BasicTimer timer;
+    while(true)
     {
-        shouldRun = !window.processWindowEvent();
+        timer.tick();
+
+        if(window.processWindowEvent())
+        {
+            break;
+        }
+
+        renderer.render(timer.getDeltaTime());
     }
+
+    renderer.cleanup();
+    renderResources.cleanup();
 
     window.destroyAndTerminate();
 
