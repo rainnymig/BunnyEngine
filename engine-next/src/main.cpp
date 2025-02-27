@@ -50,9 +50,23 @@ int main(void)
     bool shouldRun = true;
 
     Bunny::Base::BasicTimer timer;
+
+    float accumulatedTime = 0;
+    constexpr float interval = 0.5f;
+    uint32_t accumulatedFrames = 0;
+    float fps = 0;
     while(true)
     {
         timer.tick();
+
+        accumulatedTime += timer.getDeltaTime();
+        accumulatedFrames++;
+        if (accumulatedTime > interval)
+        {
+            fps = accumulatedFrames/accumulatedTime;
+            accumulatedFrames = 0;
+            accumulatedTime = 0;
+        }
 
         if(window.processWindowEvent())
         {
@@ -63,6 +77,11 @@ int main(void)
 
         ImGui::Begin("Hello!");
         ImGui::Text("Hi there!");
+        ImGui::End();
+
+
+        ImGui::Begin("Game Stats");
+        ImGui::Text(fmt::format("FPS: {}", fps).c_str());
         ImGui::End();
     
         renderer.finishRenderFrame();
