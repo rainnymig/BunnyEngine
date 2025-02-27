@@ -7,4 +7,4 @@ target_sources(EngineNext
         src/Config.cpp
 )
 
-target_link_libraries(EngineNext PRIVATE Base fmt::fmt VulkanRenderer inicpp EnTT::EnTT)
+target_link_libraries(EngineNext PRIVATE Base fmt::fmt VulkanRenderer inicpp EnTT::EnTT imgui)

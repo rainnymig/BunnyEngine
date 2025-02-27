@@ -32,6 +32,7 @@ class VulkanRenderResources
     void cleanup();
 
     Base::Window* getWindow() const { return mWindow; }
+    VkInstance getInstance() const { return mInstance; }
     VkSurfaceKHR getSurface() const { return mSurface; }
     VkPhysicalDevice getPhysicalDevice() const { return mPhysicalDevice; }
     VkDevice getDevice() const { return mDevice; }

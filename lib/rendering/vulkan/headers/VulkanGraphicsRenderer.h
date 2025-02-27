@@ -23,6 +23,9 @@ namespace Bunny::Render
         BunnyResult initialize();
         void render(float deltaTime);
 
+        void beginRenderFrame();
+        void finishRenderFrame();
+
         void cleanup();
         ~VulkanGraphicsRenderer();
 
@@ -40,6 +43,7 @@ namespace Bunny::Render
         BunnyResult initSwapChain();
         BunnyResult initFrameResources();
         BunnyResult initDepthResource();
+        BunnyResult initImgui();
 
         BunnyResult createSwapChain();
         BunnyResult recreateSwapChain();
@@ -48,6 +52,9 @@ namespace Bunny::Render
         BunnyResult createDepthResource();
         void destroyDepthResource();
     
+        void beginImguiFrame();
+        void finishImguiFrame(VkCommandBuffer commandBuffer, VkImageView targetImageView);
+
         SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface) const;
         VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) const;
         VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) const;
@@ -63,6 +70,7 @@ namespace Bunny::Render
         VkFormat mSwapChainImageFormat;
         VkExtent2D mSwapChainExtent;
         AllocatedImage mDepthImage;
+        uint32_t mSwapchainImageIndex = 0;
 
         std::array<FrameRenderObject, MAX_FRAMES_IN_FLIGHT> mFrameResources;
         uint32_t mCurrentFrameId = 0;

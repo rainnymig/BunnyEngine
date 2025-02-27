@@ -1,8 +1,6 @@
 #pragma once
 
 #include "BunnyResult.h"
-#include "BunnyGuard.h"
-// #include "Input.h"
 
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
@@ -10,9 +8,6 @@
 
 namespace Bunny::Base
 {
-
-class InputManager;
-
 class Window
 {
   public:
@@ -36,7 +31,7 @@ class Window
     //  return true when window should close
     bool processWindowEvent();
 
-    GLFWwindow* getRawGlfwWindow(BunnyGuard<InputManager> guard) const {return mGlfwWindow;}
+    GLFWwindow* getRawGlfwWindow() const {return mGlfwWindow;}
 
     ~Window();
 
