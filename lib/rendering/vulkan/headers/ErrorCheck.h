@@ -1,5 +1,7 @@
 #pragma once
 
+#include "BunnyResult.h"
+
 #include <vulkan/vk_enum_string_helper.h>
 #include <fmt/core.h>
 
@@ -21,3 +23,5 @@
             fmt::print("Vulkan error on soft check: {}.", string_VkResult(r));                                         \
         }                                                                                                              \
     }
+
+#define VK_CHECK_OR_RETURN_BUNNY_SAD(exp) if (VkResult r = exp; r != VK_SUCCESS) { fmt::print("Vulkan error: {}, return BUNNY_SAD.", string_VkResult(r)); return BUNNY_SAD; }

@@ -57,7 +57,6 @@ add_subdirectory("./third-party/entt")
 
 # Bunny stuff
 add_subdirectory("./lib/base")
-add_subdirectory("./lib/time")
 add_subdirectory("./lib/rendering/renderer")
 add_subdirectory("./lib/rendering/vulkan")
 add_subdirectory("./lib/physics")

@@ -7,10 +7,12 @@ target_sources(Base
         headers/Error.h
         headers/FunctionStack.h
         headers/Input.h
+        headers/Timer.h
         headers/Transform.h
         headers/Window.h
     PRIVATE
         src/Input.cpp
+        src/Timer.cpp
         src/Transform.cpp
         src/Window.cpp
 )
