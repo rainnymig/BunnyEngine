@@ -6,6 +6,10 @@
 #include "Error.h"
 #include "ErrorCheck.h"
 
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_vulkan.h>
+
 #include <algorithm>
 #include <cassert>
 
@@ -23,11 +27,25 @@ BunnyResult VulkanGraphicsRenderer::initialize()
     BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(initSwapChain());
     BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(initFrameResources());
     BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(initDepthResource());
+    BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(initImgui());
 
     return BUNNY_HAPPY;
 }
 
 void VulkanGraphicsRenderer::render(float deltaTime)
+{
+    //  begin render
+
+
+
+    //  end render
+
+    //  run render ui
+
+
+}
+
+void VulkanGraphicsRenderer::beginRenderFrame()
 {
     VkDevice device = mRenderResources->getDevice();
     FrameRenderObject& currentFrame = mFrameResources[mCurrentFrameId];
@@ -36,9 +54,8 @@ void VulkanGraphicsRenderer::render(float deltaTime)
     vkWaitForFences(device, 1, &currentFrame.mFrameInflightFence, VK_TRUE, UINT64_MAX);
 
     //  wait for image in the swap chain to be available before acquiring it
-    uint32_t imageIndex;
     VkResult result = vkAcquireNextImageKHR(
-        device, mSwapChain, UINT64_MAX, currentFrame.mSwapchainImageSemaphore, VK_NULL_HANDLE, &imageIndex);
+        device, mSwapChain, UINT64_MAX, currentFrame.mSwapchainImageSemaphore, VK_NULL_HANDLE, &mSwapchainImageIndex);
 
     //  recreate swap chain when necessary
     if (result == VK_ERROR_OUT_OF_DATE_KHR)
@@ -66,14 +83,14 @@ void VulkanGraphicsRenderer::render(float deltaTime)
 
     VK_HARD_CHECK(vkBeginCommandBuffer(cmdBuf, &beginInfo))
 
-    mRenderResources->transitionImageLayout(cmdBuf, mSwapChainImages[imageIndex], mSwapChainImageFormat, VK_IMAGE_LAYOUT_UNDEFINED,
+    mRenderResources->transitionImageLayout(cmdBuf, mSwapChainImages[mSwapchainImageIndex], mSwapChainImageFormat, VK_IMAGE_LAYOUT_UNDEFINED,
         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
     VkClearValue colorClearValue = {
         .color = {0.0f, 0.0f, 0.0f, 1.0f}
     };
     VkRenderingAttachmentInfo colorAttachment =
-        makeColorAttachmentInfo(mSwapChainImageViews[imageIndex], &colorClearValue);
+        makeColorAttachmentInfo(mSwapChainImageViews[mSwapchainImageIndex], &colorClearValue);
     VkRenderingAttachmentInfo depthAttachment = makeDepthAttachmentInfo(mDepthImage.mImageView);
 
     VkRenderingInfo renderInfo = makeRenderingInfo(mSwapChainExtent, &colorAttachment, &depthAttachment);
@@ -93,16 +110,21 @@ void VulkanGraphicsRenderer::render(float deltaTime)
     scissor.extent = mSwapChainExtent;
     vkCmdSetScissor(cmdBuf, 0, 1, &scissor);
 
-    //  begin render
     vkCmdBeginRendering(cmdBuf, &renderInfo);
-
-
-    //  end render
     vkCmdEndRendering(cmdBuf);
 
-    //  run render ui
+    beginImguiFrame();
+}
 
-    mRenderResources->transitionImageLayout(cmdBuf, mSwapChainImages[imageIndex], mSwapChainImageFormat,
+void VulkanGraphicsRenderer::finishRenderFrame()
+{
+    VkDevice device = mRenderResources->getDevice();
+    FrameRenderObject& currentFrame = mFrameResources[mCurrentFrameId];
+    VkCommandBuffer cmdBuf = currentFrame.mCommandBuffer;
+
+    finishImguiFrame(cmdBuf, mSwapChainImageViews[mSwapchainImageIndex]);
+
+    mRenderResources->transitionImageLayout(cmdBuf, mSwapChainImages[mSwapchainImageIndex], mSwapChainImageFormat,
         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
     //  end command buffer
@@ -133,9 +155,9 @@ void VulkanGraphicsRenderer::render(float deltaTime)
     VkSwapchainKHR swapChains[] = {mSwapChain};
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = swapChains;
-    presentInfo.pImageIndices = &imageIndex;
+    presentInfo.pImageIndices = &mSwapchainImageIndex;
     presentInfo.pResults = nullptr; // Optional
-    result = vkQueuePresentKHR(mRenderResources->getPresentQueue().mQueue, &presentInfo);
+    VkResult result = vkQueuePresentKHR(mRenderResources->getPresentQueue().mQueue, &presentInfo);
 
     //  recreate swap chain when necessary
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || mFrameBufferResized)
@@ -222,6 +244,55 @@ BunnyResult VulkanGraphicsRenderer::initDepthResource()
     return BUNNY_HAPPY;
 }
 
+BunnyResult VulkanGraphicsRenderer::initImgui()
+{
+    //  create descriptor pool just for imgui
+    VkDescriptorPool imguiDescPool;
+    VkDescriptorPoolSize poolSizes[] = {
+        {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1},
+    };
+    VkDescriptorPoolCreateInfo poolInfo = {};
+    poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+    poolInfo.maxSets = 1;
+    poolInfo.poolSizeCount = (uint32_t)IM_ARRAYSIZE(poolSizes);
+    poolInfo.pPoolSizes = poolSizes;
+    VK_CHECK_OR_RETURN_BUNNY_SAD(vkCreateDescriptorPool(mRenderResources->getDevice(), &poolInfo, nullptr, &imguiDescPool))
+
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+    //  enable keyboard and gamepad controls
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
+
+    ImGui::StyleColorsDark();
+    // ImGui::StyleColorsLight();
+
+    // Setup Platform/Renderer backends
+    ImGui_ImplGlfw_InitForVulkan(mRenderResources->getWindow()->getRawGlfwWindow(), true);
+    ImGui_ImplVulkan_InitInfo initInfo = {};
+    initInfo.Instance = mRenderResources->getInstance();
+    initInfo.PhysicalDevice = mRenderResources->getPhysicalDevice();
+    initInfo.Device = mRenderResources->getDevice();
+    initInfo.QueueFamily = mRenderResources->getGraphicQueue().mQueueFamilyIndex.value();
+    initInfo.Queue = mRenderResources->getGraphicQueue().mQueue;
+    initInfo.DescriptorPool = imguiDescPool;
+    initInfo.MinImageCount = mSwapChainImages.size();
+    initInfo.ImageCount = mSwapChainImages.size();
+    initInfo.UseDynamicRendering = true;
+    initInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+    initInfo.PipelineRenderingCreateInfo = {.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO};
+    initInfo.PipelineRenderingCreateInfo.colorAttachmentCount = 1;
+    initInfo.PipelineRenderingCreateInfo.pColorAttachmentFormats = &mSwapChainImageFormat;
+    ImGui_ImplVulkan_Init(&initInfo);
+    ImGui_ImplVulkan_CreateFontsTexture();
+
+    mDeletionStack.AddFunction([this, imguiDescPool]() { vkDestroyDescriptorPool(mRenderResources->getDevice(), imguiDescPool, nullptr); });
+    mDeletionStack.AddFunction([]() { ImGui_ImplVulkan_Shutdown(); });
+
+    return BUNNY_HAPPY;
+}
+
 BunnyResult VulkanGraphicsRenderer::createSwapChain()
 {
     SwapChainSupportDetails swapChainSupport = querySwapChainSupport(mRenderResources->getPhysicalDevice(), mRenderResources->getSurface());
@@ -295,6 +366,29 @@ BunnyResult VulkanGraphicsRenderer::createDepthResource()
 void VulkanGraphicsRenderer::destroyDepthResource()
 {
     mRenderResources->destroyImage(mDepthImage);
+}
+
+void VulkanGraphicsRenderer::beginImguiFrame()
+{
+    ImGui_ImplVulkan_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+
+    ImGui::NewFrame();
+}
+
+void VulkanGraphicsRenderer::finishImguiFrame(VkCommandBuffer commandBuffer, VkImageView targetImageView)
+{
+    ImGui::Render();
+
+    VkRenderingAttachmentInfo colorAttachment =
+    makeColorAttachmentInfo(targetImageView, nullptr, VK_IMAGE_LAYOUT_GENERAL);
+    VkRenderingInfo renderInfo = makeRenderingInfo(mSwapChainExtent, &colorAttachment, nullptr);
+
+    vkCmdBeginRendering(commandBuffer, &renderInfo);
+
+    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
+
+    vkCmdEndRendering(commandBuffer);
 }
 
 SwapChainSupportDetails VulkanGraphicsRenderer::querySwapChainSupport(

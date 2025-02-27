@@ -7,6 +7,7 @@
 #include "VulkanRenderResources.h"
 #include "VulkanGraphicsRenderer.h"
 
+#include <imgui.h>
 #include <fmt/core.h>
 #include <inicpp.h>
 #include <entt/entt.hpp>
@@ -58,7 +59,14 @@ int main(void)
             break;
         }
 
-        renderer.render(timer.getDeltaTime());
+        renderer.beginRenderFrame();
+
+        ImGui::Begin("Hello!");
+        ImGui::Text("Hi there!");
+        ImGui::End();
+    
+        renderer.finishRenderFrame();
+
     }
 
     renderer.cleanup();

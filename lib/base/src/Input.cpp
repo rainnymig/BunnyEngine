@@ -1,7 +1,6 @@
 #include "Input.h"
 
 #include "Window.h"
-#include "BunnyGuard.h"
 
 #include <GLFW/glfw3.h>
 #include <fmt/core.h>
@@ -19,7 +18,7 @@ namespace Bunny::Base
 
         InputManager::msKeyReceiverInstance = this;
 
-        GLFWwindow* glfwWindow = window.getRawGlfwWindow(CARROT);
+        GLFWwindow* glfwWindow = window.getRawGlfwWindow();
 
         glfwSetKeyCallback(glfwWindow, &InputManager::onKeyCallback);
     }
