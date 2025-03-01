@@ -23,6 +23,14 @@ struct MaterialInstance
     VkDescriptorSet mDescriptorSet = nullptr;
 };
 
+class Material
+{
+  public:
+    virtual std::string_view getName() const = 0;
+    virtual size_t getId() const = 0;
+    virtual const MaterialPipeline& getMaterialPipeline() const = 0;
+};
+
 class BasicBlinnPhongMaterial
 {
   public:

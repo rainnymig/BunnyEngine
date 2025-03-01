@@ -12,6 +12,7 @@ target_sources(VulkanRenderer
         headers/PipelineBuilder.h
         headers/QueueFamilyIndices.h
         headers/Renderable.h
+        headers/RenderJob.h
         headers/Shader.h
         headers/SwapChainSupportDetails.h
         headers/Vertex.h
@@ -28,6 +29,7 @@ target_sources(VulkanRenderer
         src/Mesh.cpp
         src/PipelineBuilder.cpp
         src/Renderable.cpp
+        src/RenderJob.cpp
         src/Shader.cpp
         src/Vertex.cpp
         src/VulkanGraphicsRenderer.cpp
