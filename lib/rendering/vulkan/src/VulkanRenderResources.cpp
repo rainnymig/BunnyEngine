@@ -75,6 +75,10 @@ BunnyResult VulkanRenderResources::initialize(Base::Window* window)
     features12.descriptorBindingVariableDescriptorCount = true;
     features12.runtimeDescriptorArray = true;
 
+    //  enable usage of std430 uniform buffer
+    //  https://docs.vulkan.org/guide/latest/shader_memory_layout.html#VK_KHR_uniform_buffer_standard_layout
+    // features12.uniformBufferStandardLayout = true;
+
     VkPhysicalDeviceFeatures featureBasic{};
     featureBasic.samplerAnisotropy = true;
 
@@ -333,8 +337,8 @@ BunnyResult VulkanRenderResources::createImmediateCommand()
     assert(mGraphicQueue.mQueueFamilyIndex.has_value());
 
     //  create command pool for graphics queue
-    VkCommandPoolCreateInfo poolInfo =
-    makeCommandPoolCreateInfo(mGraphicQueue.mQueueFamilyIndex.value(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+    VkCommandPoolCreateInfo poolInfo = makeCommandPoolCreateInfo(
+        mGraphicQueue.mQueueFamilyIndex.value(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
     VK_CHECK_OR_RETURN_BUNNY_SAD(vkCreateCommandPool(mDevice, &poolInfo, nullptr, &mImmediateCommandPool));
 
     mDeletionStack.AddFunction([this]() { vkDestroyCommandPool(mDevice, mImmediateCommandPool, nullptr); });

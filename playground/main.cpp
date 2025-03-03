@@ -1,43 +1,68 @@
 #include "Timer.h"
 
-#include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>
+#include <glm/matrix.hpp>
+#include <glm/ext/matrix_transform.hpp>
 #include <fmt/core.h>
-#include <chrono>
-#include <vector>
-#include <string>
+#include <entt/entt.hpp>
 
-struct TestData
+#include <array>
+#include <random>
+
+using IdType = size_t;
+
+struct MeshComponent
 {
-    int m1;
-    float m2;
-    std::string m3;
-    glm::mat4 mat1;
-    glm::vec4 v1;
+    IdType mMaterialId;
+    IdType mMaterialInstanceId;
 };
+
+struct TransformComponent
+{
+    glm::mat4x4 mTransformMatrix;
+};
+
+size_t getRandom()
+{
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dist(1, 3);
+    return dist(gen);
+}
 
 int main()
 {
-    using namespace std::chrono_literals;
+    entt::registry gameObjectRegistry;
 
-    Bunny::Base::BasicTimer timer;
+    constexpr std::array<IdType, 3> materials{1, 2, 3};
+    constexpr std::array<IdType, 9> materialInstances{11, 12, 13, 21, 22, 23, 31, 32, 33};
 
-    const size_t num = 1000000;
+    constexpr size_t entityCount = 20;
 
-    std::vector<TestData> v1(num);
-    std::vector<TestData> v2;
-    std::vector<TestData> v3;
+    //  create entities with components
+    for (size_t i = 0; i < entityCount; i++)
+    {
+        const auto entity = gameObjectRegistry.create();
+        size_t matIdx = i % materials.size();
+        auto& m = gameObjectRegistry.emplace<MeshComponent>(entity);
+        m.mMaterialId = materials[matIdx];
+        m.mMaterialInstanceId = m.mMaterialId * 10 + getRandom();
+        auto& t = gameObjectRegistry.emplace<TransformComponent>(entity);
+        t.mTransformMatrix = glm::translate(glm::mat4(1), glm::vec3{i, i, i});
+    }
 
-    timer.start();
-    v2.reserve(num);
-    std::copy(v1.begin(), v1.end(), std::back_inserter(v2));
-    timer.tick();
-    fmt::print("delta time is {}\n", timer.getDeltaTime());
-    timer.tick();
-    v3.reserve(num);
-    memcpy(v3.data(), v1.data(), num * sizeof(TestData));
-    timer.tick();
-    fmt::print("delta time is {}\n", timer.getDeltaTime());
+    gameObjectRegistry.sort<MeshComponent>([](const MeshComponent& lhs, const MeshComponent& rhs) {
+        return lhs.mMaterialId < rhs.mMaterialId ||
+               (lhs.mMaterialId == rhs.mMaterialId && lhs.mMaterialInstanceId < rhs.mMaterialInstanceId);
+    });
+    gameObjectRegistry.sort<TransformComponent, MeshComponent>();
+
+    //  iterate the components
+    auto view = gameObjectRegistry.view<const MeshComponent, const TransformComponent>();
+    for (const auto [entity, mesh, transform] : view.each())
+    {
+        fmt::print("entity: mat id {}, mat inst id {}.\n", mesh.mMaterialId, mesh.mMaterialInstanceId);
+    }
 
     return 0;
 }

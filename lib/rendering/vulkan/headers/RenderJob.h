@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Fundamentals.h"
+
 namespace Bunny::Render
 {
 
@@ -26,7 +28,7 @@ struct RenderBatch
     IdType mMaterialId;         //  gets material pipeline
     IdType mMaterialInstanceId; //  gets material descriptor sets
     IdType mMeshId;             //  gets vertices and indices
-
+    AllocatedBuffer mObjectBuffer;
     //  object data (uniform buffers?)
 };
 } // namespace Bunny::Render

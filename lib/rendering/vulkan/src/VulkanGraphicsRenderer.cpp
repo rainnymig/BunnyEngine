@@ -36,13 +36,9 @@ void VulkanGraphicsRenderer::render(float deltaTime)
 {
     //  begin render
 
-
-
     //  end render
 
     //  run render ui
-
-
 }
 
 void VulkanGraphicsRenderer::beginRenderFrame()
@@ -83,8 +79,8 @@ void VulkanGraphicsRenderer::beginRenderFrame()
 
     VK_HARD_CHECK(vkBeginCommandBuffer(cmdBuf, &beginInfo))
 
-    mRenderResources->transitionImageLayout(cmdBuf, mSwapChainImages[mSwapchainImageIndex], mSwapChainImageFormat, VK_IMAGE_LAYOUT_UNDEFINED,
-        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    mRenderResources->transitionImageLayout(cmdBuf, mSwapChainImages[mSwapchainImageIndex], mSwapChainImageFormat,
+        VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
     VkClearValue colorClearValue = {
         .color = {0.0f, 0.0f, 0.0f, 1.0f}
@@ -144,7 +140,8 @@ void VulkanGraphicsRenderer::finishRenderFrame()
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
 
-    VK_HARD_CHECK(vkQueueSubmit(mRenderResources->getGraphicQueue().mQueue, 1, &submitInfo, currentFrame.mFrameInflightFence))
+    VK_HARD_CHECK(
+        vkQueueSubmit(mRenderResources->getGraphicQueue().mQueue, 1, &submitInfo, currentFrame.mFrameInflightFence))
 
     //  present
     VkPresentInfoKHR presentInfo{};
@@ -213,20 +210,25 @@ BunnyResult VulkanGraphicsRenderer::initFrameResources()
     {
         //  create command pool
         VkCommandPoolCreateInfo poolInfo =
-            makeCommandPoolCreateInfo(mRenderResources->getGraphicQueue().mQueueFamilyIndex.value(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
-        VK_CHECK_OR_RETURN_BUNNY_SAD(vkCreateCommandPool(mRenderResources->getDevice(), &poolInfo, nullptr, &mFrameResources[i].mCommandPool))
+            makeCommandPoolCreateInfo(mRenderResources->getGraphicQueue().mQueueFamilyIndex.value(),
+                VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+        VK_CHECK_OR_RETURN_BUNNY_SAD(
+            vkCreateCommandPool(mRenderResources->getDevice(), &poolInfo, nullptr, &mFrameResources[i].mCommandPool))
 
         //  create command buffer
         VkCommandBufferAllocateInfo allocInfo = makeCommandBufferAllocateInfo(mFrameResources[i].mCommandPool, 1);
-        VK_CHECK_OR_RETURN_BUNNY_SAD(vkAllocateCommandBuffers(mRenderResources->getDevice(), &allocInfo, &mFrameResources[i].mCommandBuffer))
+        VK_CHECK_OR_RETURN_BUNNY_SAD(
+            vkAllocateCommandBuffers(mRenderResources->getDevice(), &allocInfo, &mFrameResources[i].mCommandBuffer))
 
         //  create sync objects
-        VK_CHECK_OR_RETURN_BUNNY_SAD(vkCreateSemaphore(mRenderResources->getDevice(), &semaphoreInfo, nullptr, &mFrameResources[i].mSwapchainImageSemaphore))
-        VK_CHECK_OR_RETURN_BUNNY_SAD(vkCreateSemaphore(mRenderResources->getDevice(), &semaphoreInfo, nullptr, &mFrameResources[i].mRenderFinishSemaphore))
-        VK_CHECK_OR_RETURN_BUNNY_SAD(vkCreateFence(mRenderResources->getDevice(), &fenceInfo, nullptr, &mFrameResources[i].mFrameInflightFence))
+        VK_CHECK_OR_RETURN_BUNNY_SAD(vkCreateSemaphore(
+            mRenderResources->getDevice(), &semaphoreInfo, nullptr, &mFrameResources[i].mSwapchainImageSemaphore))
+        VK_CHECK_OR_RETURN_BUNNY_SAD(vkCreateSemaphore(
+            mRenderResources->getDevice(), &semaphoreInfo, nullptr, &mFrameResources[i].mRenderFinishSemaphore))
+        VK_CHECK_OR_RETURN_BUNNY_SAD(
+            vkCreateFence(mRenderResources->getDevice(), &fenceInfo, nullptr, &mFrameResources[i].mFrameInflightFence))
 
-
-        mDeletionStack.AddFunction([this, i](){
+        mDeletionStack.AddFunction([this, i]() {
             vkDestroyFence(mRenderResources->getDevice(), mFrameResources[i].mFrameInflightFence, nullptr);
             vkDestroySemaphore(mRenderResources->getDevice(), mFrameResources[i].mSwapchainImageSemaphore, nullptr);
             vkDestroySemaphore(mRenderResources->getDevice(), mFrameResources[i].mRenderFinishSemaphore, nullptr);
@@ -240,7 +242,7 @@ BunnyResult VulkanGraphicsRenderer::initFrameResources()
 BunnyResult VulkanGraphicsRenderer::initDepthResource()
 {
     BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(createDepthResource())
-    mDeletionStack.AddFunction([this](){ destroyDepthResource(); });
+    mDeletionStack.AddFunction([this]() { destroyDepthResource(); });
     return BUNNY_HAPPY;
 }
 
@@ -257,7 +259,8 @@ BunnyResult VulkanGraphicsRenderer::initImgui()
     poolInfo.maxSets = 1;
     poolInfo.poolSizeCount = (uint32_t)IM_ARRAYSIZE(poolSizes);
     poolInfo.pPoolSizes = poolSizes;
-    VK_CHECK_OR_RETURN_BUNNY_SAD(vkCreateDescriptorPool(mRenderResources->getDevice(), &poolInfo, nullptr, &imguiDescPool))
+    VK_CHECK_OR_RETURN_BUNNY_SAD(
+        vkCreateDescriptorPool(mRenderResources->getDevice(), &poolInfo, nullptr, &imguiDescPool))
 
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
@@ -287,7 +290,8 @@ BunnyResult VulkanGraphicsRenderer::initImgui()
     ImGui_ImplVulkan_Init(&initInfo);
     ImGui_ImplVulkan_CreateFontsTexture();
 
-    mDeletionStack.AddFunction([this, imguiDescPool]() { vkDestroyDescriptorPool(mRenderResources->getDevice(), imguiDescPool, nullptr); });
+    mDeletionStack.AddFunction(
+        [this, imguiDescPool]() { vkDestroyDescriptorPool(mRenderResources->getDevice(), imguiDescPool, nullptr); });
     mDeletionStack.AddFunction([]() { ImGui_ImplVulkan_Shutdown(); });
 
     return BUNNY_HAPPY;
@@ -295,12 +299,14 @@ BunnyResult VulkanGraphicsRenderer::initImgui()
 
 BunnyResult VulkanGraphicsRenderer::createSwapChain()
 {
-    SwapChainSupportDetails swapChainSupport = querySwapChainSupport(mRenderResources->getPhysicalDevice(), mRenderResources->getSurface());
+    SwapChainSupportDetails swapChainSupport =
+        querySwapChainSupport(mRenderResources->getPhysicalDevice(), mRenderResources->getSurface());
     VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
     VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
     VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities);
 
-    vkb::SwapchainBuilder swapchainBuilder{mRenderResources->getPhysicalDevice(), mRenderResources->getDevice(), mRenderResources->getSurface()};
+    vkb::SwapchainBuilder swapchainBuilder{
+        mRenderResources->getPhysicalDevice(), mRenderResources->getDevice(), mRenderResources->getSurface()};
 
     vkb::Swapchain vkbSwapchain =
         swapchainBuilder.set_desired_format(surfaceFormat)
@@ -357,8 +363,8 @@ BunnyResult VulkanGraphicsRenderer::createDepthResource()
         VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_LAYOUT_UNDEFINED);
 
     //  transition the depth image layout
-    BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(mRenderResources->immediateTransitionImageLayout(mDepthImage.mImage, mDepthImage.mFormat, VK_IMAGE_LAYOUT_UNDEFINED,
-        VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL))
+    BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(mRenderResources->immediateTransitionImageLayout(mDepthImage.mImage,
+        mDepthImage.mFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL))
 
     return BUNNY_HAPPY;
 }
@@ -381,7 +387,7 @@ void VulkanGraphicsRenderer::finishImguiFrame(VkCommandBuffer commandBuffer, VkI
     ImGui::Render();
 
     VkRenderingAttachmentInfo colorAttachment =
-    makeColorAttachmentInfo(targetImageView, nullptr, VK_IMAGE_LAYOUT_GENERAL);
+        makeColorAttachmentInfo(targetImageView, nullptr, VK_IMAGE_LAYOUT_GENERAL);
     VkRenderingInfo renderInfo = makeRenderingInfo(mSwapChainExtent, &colorAttachment, nullptr);
 
     vkCmdBeginRendering(commandBuffer, &renderInfo);
@@ -421,7 +427,8 @@ SwapChainSupportDetails VulkanGraphicsRenderer::querySwapChainSupport(
     return details;
 }
 
-VkSurfaceFormatKHR VulkanGraphicsRenderer::chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) const
+VkSurfaceFormatKHR VulkanGraphicsRenderer::chooseSwapSurfaceFormat(
+    const std::vector<VkSurfaceFormatKHR>& availableFormats) const
 {
     if (availableFormats.empty())
     {
@@ -480,7 +487,8 @@ VkExtent2D VulkanGraphicsRenderer::chooseSwapExtent(const VkSurfaceCapabilitiesK
 VkFormat Bunny::Render::VulkanGraphicsRenderer::findDepthFormat() const
 {
     std::array<VkFormat, 3> candidates{VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT};
-    return mRenderResources->findSupportedFormat(candidates, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+    return mRenderResources->findSupportedFormat(
+        candidates, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 }
 
 } // namespace Bunny::Render
