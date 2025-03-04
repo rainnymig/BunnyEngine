@@ -22,13 +22,13 @@ namespace Bunny::Render
 
 struct RenderBatch
 {
-    using IdType = size_t;
-
     IdType mId;
     IdType mMaterialId;         //  gets material pipeline
     IdType mMaterialInstanceId; //  gets material descriptor sets
     IdType mMeshId;             //  gets vertices and indices
-    AllocatedBuffer mObjectBuffer;
-    //  object data (uniform buffers?)
+    //  may need startIndex and indexCount for a surface, since a mesh can have surfaces of different materials
+
+    AllocatedBuffer mObjectBuffer; //  should hold an array of ObjectData for rendering
+                                   //  i.e. should be used directly as uniform buffer
 };
 } // namespace Bunny::Render

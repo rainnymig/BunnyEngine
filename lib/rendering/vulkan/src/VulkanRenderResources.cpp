@@ -152,6 +152,37 @@ void VulkanRenderResources::cleanup()
     mDeletionStack.Flush();
 }
 
+BunnyResult VulkanRenderResources::createAndMapBuffer(void* data, VkDeviceSize size, VkBufferUsageFlags bufferUsage,
+    VmaAllocationCreateFlags vmaCreateFlags, VmaMemoryUsage vmaUsage, AllocatedBuffer& outBuffer) const
+{
+    //  create the buffer
+    //  add the transfer dst usage to receive data from staging buffer
+    outBuffer = createBuffer(size, bufferUsage | VK_BUFFER_USAGE_TRANSFER_DST_BIT, vmaCreateFlags, vmaUsage);
+
+    //  create staging buffer to map and transfer the data
+    AllocatedBuffer stagingBuffer = createBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+        VMA_MEMORY_USAGE_CPU_ONLY);
+
+    memcpy(stagingBuffer.mAllocationInfo.pMappedData, data, size);
+
+    BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(startImmedidateCommand(ImmediateQueueType::Transfer))
+
+    VkBufferCopy bufCopy{0};
+    bufCopy.dstOffset = 0;
+    bufCopy.srcOffset = 0;
+    bufCopy.size = size;
+
+    vkCmdCopyBuffer(mImmediateCommands.at(ImmediateQueueType::Transfer).mBuffer, stagingBuffer.mBuffer,
+        outBuffer.mBuffer, 1, &bufCopy);
+
+    BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(endAndSubmitImmediateCommand(ImmediateQueueType::Transfer))
+
+    destroyBuffer(stagingBuffer);
+
+    return BUNNY_HAPPY;
+}
+
 AllocatedBuffer VulkanRenderResources::createBuffer(VkDeviceSize size, VkBufferUsageFlags bufferUsage,
     VmaAllocationCreateFlags vmaCreateFlags, VmaMemoryUsage vmaUsage) const
 {
@@ -221,6 +252,10 @@ AllocatedImage VulkanRenderResources::createImage(
 
 void VulkanRenderResources::destroyBuffer(AllocatedBuffer& buffer) const
 {
+    if (buffer.mBuffer == nullptr)
+    {
+        return;
+    }
     vmaDestroyBuffer(mAllocator, buffer.mBuffer, buffer.mAllocation);
     buffer.mBuffer = nullptr;
     buffer.mAllocation = nullptr;
@@ -286,7 +321,8 @@ BunnyResult VulkanRenderResources::immediateTransitionImageLayout(
 {
     BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(startImmedidateCommand())
 
-    this->transitionImageLayout(mImmediateCommandBuffer, image, format, oldLayout, newLayout);
+    this->transitionImageLayout(
+        mImmediateCommands[ImmediateQueueType::Graphics].mBuffer, image, format, oldLayout, newLayout);
 
     BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(endAndSubmitImmediateCommand())
 
@@ -319,7 +355,8 @@ VulkanRenderResources::~VulkanRenderResources()
     cleanup();
 }
 
-BunnyResult VulkanRenderResources::getQueueFromDevice(Queue& queue, const vkb::Device& device, vkb::QueueType queueType)
+BunnyResult VulkanRenderResources::getQueueFromDevice(
+    Queue& queue, const vkb::Device& device, vkb::QueueType queueType) const
 {
     auto queueResult = device.get_queue(queueType);
     auto idxResult = device.get_queue_index(queueType);
@@ -336,16 +373,47 @@ BunnyResult VulkanRenderResources::createImmediateCommand()
 {
     assert(mGraphicQueue.mQueueFamilyIndex.has_value());
 
+    ImmediateCommand& graphicsCommand = mImmediateCommands[ImmediateQueueType::Graphics];
+    ImmediateCommand& transferCommand = mImmediateCommands[ImmediateQueueType::Transfer];
+
     //  create command pool for graphics queue
     VkCommandPoolCreateInfo poolInfo = makeCommandPoolCreateInfo(
         mGraphicQueue.mQueueFamilyIndex.value(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
-    VK_CHECK_OR_RETURN_BUNNY_SAD(vkCreateCommandPool(mDevice, &poolInfo, nullptr, &mImmediateCommandPool));
+    VK_CHECK_OR_RETURN_BUNNY_SAD(vkCreateCommandPool(mDevice, &poolInfo, nullptr, &graphicsCommand.mPool));
 
-    mDeletionStack.AddFunction([this]() { vkDestroyCommandPool(mDevice, mImmediateCommandPool, nullptr); });
+    mDeletionStack.AddFunction([this]() {
+        vkDestroyCommandPool(mDevice, mImmediateCommands[ImmediateQueueType::Graphics].mPool, nullptr);
+        mImmediateCommands[ImmediateQueueType::Graphics].mPool = nullptr;
+    });
 
-    //  create command buffer
-    VkCommandBufferAllocateInfo allocInfo = makeCommandBufferAllocateInfo(mImmediateCommandPool, 1);
-    VK_CHECK_OR_RETURN_BUNNY_SAD(vkAllocateCommandBuffers(mDevice, &allocInfo, &mImmediateCommandBuffer));
+    //  create command buffer for graphics queue
+    VkCommandBufferAllocateInfo allocInfo = makeCommandBufferAllocateInfo(graphicsCommand.mPool, 1);
+    VK_CHECK_OR_RETURN_BUNNY_SAD(vkAllocateCommandBuffers(mDevice, &allocInfo, &graphicsCommand.mBuffer));
+
+    //  if transfer queue is not the same as graphics queue then create commands for transfer
+    //  otherwise use the same commands
+    if (mTransferQueue.mQueueFamilyIndex.has_value() &&
+        mTransferQueue.mQueueFamilyIndex.value() != mGraphicQueue.mQueueFamilyIndex.value())
+    {
+        //  create command pool for transfer queue
+        VkCommandPoolCreateInfo poolInfo = makeCommandPoolCreateInfo(
+            mTransferQueue.mQueueFamilyIndex.value(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+        VK_CHECK_OR_RETURN_BUNNY_SAD(vkCreateCommandPool(mDevice, &poolInfo, nullptr, &transferCommand.mPool));
+
+        mDeletionStack.AddFunction([this]() {
+            vkDestroyCommandPool(mDevice, mImmediateCommands[ImmediateQueueType::Transfer].mPool, nullptr);
+            mImmediateCommands[ImmediateQueueType::Transfer].mPool = nullptr;
+        });
+
+        //  create command buffer for transfer queue
+        VkCommandBufferAllocateInfo allocInfo = makeCommandBufferAllocateInfo(transferCommand.mPool, 1);
+        VK_CHECK_OR_RETURN_BUNNY_SAD(vkAllocateCommandBuffers(mDevice, &allocInfo, &transferCommand.mBuffer));
+    }
+    else
+    {
+        transferCommand.mPool = graphicsCommand.mPool;
+        transferCommand.mBuffer = graphicsCommand.mBuffer;
+    }
 
     //  create immediate fence for synchronizing immediate command submits
     VkFenceCreateInfo fenceInfo{};
@@ -359,28 +427,33 @@ BunnyResult VulkanRenderResources::createImmediateCommand()
     return BUNNY_HAPPY;
 }
 
-BunnyResult VulkanRenderResources::startImmedidateCommand()
+BunnyResult VulkanRenderResources::startImmedidateCommand(ImmediateQueueType cmdType) const
 {
     VK_CHECK_OR_RETURN_BUNNY_SAD(vkResetFences(mDevice, 1, &mImmediateFence));
-    VK_CHECK_OR_RETURN_BUNNY_SAD(vkResetCommandBuffer(mImmediateCommandBuffer, 0));
+
+    VkCommandBuffer cmdBuf = mImmediateCommands.at(cmdType).mBuffer;
+
+    VK_CHECK_OR_RETURN_BUNNY_SAD(vkResetCommandBuffer(cmdBuf, 0));
 
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
-    VK_CHECK_OR_RETURN_BUNNY_SAD(vkBeginCommandBuffer(mImmediateCommandBuffer, &beginInfo));
+    VK_CHECK_OR_RETURN_BUNNY_SAD(vkBeginCommandBuffer(cmdBuf, &beginInfo));
 
     return BUNNY_HAPPY;
 }
 
-BunnyResult VulkanRenderResources::endAndSubmitImmediateCommand()
+BunnyResult VulkanRenderResources::endAndSubmitImmediateCommand(ImmediateQueueType cmdType) const
 {
-    VK_CHECK_OR_RETURN_BUNNY_SAD(vkEndCommandBuffer(mImmediateCommandBuffer));
+    VkCommandBuffer cmdBuf = mImmediateCommands.at(cmdType).mBuffer;
+
+    VK_CHECK_OR_RETURN_BUNNY_SAD(vkEndCommandBuffer(cmdBuf));
 
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &mImmediateCommandBuffer;
+    submitInfo.pCommandBuffers = &cmdBuf;
 
     VK_CHECK_OR_RETURN_BUNNY_SAD(vkQueueSubmit(mGraphicQueue.mQueue, 1, &submitInfo, mImmediateFence));
     VK_CHECK_OR_RETURN_BUNNY_SAD(vkWaitForFences(mDevice, 1, &mImmediateFence, true, 9999999999));

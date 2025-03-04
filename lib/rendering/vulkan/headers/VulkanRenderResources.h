@@ -11,10 +11,11 @@
 #include <optional>
 #include <span>
 #include <functional>
+#include <map>
 
 namespace Bunny::Base
 {
-  class Window;
+class Window;
 }
 
 namespace Bunny::Render
@@ -41,26 +42,43 @@ class VulkanRenderResources
     const Queue& getComputeQueue() const { return mComputeQueue; }
     const Queue& getTransferQueue() const { return mTransferQueue; }
 
+    BunnyResult createAndMapBuffer(void* data, VkDeviceSize size, VkBufferUsageFlags bufferUsage,
+        VmaAllocationCreateFlags vmaCreateFlags, VmaMemoryUsage vmaUsage, AllocatedBuffer& outBuffer) const;
+
     AllocatedBuffer createBuffer(VkDeviceSize size, VkBufferUsageFlags bufferUsage,
-      VmaAllocationCreateFlags vmaCreateFlags, VmaMemoryUsage vmaUsage) const;
+        VmaAllocationCreateFlags vmaCreateFlags, VmaMemoryUsage vmaUsage) const;
     AllocatedImage createImage(VkExtent3D size, VkFormat format, VkImageUsageFlags usage,
-      VkImageAspectFlags aspectFlags, VkImageLayout layout = VK_IMAGE_LAYOUT_UNDEFINED);
+        VkImageAspectFlags aspectFlags, VkImageLayout layout = VK_IMAGE_LAYOUT_UNDEFINED);
     void destroyBuffer(AllocatedBuffer& buffer) const;
     void destroyImage(AllocatedImage& image) const;
 
-    void transitionImageLayout(VkCommandBuffer commandBuffer, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
-    BunnyResult immediateTransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
+    void transitionImageLayout(VkCommandBuffer commandBuffer, VkImage image, VkFormat format, VkImageLayout oldLayout,
+        VkImageLayout newLayout);
+    BunnyResult immediateTransitionImageLayout(
+        VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 
     VkFormat findSupportedFormat(
-      std::span<VkFormat> candidates, VkImageTiling tiling, VkFormatFeatureFlags features) const;
+        std::span<VkFormat> candidates, VkImageTiling tiling, VkFormatFeatureFlags features) const;
 
     ~VulkanRenderResources();
 
   private:
-    BunnyResult getQueueFromDevice(Queue& queue, const vkb::Device& device, vkb::QueueType queueType);
+    enum class ImmediateQueueType
+    {
+        Graphics,
+        Transfer
+    };
+
+    struct ImmediateCommand
+    {
+        VkCommandPool mPool;
+        VkCommandBuffer mBuffer;
+    };
+
+    BunnyResult getQueueFromDevice(Queue& queue, const vkb::Device& device, vkb::QueueType queueType) const;
     BunnyResult createImmediateCommand();
-    BunnyResult startImmedidateCommand();
-    BunnyResult endAndSubmitImmediateCommand();
+    BunnyResult startImmedidateCommand(ImmediateQueueType cmdType = ImmediateQueueType::Graphics) const;
+    BunnyResult endAndSubmitImmediateCommand(ImmediateQueueType cmdType = ImmediateQueueType::Graphics) const;
 
     Base::Window* mWindow = nullptr;
     VkInstance mInstance = VK_NULL_HANDLE;
@@ -77,10 +95,8 @@ class VulkanRenderResources
     Queue mTransferQueue;
 
     //  command pool for submitting immediate commands like image format transition or copy buffer
-    VkCommandPool mImmediateCommandPool;
-    VkCommandBuffer mImmediateCommandBuffer;
+    std::map<ImmediateQueueType, ImmediateCommand> mImmediateCommands;
     VkFence mImmediateFence;
-
 
     VmaAllocator mAllocator = nullptr;
 

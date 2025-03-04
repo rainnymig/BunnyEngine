@@ -24,4 +24,7 @@ struct AllocatedBuffer
 
 //  frame
 static constexpr size_t MAX_FRAMES_IN_FLIGHT = 2;
+
+using IdType = size_t;
+
 } // namespace Bunny::Render
