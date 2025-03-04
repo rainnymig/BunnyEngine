@@ -9,6 +9,7 @@ target_sources(VulkanRenderer
         headers/Helper.h
         headers/Material.h
         headers/Mesh.h
+        headers/MeshBank.h
         headers/PipelineBuilder.h
         headers/QueueFamilyIndices.h
         headers/Renderable.h
@@ -27,6 +28,7 @@ target_sources(VulkanRenderer
         src/Helper.cpp
         src/Material.cpp
         src/Mesh.cpp
+        src/MeshBank.cpp
         src/PipelineBuilder.cpp
         src/Renderable.cpp
         src/RenderJob.cpp
