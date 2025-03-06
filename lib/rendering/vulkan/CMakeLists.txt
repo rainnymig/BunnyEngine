@@ -8,14 +8,17 @@ target_sources(VulkanRenderer
         headers/Fundamentals.h
         headers/Helper.h
         headers/Material.h
+        headers/MaterialBank.h
         headers/Mesh.h
         headers/MeshBank.h
         headers/PipelineBuilder.h
         headers/QueueFamilyIndices.h
         headers/Renderable.h
         headers/RenderJob.h
+        headers/RenderPass.h
         headers/Shader.h
         headers/SwapChainSupportDetails.h
+        headers/TextureBank.h
         headers/Vertex.h
         headers/VulkanGraphicsRenderer.h
         headers/VulkanRenderer.h
@@ -32,6 +35,7 @@ target_sources(VulkanRenderer
         src/PipelineBuilder.cpp
         src/Renderable.cpp
         src/RenderJob.cpp
+        src/RenderPass.cpp
         src/Shader.cpp
         src/Vertex.cpp
         src/VulkanGraphicsRenderer.cpp
