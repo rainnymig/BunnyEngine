@@ -2,6 +2,7 @@
 
 #include "Fundamentals.h"
 #include "VulkanRenderResources.h"
+#include "BoundingBox.h"
 
 #include <vulkan/vulkan.h>
 
@@ -22,12 +23,16 @@ struct SurfaceLite
     IdType mMaterialInstanceId;
 };
 
-struct MeshLite
+template<typename BoundType>
+struct MeshLiteT
 {
     IdType mId;
     std::string mName;
     std::vector<SurfaceLite> mSurfaces;
+    BoundType mBounds;
 };
+
+using MeshLite = MeshLiteT<Base::BoundingSphere>;
 
 template <typename VertexType, typename IndexType = uint32_t>
 class MeshBank

@@ -2,6 +2,7 @@ add_library(Base)
 
 target_sources(Base
     PUBLIC
+        headers/BoundingBox.h
         headers/BunnyGuard.h
         headers/BunnyResult.h
         headers/Error.h
@@ -11,6 +12,7 @@ target_sources(Base
         headers/Transform.h
         headers/Window.h
     PRIVATE
+        src/BoundingBox.cpp
         src/Input.cpp
         src/Timer.cpp
         src/Transform.cpp
