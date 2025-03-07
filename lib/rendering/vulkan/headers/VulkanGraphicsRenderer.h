@@ -29,6 +29,8 @@ namespace Bunny::Render
         void cleanup();
         ~VulkanGraphicsRenderer();
 
+        VkCommandBuffer getCurrentCommandBuffer() const {return mFrameResources.at(mCurrentFrameId).mCommandBuffer;}
+
     private:
 
         struct FrameRenderObject

@@ -9,6 +9,11 @@
 
 namespace Bunny::Render
 {
+BasicBlinnPhongMaterial::BasicBlinnPhongMaterial(Base::BunnyGuard<Builder> guard, VkDevice device)
+    : mDevice(device)
+{
+    mId = std::hash<std::string_view>{}(getName());
+}
 
 void BasicBlinnPhongMaterial::cleanupPipeline()
 {

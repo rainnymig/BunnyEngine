@@ -3,6 +3,7 @@ add_library(VulkanRenderer)
 target_sources(VulkanRenderer
     PUBLIC
         headers/BaseVulkanRenderer.h
+        headers/Culling.h
         headers/Descriptor.h
         headers/ErrorCheck.h
         headers/Fundamentals.h
@@ -27,9 +28,11 @@ target_sources(VulkanRenderer
         headers/VulkanRenderResources.h
     PRIVATE
         src/BaseVulkanRenderer.cpp
+        src/Culling.cpp
         src/Descriptor.cpp
         src/Helper.cpp
         src/Material.cpp
+        src/MaterialBank.cpp
         src/Mesh.cpp
         src/MeshBank.cpp
         src/PipelineBuilder.cpp
