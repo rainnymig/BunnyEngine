@@ -5,6 +5,8 @@ target_sources(EngineNext
         src/main.cpp
         src/Config.h
         src/Config.cpp
+        src/World.h
+        src/World.cpp
 )
 
-target_link_libraries(EngineNext PRIVATE Base fmt::fmt VulkanRenderer inicpp EnTT::EnTT imgui)
+target_link_libraries(EngineNext PRIVATE Base fmt::fmt VulkanRenderer inicpp EnTT::EnTT imgui fastgltf::fastgltf)

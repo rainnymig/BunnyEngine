@@ -10,20 +10,4 @@
 namespace Bunny::Render
 {
 
-    struct BoundingSphere
-    {
-        glm::vec3 mCenter;
-        float mRadius;
-    };
-
-    struct CullComponenet
-    {
-        Base::Transform mTransform;
-        BoundingSphere mBounds;
-    };
-
-    class CullingPass
-    {
-        void Cull(const std::vector<CullComponenet>& comps);
-    };
 } // namespace Bunny::Render
