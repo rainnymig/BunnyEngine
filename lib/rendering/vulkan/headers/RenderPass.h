@@ -10,17 +10,19 @@ namespace Bunny::Render
 {
 
 class VulkanRenderResources;
+class VulkanGraphicsRenderer;
 class MaterialBank;
 
 class ForwardPass
 {
   public:
     void initializePass();
-    void renderBatch(const std::vector<RenderBatch>& batches);
+    void renderBatch(const RenderBatch& batch);
     void cleanup();
 
   private:
     VulkanRenderResources* mVulkanResources;
+    VulkanGraphicsRenderer* mRenderer;
     const MaterialBank* mMaterialBank;
     const MeshBank<NormalVertex>* mMeshBank;
 };

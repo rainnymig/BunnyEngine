@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Descriptor.h"
+#include "Fundamentals.h"
 
 #include "BunnyGuard.h"
 
@@ -19,6 +20,7 @@ struct MaterialPipeline
 
 struct MaterialInstance
 {
+    IdType mId;
     MaterialPipeline* mpBaseMaterial;
     VkDescriptorSet mDescriptorSet = nullptr;
 };
@@ -26,12 +28,14 @@ struct MaterialInstance
 class Material
 {
   public:
-    virtual std::string_view getName() const = 0;
-    virtual size_t getId() const = 0;
-    virtual const MaterialPipeline& getMaterialPipeline() const = 0;
+    IdType getId() const {return mId;}
+    const MaterialPipeline& getMaterialPipeline() const {return mPipeline;}
+  protected:
+    IdType mId;
+    MaterialPipeline mPipeline;
 };
 
-class BasicBlinnPhongMaterial
+class BasicBlinnPhongMaterial : public Material
 {
   public:
     class Builder
@@ -57,7 +61,7 @@ class BasicBlinnPhongMaterial
         VkDescriptorSetLayout mObjectDescSetLayout = nullptr;
     };
 
-    BasicBlinnPhongMaterial(Base::BunnyGuard<Builder> guard, VkDevice device) : mDevice(device) {};
+    BasicBlinnPhongMaterial(Base::BunnyGuard<Builder> guard, VkDevice device);
     void cleanupPipeline();
 
     constexpr std::string_view getName() const { return "Basic Blinn Phong"; }
@@ -70,7 +74,6 @@ class BasicBlinnPhongMaterial
     // void buildDescriptorSetLayout(VkDevice device);
 
     // DescriptorAllocator mDescriptorAllocator;
-    MaterialPipeline mPipeline;
     VkDevice mDevice;
     // VkDescriptorSetLayout mDescriptorSetLayout;
 };
