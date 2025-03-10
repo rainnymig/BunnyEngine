@@ -68,10 +68,10 @@ inline void MeshBank<VertexType, IndexType>::addMesh(
 {
     //  take the current number of vertices in the vertex buffer
     //  because the newly added indices will have to count from here
-    auto vertexOffset = mVertexBufferData.size();
+    uint32_t vertexOffset = mVertexBufferData.size();
     //  take the current number of indices in the index buffer
     //  because the newly added surfaces will need to offset their starting index from here
-    auto indexOffset = mIndexBufferData.size();
+    uint32_t indexOffset = mIndexBufferData.size();
     //  vertices can be directly insert into the buffer
     mVertexBufferData.insert(mVertexBufferData.end(), vertices.begin(), vertices.end());
     //  indices need to add the offset first

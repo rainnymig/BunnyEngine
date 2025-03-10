@@ -2,7 +2,6 @@
 
 #include "Material.h"
 #include "MaterialBank.h"
-#include "MeshBank.h"
 #include "VulkanGraphicsRenderer.h"
 #include "VulkanRenderResources.h"
 
@@ -35,5 +34,8 @@ void ForwardPass::renderBatch(const RenderBatch& batch)
     //  temp
     //  should draw all meshes (surfaces) that has the same pipeline (material) and desc set (material instance)
     vkCmdDrawIndexedIndirect(mRenderer->getCurrentCommandBuffer(), nullptr, 0, 0, 1);
+}
+void ForwardPass::cleanup()
+{
 }
 } // namespace Bunny::Render

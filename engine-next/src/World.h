@@ -13,6 +13,7 @@
 namespace Bunny::Render
 {
     class VulkanRenderResources;
+    class MaterialBank;
 }
 
 namespace Bunny::Engine
@@ -42,9 +43,11 @@ namespace Bunny::Engine
     {
     public:
         BunnyResult loadGltfToWorld(std::string_view filePath, World outWorld);
+        BunnyResult loadTestWorld();
 
     private:
         const Render::VulkanRenderResources* mVulkanResources;
+        Render::MaterialBank* mMaterialBank;
         Render::MeshBank<Render::NormalVertex>* mMeshBank;
     };
 
