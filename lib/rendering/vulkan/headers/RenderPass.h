@@ -1,8 +1,8 @@
 #pragma once
 
 #include "RenderJob.h"
-#include "MaterialBank.h"
 #include "Vertex.h"
+#include "MeshBank.h"
 
 #include <vector>
 
