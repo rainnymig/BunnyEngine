@@ -3,6 +3,7 @@
 #include "VulkanRenderResources.h"
 #include "Vertex.h"
 #include "MaterialBank.h"
+#include "Helper.h"
 
 #include <glm/mat4x4.hpp>
 #include <glm/ext/matrix_transform.hpp>
@@ -18,7 +19,7 @@
 namespace Bunny::Engine
 {
 BunnyResult WorldLoader::loadGltfToWorld(
-    std::string_view filePath, World outWorld)
+    std::string_view filePath, World& outWorld)
 {
     std::filesystem::path path(filePath);
     constexpr auto gltfOptions = fastgltf::Options::DontRequireValidAssetMember | fastgltf::Options::AllowDouble |
@@ -197,7 +198,7 @@ BunnyResult WorldLoader::loadGltfToWorld(
     return BUNNY_HAPPY;
 }
 
-BunnyResult WorldLoader::loadTestWorld()
+BunnyResult WorldLoader::loadTestWorld(World& outWorld)
 {
     //  vecters to hold indices and vertices for creating buffers
     // std::vector<uint32_t> indices;
@@ -205,7 +206,7 @@ BunnyResult WorldLoader::loadTestWorld()
     // std::unordered_map<NormalVertex, uint32_t, NormalVertex::Hash> vertexToIndexMap;
 
     //  create meshes and save them in the mesh asset bank
-    const Mesh* cubeMesh = createCubeMeshToBank(meshAssetBank, renderer);
+    const Render::IdType meshId = createCubeMeshToBank(mMeshBank, mMaterialBank->getDefaultMaterialId());
 
     //  create scene structure
     //  create grid of cubes to fill the scene
@@ -244,29 +245,33 @@ BunnyResult WorldLoader::loadTestWorld()
         {0, 0, 6},
         {0, 0, 8}
     };
-    scene->mNodes.clear();
+
+    //  nodes
     for (int idx = 0; idx < positions.size(); idx++)
     {
-        Node& newNode = scene->mNodes[idx];
-        newNode.mScene = scene;
-        newNode.mTransform = Base::Transform{
-            positions[idx], {0, 0, 0},
-             {1, 1, 1}
-        };
-        newNode.mRenderComponent = std::make_unique<MeshRenderComponent>(cubeMesh, &newNode);
+        Base::Transform nodeTransform (positions[idx], {0, 0, 0}, {1, 1, 1});
+        const auto nodeEntity = outWorld.mEntityRegistry.create();
+        outWorld.mEntityRegistry.emplace<TransformComponent>(nodeEntity, nodeTransform);
+        outWorld.mEntityRegistry.emplace<MeshComponent>(nodeEntity, meshId);
     }
 
-    scene->findRootNodes();
+    //  camera
+    {
+        const auto cameraEntity = outWorld.mEntityRegistry.create();
+        Render::Camera camera(glm::vec3{5, 5, -5});
+        outWorld.mEntityRegistry.emplace<CameraComponent>(cameraEntity, camera);
+    }
 
-    //  config camera
-    scene->mCamera = Camera(glm::vec3{5, 5, -5});
-
-    //  create lights
-    scene->mLights.push_back(DirectionalLight{
-        .mDirection = glm::normalize(glm::vec3{-1, -1, 1}
-          ),
-        .mColor = {1,  1,  1},
-    });
+    //  light
+    {
+        const auto lightEntity = outWorld.mEntityRegistry.create();
+        Render::DirectionalLight dirLight{
+            .mDirection = glm::normalize(glm::vec3{-1, -1, 1}
+            ),
+            .mColor = {1,  1,  1},
+        };
+        outWorld.mEntityRegistry.emplace<DirectionLightComponent>(lightEntity, dirLight);
+    }
 
     return BUNNY_HAPPY;
 }
