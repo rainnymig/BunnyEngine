@@ -5,6 +5,8 @@
 #include "BunnyResult.h"
 #include "MeshBank.h"
 #include "Vertex.h"
+#include "Light.h"
+#include "Camera.h"
 
 #include <entt/entt.hpp>
 
@@ -33,6 +35,16 @@ namespace Bunny::Engine
         entt::entity mParent{entt::null};
     };
 
+    struct DirectionLightComponent
+    {
+        Render::DirectionalLight mLight;
+    };
+
+    struct CameraComponent
+    {
+        Render::Camera mCamera;
+    };
+
     class World
     {
     public:
@@ -42,8 +54,8 @@ namespace Bunny::Engine
     class WorldLoader
     {
     public:
-        BunnyResult loadGltfToWorld(std::string_view filePath, World outWorld);
-        BunnyResult loadTestWorld();
+        BunnyResult loadGltfToWorld(std::string_view filePath, World& outWorld);
+        BunnyResult loadTestWorld(World& outWorld);
 
     private:
         const Render::VulkanRenderResources* mVulkanResources;

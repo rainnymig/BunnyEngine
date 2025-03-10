@@ -4,6 +4,7 @@
 #include "Vertex.h"
 #include "VulkanRenderer.h"
 #include "Transform.h"
+#include "Helper.h"
 
 #include <glm/mat4x4.hpp>
 #include <glm/ext/matrix_transform.hpp>
@@ -457,130 +458,6 @@ bool SceneInitializer::makeExampleScene(BaseVulkanRenderer* renderer, Scene* sce
     });
 
     return true;
-}
-
-void SceneInitializer::addVertex(const glm::vec3& position, const glm::vec3& normal, const glm::vec4& color,
-    const glm::vec2& texCoord, std::vector<uint32_t>& indices, std::vector<NormalVertex>& vertices,
-    std::unordered_map<NormalVertex, uint32_t, NormalVertex::Hash>& vertexToIndexMap)
-{
-    NormalVertex newVertex{.mPosition = position, .mNormal = normal, .mColor = color, .mTexCoord = texCoord};
-
-    const auto verIdxPair = vertexToIndexMap.find(newVertex);
-    if (verIdxPair != vertexToIndexMap.end())
-    {
-        indices.push_back(verIdxPair->second);
-    }
-    else
-    {
-        uint32_t newIndex = vertices.size();
-        vertices.emplace_back(newVertex);
-        indices.emplace_back(newIndex);
-        vertexToIndexMap[newVertex] = newIndex;
-    }
-}
-
-void SceneInitializer::addTriangle(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3,
-    const glm::vec4& color, const glm::vec2& texCoordBase, const float scale, std::vector<uint32_t>& indices,
-    std::vector<NormalVertex>& vertices,
-    std::unordered_map<NormalVertex, uint32_t, NormalVertex::Hash>& vertexToIndexMap)
-{
-    //  p1 - - p3 - u
-    //  |     /
-    //  |   /
-    //  | /
-    //  p2
-    //  |
-    //  v
-
-    glm::vec3 v12 = p2 - p1;
-    glm::vec3 v13 = p3 - p1;
-    glm::vec3 normal = glm::normalize(glm::cross(v12, v13));
-
-    glm::vec2 tex1 = texCoordBase;
-    glm::vec2 tex2 = texCoordBase + glm::vec2{0, scale};
-    glm::vec2 tex3 = texCoordBase + glm::vec2{scale, 0};
-
-    addVertex(p1, normal, color, tex1, indices, vertices, vertexToIndexMap);
-    addVertex(p2, normal, color, tex2, indices, vertices, vertexToIndexMap);
-    addVertex(p3, normal, color, tex3, indices, vertices, vertexToIndexMap);
-}
-
-void SceneInitializer::addQuad(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3, const glm::vec3& p4,
-    const glm::vec4& color, const glm::vec2& texCoordBase, const float scale, std::vector<uint32_t>& indices,
-    std::vector<NormalVertex>& vertices,
-    std::unordered_map<NormalVertex, uint32_t, NormalVertex::Hash>& vertexToIndexMap)
-{
-    //  p1 - - p4 - u
-    //  |     / |
-    //  |   /   |
-    //  | /     |
-    //  p2 - - p3
-    //  |
-    //  v
-
-    glm::vec3 v12 = p2 - p1;
-    glm::vec3 v14 = p4 - p1;
-    glm::vec3 normal = glm::normalize(glm::cross(v12, v14));
-
-    glm::vec2 tex1 = texCoordBase;
-    glm::vec2 tex2 = texCoordBase + glm::vec2{0, scale};
-    glm::vec2 tex3 = texCoordBase + glm::vec2{scale, scale};
-    glm::vec2 tex4 = texCoordBase + glm::vec2{scale, 0};
-
-    addVertex(p1, normal, color, tex1, indices, vertices, vertexToIndexMap);
-    addVertex(p2, normal, color, tex2, indices, vertices, vertexToIndexMap);
-    addVertex(p4, normal, color, tex4, indices, vertices, vertexToIndexMap);
-
-    addVertex(p4, normal, color, tex4, indices, vertices, vertexToIndexMap);
-    addVertex(p2, normal, color, tex2, indices, vertices, vertexToIndexMap);
-    addVertex(p3, normal, color, tex3, indices, vertices, vertexToIndexMap);
-}
-
-Mesh* SceneInitializer::createCubeMeshToBank(MeshAssetsBank* bank, BaseVulkanRenderer* renderer)
-{
-    const auto id = bank->mMeshes.size();
-    bank->mMeshes[id] = std::make_unique<Mesh>();
-    Mesh* newMesh = bank->mMeshes.at(id).get();
-    newMesh->mName = "Cube";
-
-    newMesh->mSurfaces.resize(1);
-    Surface& cubeSurface = newMesh->mSurfaces[0];
-    cubeSurface.mMaterial = renderer->getMaterial()->makeInstance();
-    cubeSurface.mStartIndex = 0;
-
-    std::vector<uint32_t> indices;
-    std::vector<NormalVertex> vertices;
-    std::unordered_map<NormalVertex, uint32_t, NormalVertex::Hash> vertexToIndexMap;
-
-    constexpr glm::vec4 red{1.0f, 0.0, 0.0, 1.0};
-    constexpr glm::vec4 green{0.0f, 1.0, 0.0, 1.0};
-    constexpr glm::vec4 blue{0.0f, 0.0, 1.0, 1.0};
-    constexpr glm::vec4 yellow{1.0f, 1.0, 0.0, 1.0};
-    constexpr glm::vec4 fuchsia{1.0f, 0.0, 1.0, 1.0};
-    constexpr glm::vec4 aqua{0.0f, 1.0, 1.0, 1.0};
-    //  front   -z
-    addQuad({-0.5, 0.5, -0.5}, {-0.5, -0.5, -0.5}, {0.5, -0.5, -0.5}, {0.5, 0.5, -0.5}, aqua, {0, 0}, 1, indices,
-        vertices, vertexToIndexMap);
-    //  right   +x
-    addQuad({0.5, 0.5, -0.5}, {0.5, -0.5, -0.5}, {0.5, -0.5, 0.5}, {0.5, 0.5, 0.5}, red, {0, 0}, 1, indices, vertices,
-        vertexToIndexMap);
-    //  up      +y
-    addQuad({-0.5, 0.5, 0.5}, {-0.5, 0.5, -0.5}, {0.5, 0.5, -0.5}, {0.5, 0.5, 0.5}, green, {0, 0}, 1, indices, vertices,
-        vertexToIndexMap);
-    //  left    -x
-    addQuad({-0.5, 0.5, 0.5}, {-0.5, -0.5, 0.5}, {-0.5, -0.5, -0.5}, {-0.5, 0.5, -0.5}, yellow, {0, 0}, 1, indices,
-        vertices, vertexToIndexMap);
-    //  bottom  -y
-    addQuad({-0.5, -0.5, -0.5}, {-0.5, -0.5, 0.5}, {0.5, -0.5, 0.5}, {0.5, -0.5, -0.5}, fuchsia, {0, 0}, 1, indices,
-        vertices, vertexToIndexMap);
-    //  back    +z
-    addQuad({0.5, 0.5, 0.5}, {0.5, -0.5, 0.5}, {-0.5, -0.5, 0.5}, {-0.5, 0.5, 0.5}, blue, {0, 0}, 1, indices, vertices,
-        vertexToIndexMap);
-
-    cubeSurface.mIndexCount = indices.size();
-    renderer->createAndMapMeshBuffers(newMesh, vertices, indices);
-
-    return newMesh;
 }
 
 } // namespace Bunny::Render
