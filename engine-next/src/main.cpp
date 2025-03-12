@@ -111,6 +111,16 @@ int main(void)
         forwardPass.updateLightData(worldTranslator.getLightBuffer());
 
         renderer.beginRenderFrame();
+
+        renderer.beginRender();
+
+        for (const Bunny::Render::RenderBatch& batch : worldTranslator.getRenderBatches())
+        {
+            forwardPass.renderBatch(batch);
+        }
+
+        renderer.finishRender();
+
         renderer.beginImguiFrame();
 
         ImGui::Begin("Hello!");
@@ -124,14 +134,7 @@ int main(void)
 
         renderer.finishImguiFrame();
 
-        renderer.beginRender();
 
-        for (const Bunny::Render::RenderBatch& batch : worldTranslator.getRenderBatches())
-        {
-            forwardPass.renderBatch(batch);
-        }
-
-        renderer.finishRender();
         renderer.finishRenderFrame();
 //
     }

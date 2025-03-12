@@ -218,40 +218,37 @@ BunnyResult WorldLoader::loadTestWorld(World& outWorld)
     //  create scene structure
     //  create grid of cubes to fill the scene
 
-    constexpr int resolution = 2;
-    constexpr float gap = 2;
-    // glm::vec3 pos{-gap * resolution / 2, -gap * resolution / 2, -gap * resolution / 2};
-    // scene->mNodes.clear();
-    // size_t idx = 0;
-    // for (int z = 0; z < resolution; z++)
-    // {
-    //     for (int y = 0; y < resolution; y++)
-    //     {
-    //         for (int x = 0; x < resolution; x++)
-    //         {
-    //             Node& newNode = scene->mNodes[idx++];
-    //             newNode.mScene = scene;
-    //             newNode.mTransform = Base::Transform{
-    //                 pos + glm::vec3{x * gap, y * gap, z * gap},
-    //                   {0,       0,       0      },
-    //                   {1,       1,       1      }
-    //             };
-    //             newNode.mRenderComponent = std::make_unique<MeshRenderComponent>(cubeMesh, &newNode);
-    //         }
-    //     }
-    // }
-    std::vector<glm::vec3> positions{
-        {0, 0, 0},
-        {2, 0, 0},
-        {4, 0, 0},
-        {0, 2, 0},
-        {0, 4, 0},
-        {0, 6, 0},
-        {0, 0, 2},
-        {0, 0, 4},
-        {0, 0, 6},
-        {0, 0, 8}
-    };
+    constexpr int resolution = 16;
+    constexpr float gap = 4;
+    std::vector<glm::vec3> positions;
+    glm::vec3 startingPos {-gap * resolution / 2, -gap * resolution / 2, -gap * resolution / 2};
+    size_t idx = 0;
+    for (int z = 0; z < resolution; z++)
+    {
+        for (int y = 0; y < resolution; y++)
+        {
+            for (int x = 0; x < resolution; x++)
+            {
+                positions.emplace_back(glm::vec3{
+                    startingPos.x + x * gap,
+                    startingPos.y + y * gap,
+                    startingPos.z + z * gap
+                });
+            }
+        }
+    }
+    // std::vector<glm::vec3> positions{
+    //     {0, 0, 0},
+    //     {2, 0, 0},
+    //     {4, 0, 0},
+    //     {0, 2, 0},
+    //     {0, 4, 0},
+    //     {0, 6, 0},
+    //     {0, 0, 2},
+    //     {0, 0, 4},
+    //     {0, 0, 6},
+    //     {0, 0, 8}
+    // };
 
     //  nodes
     for (int idx = 0; idx < positions.size(); idx++)
