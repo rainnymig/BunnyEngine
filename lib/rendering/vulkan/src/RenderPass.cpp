@@ -4,38 +4,145 @@
 #include "MaterialBank.h"
 #include "VulkanGraphicsRenderer.h"
 #include "VulkanRenderResources.h"
+#include "ShaderData.h"
 
 #include <vulkan/vulkan.h>
 
 namespace Bunny::Render
 {
+ForwardPass::ForwardPass(const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer,
+    const MaterialBank* materialBank, const MeshBank<NormalVertex>* meshBank)
+    : mVulkanResources(vulkanResources), mRenderer(renderer), mMaterialBank(materialBank), mMeshBank(meshBank)
+{
+}
+
 void ForwardPass::initializePass()
 {
+    //  create descriptor for object buffer and scene buffer
+    DescriptorAllocator::PoolSize poolSizes[] = {
+        {.mType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, .mRatio = 2},
+        {.mType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .mRatio = 6}
+    };
+    mDescriptorAllocator.init(mVulkanResources->getDevice(), 2, poolSizes);
+
+    //  object data desc sets
+    DescriptorLayoutBuilder layoutBuilder;
+    {
+        VkDescriptorSetLayoutBinding uniformBufferLayout{};
+        uniformBufferLayout.binding = 0;
+        uniformBufferLayout.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;         //  storage buffer?
+        uniformBufferLayout.descriptorCount = 1;
+        uniformBufferLayout.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        uniformBufferLayout.pImmutableSamplers = nullptr;
+        layoutBuilder.addBinding(uniformBufferLayout);
+    }
+    mObjectDescLayout = layoutBuilder.build(mVulkanResources->getDevice());
+
+    for (size_t idx = 0; idx < mObjectDescSets.size(); idx++)
+    {
+        mDescriptorAllocator.allocate(mVulkanResources->getDevice(), &mObjectDescLayout, &mObjectDescSets[idx], 1, nullptr);
+    }
+
+    //  scene data desc sets
+    layoutBuilder.clear();
+    {
+        VkDescriptorSetLayoutBinding uniformBufferLayout{};
+        uniformBufferLayout.binding = 0;
+        uniformBufferLayout.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        uniformBufferLayout.descriptorCount = 1;
+        uniformBufferLayout.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        uniformBufferLayout.pImmutableSamplers = nullptr;
+        layoutBuilder.addBinding(uniformBufferLayout);
+        uniformBufferLayout.binding = 1;
+        uniformBufferLayout.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        layoutBuilder.addBinding(uniformBufferLayout);
+    }
+    mSceneDescLayout = layoutBuilder.build(mVulkanResources->getDevice());
+
+    for (size_t idx = 0; idx < mObjectDescSets.size(); idx++)
+    {
+        mDescriptorAllocator.allocate(mVulkanResources->getDevice(), &mSceneDescLayout, &mSceneDescSets[idx], 1, nullptr);
+    }
+}
+
+void ForwardPass::updateSceneData(const AllocatedBuffer& sceneBuffer)
+{
+    DescriptorWriter writer;
+    writer.writeBuffer(0, sceneBuffer.mBuffer, sizeof(SceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+    for (VkDescriptorSet set : mSceneDescSets)
+    {
+        writer.updateSet(mVulkanResources->getDevice(), set);
+    }
+}
+
+void ForwardPass::updateLightData(const AllocatedBuffer& lightBuffer)
+{
+    DescriptorWriter writer;
+    writer.writeBuffer(1, lightBuffer.mBuffer, sizeof(LightData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+    for (VkDescriptorSet set : mSceneDescSets)
+    {
+        writer.updateSet(mVulkanResources->getDevice(), set);
+    }
 }
 
 void ForwardPass::renderBatch(const RenderBatch& batch)
 {
+
+    //  bind vertex and index buffer
+    //  to be moved to other places!
+    mMeshBank->bindMeshBuffers(mRenderer->getCurrentCommandBuffer());
+
     const MaterialInstance& matInstance = mMaterialBank->getMaterialInstance(batch.mMaterialInstanceId);
 
     vkCmdBindPipeline(mRenderer->getCurrentCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, matInstance.mpBaseMaterial->mPipeline);
 
+    //  bind scene data
+    //  best to bind this before for all batches
+    //  but now we need the pipeline layout so have to do it here
+    //  optimize later
+    vkCmdBindDescriptorSets(mRenderer->getCurrentCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS,
+        matInstance.mpBaseMaterial->mPipelineLayout, 0, 1, &mSceneDescSets[mRenderer->getCurrentFrameIdx()], 0, nullptr);
+
+
+    //  bind object data
+    //  set 1 is object data
+    {
+        Render::DescriptorWriter writer;
+        writer.writeBuffer(0, batch.mObjectBuffer->mBuffer, batch.mInstanceCount * sizeof(ObjectData), 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);    //  storage buffer?
+        writer.updateSet(mVulkanResources->getDevice(), mObjectDescSets[mRenderer->getCurrentFrameIdx()]);
+
+        vkCmdBindDescriptorSets(mRenderer->getCurrentCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS,
+        matInstance.mpBaseMaterial->mPipelineLayout, 1, 1, &mObjectDescSets[mRenderer->getCurrentFrameIdx()], 0, nullptr);
+    }
 
     if (matInstance.mDescriptorSet != nullptr)
     {
         //  set 2 is material data, so start set is 2
         vkCmdBindDescriptorSets(mRenderer->getCurrentCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, 
-        matInstance.mpBaseMaterial->mPipelineLayout, 1, 1, &matInstance.mDescriptorSet, 0, nullptr);
+        matInstance.mpBaseMaterial->mPipelineLayout, 2, 1, &matInstance.mDescriptorSet, 0, nullptr);
     }
-
-    //  bind object data
-    //  set 1 is object data
 
     //  draw indexed indirect
     //  temp
     //  should draw all meshes (surfaces) that has the same pipeline (material) and desc set (material instance)
-    vkCmdDrawIndexedIndirect(mRenderer->getCurrentCommandBuffer(), nullptr, 0, 0, 1);
+    // vkCmdDrawIndexedIndirect(mRenderer->getCurrentCommandBuffer(), nullptr, 0, 0, 1);
+
+    //  temp
+    //  this can be converted draw indirect
+    const MeshLite& meshToRender = mMeshBank->getMesh(batch.mMeshId);
+    for (const SurfaceLite& surface : meshToRender.mSurfaces)
+    {
+        if (surface.mMaterialInstanceId == batch.mMaterialInstanceId)
+        {
+            vkCmdDrawIndexed(mRenderer->getCurrentCommandBuffer(), surface.mIndexCount, batch.mInstanceCount, surface.mFirstIndex, 0, 0);
+        }
+    }
 }
+
 void ForwardPass::cleanup()
 {
+    mDescriptorAllocator.destroyPools(mVulkanResources->getDevice());
+    vkDestroyDescriptorSetLayout(mVulkanResources->getDevice(), mObjectDescLayout, nullptr);
+    vkDestroyDescriptorSetLayout(mVulkanResources->getDevice(), mSceneDescLayout, nullptr);
 }
 } // namespace Bunny::Render

@@ -18,6 +18,12 @@
 
 namespace Bunny::Engine
 {
+WorldLoader::WorldLoader(const Render::VulkanRenderResources* vulkanResources, Render::MaterialBank* materialBank,
+    Render::MeshBank<Render::NormalVertex>* meshBank)
+    : mVulkanResources(vulkanResources), mMaterialBank(materialBank), mMeshBank(meshBank)
+{
+}
+
 BunnyResult WorldLoader::loadGltfToWorld(
     std::string_view filePath, World& outWorld)
 {
@@ -207,6 +213,7 @@ BunnyResult WorldLoader::loadTestWorld(World& outWorld)
 
     //  create meshes and save them in the mesh asset bank
     const Render::IdType meshId = createCubeMeshToBank(mMeshBank, mMaterialBank->getDefaultMaterialId());
+    mMeshBank->buildMeshBuffers();
 
     //  create scene structure
     //  create grid of cubes to fill the scene
@@ -274,6 +281,153 @@ BunnyResult WorldLoader::loadTestWorld(World& outWorld)
     }
 
     return BUNNY_HAPPY;
+}
+
+WorldRenderDataTranslator::WorldRenderDataTranslator(const Render::VulkanRenderResources* vulkanResources, 
+    const Render::MeshBank<Render::NormalVertex>* meshBank, const Render::MaterialBank* materialBank)
+    : mVulkanResources(vulkanResources), mMeshBank(meshBank), mMaterialBank(materialBank)
+{
+}
+
+BunnyResult WorldRenderDataTranslator::initialize()
+{
+    constexpr VkDeviceSize MAX_OBJECT_BUFFER_SIZE = sizeof(Render::ObjectData) * World::MAX_OBJECT_COUNT;
+
+    mObjectData.resize(World::MAX_OBJECT_COUNT);
+
+    mObjectDataBuffer = mVulkanResources->createBuffer(MAX_OBJECT_BUFFER_SIZE, 
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,         //  storage buffer?
+        VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+        VMA_MEMORY_USAGE_AUTO);
+
+    mSceneDataBuffer = mVulkanResources->createBuffer(sizeof(Render::SceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+        VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+        VMA_MEMORY_USAGE_AUTO);
+
+    mLightDataBuffer = mVulkanResources->createBuffer(sizeof(Render::LightData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+        VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+        VMA_MEMORY_USAGE_AUTO);
+
+    return BUNNY_HAPPY;
+}
+
+BunnyResult WorldRenderDataTranslator::translateSceneData(const World* world)
+{
+    const auto camComps = world->mEntityRegistry.view<CameraComponent>();
+    
+    if (camComps.empty())
+    {
+        return BUNNY_SAD;
+    }
+
+    for(auto [entity, cam]: camComps.each()) 
+    {
+        mSceneData.mProjMatrix = cam.mCamera.getProjMatrix();
+        mSceneData.mViewMatrix = cam.mCamera.getViewMatrix();
+        mSceneData.mViewProjMatrix = cam.mCamera.getViewProjMatrix();
+        mLightData.mCameraPos = cam.mCamera.getPosition();
+        break;
+    }
+
+    {
+        void* mappedSceneData = mSceneDataBuffer.mAllocationInfo.pMappedData;
+        memcpy(mappedSceneData, &mSceneData, sizeof(Render::SceneData));
+    }
+    
+    const auto lightComps = world->mEntityRegistry.view<DirectionLightComponent>();
+    if (lightComps.empty())
+    {
+        return BUNNY_SAD;
+    }
+
+    size_t idx = 0;
+    for (auto [entity, light] : lightComps.each())
+    {
+        mLightData.mLights[idx].mColor = light.mLight.mColor;
+        mLightData.mLights[idx].mDirection = light.mLight.mDirection;
+        idx++;
+    }
+    mLightData.mLightCount = idx;
+
+    {
+        void* mappedLightData = mLightDataBuffer.mAllocationInfo.pMappedData;
+        memcpy(mappedLightData, &mLightData, sizeof(Render::LightData));
+    }
+
+    return BUNNY_HAPPY;
+}
+
+BunnyResult WorldRenderDataTranslator::translateObjectData(const World* world)
+{
+    mRenderBatches.clear();
+
+    auto meshTransComp = world->mEntityRegistry.view<MeshComponent, TransformComponent>();
+
+    size_t idx = 0;
+    size_t countInBatch = 0;
+    Render::RenderBatch currentBatch {
+        .mMaterialInstanceId = 0,
+        .mMeshId = 0,
+        .mObjectBuffer = &mObjectDataBuffer,
+        .mInstanceCount = 0
+    };
+    for (auto [entity, mesh, transform] : meshTransComp.each())
+    {
+        if (mesh.mMeshId != currentBatch.mMeshId)
+        {
+            if (countInBatch > 0)
+            {
+                currentBatch.mInstanceCount = countInBatch;
+                mRenderBatches.push_back(currentBatch);
+
+                countInBatch = 0;
+            }
+            currentBatch.mMeshId = mesh.mMeshId;
+            currentBatch.mMaterialInstanceId = mMaterialBank->getDefaultMaterialId();
+        }
+
+        Render::ObjectData& obj = mObjectData[idx];
+        obj.model = getEntityGlobalTransform(world->mEntityRegistry, entity, transform.mTransform.mMatrix);
+        obj.invTransModel = glm::transpose(glm::inverse(obj.model));
+
+        countInBatch++;
+        idx++;
+    }
+    if (countInBatch > 0)
+    {
+        currentBatch.mInstanceCount = countInBatch;
+        mRenderBatches.push_back(currentBatch);
+    }
+
+    {
+        void* mappedObjectData = mObjectDataBuffer.mAllocationInfo.pMappedData;
+        memcpy(mappedObjectData, mObjectData.data(), idx*sizeof(Render::ObjectData));
+    }
+
+    return BUNNY_HAPPY;
+}
+
+void WorldRenderDataTranslator::cleanup()
+{
+    mVulkanResources->destroyBuffer(mObjectDataBuffer);
+    mVulkanResources->destroyBuffer(mSceneDataBuffer);
+    mVulkanResources->destroyBuffer(mLightDataBuffer);
+}
+
+glm::mat4x4 WorldRenderDataTranslator::getEntityGlobalTransform(
+    const entt::registry& registry, entt::entity entity, const glm::mat4x4& transformMat)
+{
+    if (const auto* hierComp = registry.try_get<HierarchyComponent>(entity); hierComp && hierComp->mParent != entt::null)
+    {
+        const auto parentNode = hierComp->mParent;
+        const TransformComponent& transComp = registry.get<TransformComponent>(parentNode);
+        glm::mat4x4 combinedTrans = transComp.mTransform.mMatrix * transformMat;
+        return getEntityGlobalTransform(registry, parentNode, combinedTrans);
+    }
+    else
+    {
+        return transformMat;
+    }
 }
 
 } // namespace Bunny::Engine

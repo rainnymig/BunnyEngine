@@ -81,6 +81,7 @@ BunnyResult VulkanRenderResources::initialize(Base::Window* window)
 
     VkPhysicalDeviceFeatures featureBasic{};
     featureBasic.samplerAnisotropy = true;
+    featureBasic.vertexPipelineStoresAndAtomics = true;
 
     vkb::PhysicalDeviceSelector selector{vkbInstance};
     auto deviceSelectResult = selector.set_minimum_version(1, 3)
@@ -455,7 +456,14 @@ BunnyResult VulkanRenderResources::endAndSubmitImmediateCommand(ImmediateQueueTy
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &cmdBuf;
 
-    VK_CHECK_OR_RETURN_BUNNY_SAD(vkQueueSubmit(mGraphicQueue.mQueue, 1, &submitInfo, mImmediateFence));
+    if (cmdType == ImmediateQueueType::Graphics)
+    {
+        VK_CHECK_OR_RETURN_BUNNY_SAD(vkQueueSubmit(mGraphicQueue.mQueue, 1, &submitInfo, mImmediateFence));
+    }
+    else if (cmdType == ImmediateQueueType::Transfer)
+    {
+        VK_CHECK_OR_RETURN_BUNNY_SAD(vkQueueSubmit(mTransferQueue.mQueue, 1, &submitInfo, mImmediateFence));
+    }
     VK_CHECK_OR_RETURN_BUNNY_SAD(vkWaitForFences(mDevice, 1, &mImmediateFence, true, 9999999999));
 
     return BUNNY_HAPPY;

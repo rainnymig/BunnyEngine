@@ -18,6 +18,7 @@ target_sources(VulkanRenderer
         headers/RenderJob.h
         headers/RenderPass.h
         headers/Shader.h
+        headers/ShaderData.h
         headers/SwapChainSupportDetails.h
         headers/TextureBank.h
         headers/Vertex.h

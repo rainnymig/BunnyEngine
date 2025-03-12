@@ -15,6 +15,8 @@ class Camera
     Camera(const glm::vec3& lookFrom = {0, 5, 10}, const glm::vec3& lookAt = {0, 0, 0}, float fov = glm::radians(45.0f),
         float aspectRatio = 16.0f / 9.0f);
 
+    void setAspectRatio(float ratio);
+
     glm::mat4 getViewMatrix() const { return mViewMatrix; }
     glm::mat4 getProjMatrix() const { return mProjMatrix; }
     glm::mat4 getViewProjMatrix() const { return mViewProjMatrix; }
@@ -24,10 +26,16 @@ class Camera
     static constexpr float FarPlaneDistance = 100.0f;
 
   private:
+
+    void updateMatrices();
+
     glm::mat4 mViewMatrix;
     glm::mat4 mProjMatrix;
     glm::mat4 mViewProjMatrix;
     glm::vec3 mPosition;
+    glm::vec3 mLookAt;
+    float mFov;
+    float mAspectRatio;
 };
 
 } // namespace Bunny::Render

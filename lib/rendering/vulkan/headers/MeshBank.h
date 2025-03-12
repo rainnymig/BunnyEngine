@@ -44,6 +44,7 @@ class MeshBank
     //  the indices should be unprocessed, i.e. as they are starting from 0
     void addMesh(std::span<VertexType> vertices, std::span<IndexType> indices, const MeshLite& mesh);
     void buildMeshBuffers();
+    void bindMeshBuffers(VkCommandBuffer cmdBuf) const;
     const MeshLite& getMesh(IdType id) const { return mMeshes.at(id); }
     void cleanup();
 
@@ -95,11 +96,26 @@ inline void MeshBank<VertexType, IndexType>::buildMeshBuffers()
         VMA_ALLOCATION_CREATE_MAPPED_BIT, VMA_MEMORY_USAGE_GPU_ONLY, mIndexBuffer);
 }
 
+template<typename VertexType, typename IndexType>
+inline void MeshBank<VertexType, IndexType>::bindMeshBuffers(VkCommandBuffer cmdBuf) const
+{
+    VkBuffer vertexBuffers[] = { mVertexBuffer.mBuffer };
+    VkDeviceSize offsets[] = { 0 };
+    vkCmdBindVertexBuffers(cmdBuf, 0, 1, vertexBuffers, offsets);
+    vkCmdBindIndexBuffer(cmdBuf, mIndexBuffer.mBuffer, 0, VK_INDEX_TYPE_UINT32);
+}
+
 template <typename VertexType, typename IndexType>
 inline void MeshBank<VertexType, IndexType>::cleanup()
 {
-    mVulkanResources->destroyBuffer(mVertexBuffer);
-    mVulkanResources->destroyBuffer(mIndexBuffer);
+    if (mVertexBuffer.mBuffer != nullptr)
+    {
+        mVulkanResources->destroyBuffer(mVertexBuffer);
+    }
+    if (mIndexBuffer.mBuffer != nullptr)
+    {
+        mVulkanResources->destroyBuffer(mIndexBuffer);
+    }
     mVertexBufferData.clear();
     mIndexBufferData.clear();
 }

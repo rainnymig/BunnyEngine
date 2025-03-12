@@ -30,6 +30,8 @@ class Material
   public:
     IdType getId() const {return mId;}
     const MaterialPipeline& getMaterialPipeline() const {return mPipeline;}
+    
+    virtual void cleanup() = 0;
   protected:
     IdType mId;
     MaterialPipeline mPipeline;
@@ -62,13 +64,14 @@ class BasicBlinnPhongMaterial : public Material
     };
 
     BasicBlinnPhongMaterial(Base::BunnyGuard<Builder> guard, VkDevice device);
+    virtual void cleanup() override;
     void cleanupPipeline();
 
     constexpr std::string_view getName() const { return "Basic Blinn Phong"; }
     MaterialInstance makeInstance();
 
   private:
-    static constexpr std::string_view VERTEX_SHADER_PATH{"./basic_updated_vert.spv"};
+    static constexpr std::string_view VERTEX_SHADER_PATH{"./basic_instanced_vert.spv"};
     static constexpr std::string_view FRAGMENT_SHADER_PATH{"./basic_updated_frag.spv"};
 
     // void buildDescriptorSetLayout(VkDevice device);

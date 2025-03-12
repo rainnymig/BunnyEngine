@@ -17,7 +17,7 @@ struct AllocatedImage
 
 struct AllocatedBuffer
 {
-    VkBuffer mBuffer;
+    VkBuffer mBuffer = nullptr;
     VmaAllocation mAllocation;
     VmaAllocationInfo mAllocationInfo;
 };

@@ -5,8 +5,8 @@
 #include "Vertex.h"
 #include "BaseVulkanRenderer.h"
 #include "Camera.h"
-#include "Light.h"
 #include "Descriptor.h"
+#include "ShaderData.h"
 
 #include <vulkan/vulkan.h>
 #include <string_view>
@@ -67,27 +67,6 @@ class SceneInitializer
         std::string_view filePath, BaseVulkanRenderer* renderer, Scene* scene, MeshAssetsBank* meshAssetsBank);
 
     static bool makeExampleScene(BaseVulkanRenderer* renderer, Scene* scene, MeshAssetsBank* meshAssetBank);
-};
-
-struct SceneData
-{
-    glm::mat4x4 mViewMatrix;
-    glm::mat4x4 mProjMatrix;
-    glm::mat4x4 mViewProjMatrix;
-};
-
-struct LightData
-{
-    static constexpr size_t MAX_LIGHT_COUNT = 8;
-    glm::vec3 mCameraPos;
-    uint32_t mLightCount;
-    DirectionalLight mLights[MAX_LIGHT_COUNT];
-};
-
-struct ObjectData
-{
-    glm::mat4 model;
-    glm::mat4 invTransModel;
 };
 
 class Scene : public IRendenrable
