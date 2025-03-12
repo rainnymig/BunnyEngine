@@ -79,18 +79,6 @@ void VulkanGraphicsRenderer::beginRenderFrame()
 
     VK_HARD_CHECK(vkBeginCommandBuffer(cmdBuf, &beginInfo))
 
-    mRenderResources->transitionImageLayout(cmdBuf, mSwapChainImages[mSwapchainImageIndex], mSwapChainImageFormat,
-        VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-
-    VkClearValue colorClearValue = {
-        .color = {0.0f, 0.0f, 0.0f, 1.0f}
-    };
-    VkRenderingAttachmentInfo colorAttachment =
-        makeColorAttachmentInfo(mSwapChainImageViews[mSwapchainImageIndex], &colorClearValue);
-    VkRenderingAttachmentInfo depthAttachment = makeDepthAttachmentInfo(mDepthImage.mImageView);
-
-    VkRenderingInfo renderInfo = makeRenderingInfo(mSwapChainExtent, &colorAttachment, &depthAttachment);
-
     //  update dynamic states (viewport, scissors)
     VkViewport viewport{};
     viewport.x = 0.0f;
@@ -106,10 +94,20 @@ void VulkanGraphicsRenderer::beginRenderFrame()
     scissor.extent = mSwapChainExtent;
     vkCmdSetScissor(cmdBuf, 0, 1, &scissor);
 
+    mRenderResources->transitionImageLayout(cmdBuf, mSwapChainImages[mSwapchainImageIndex], mSwapChainImageFormat,
+        VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+    VkClearValue colorClearValue = {
+        .color = {0.0f, 0.0f, 0.0f, 1.0f}
+    };
+    VkRenderingAttachmentInfo colorAttachment =
+        makeColorAttachmentInfo(mSwapChainImageViews[mSwapchainImageIndex], &colorClearValue);
+    VkRenderingInfo renderInfo = makeRenderingInfo(mSwapChainExtent, &colorAttachment, nullptr);
+
     vkCmdBeginRendering(cmdBuf, &renderInfo);
     vkCmdEndRendering(cmdBuf);
 
-    beginImguiFrame();
+    // beginImguiFrame();
 }
 
 void VulkanGraphicsRenderer::finishRenderFrame()
@@ -118,7 +116,7 @@ void VulkanGraphicsRenderer::finishRenderFrame()
     FrameRenderObject& currentFrame = mFrameResources[mCurrentFrameId];
     VkCommandBuffer cmdBuf = currentFrame.mCommandBuffer;
 
-    finishImguiFrame(cmdBuf, mSwapChainImageViews[mSwapchainImageIndex]);
+    // finishImguiFrame(cmdBuf, mSwapChainImageViews[mSwapchainImageIndex]);
 
     mRenderResources->transitionImageLayout(cmdBuf, mSwapChainImages[mSwapchainImageIndex], mSwapChainImageFormat,
         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
@@ -168,6 +166,19 @@ void VulkanGraphicsRenderer::finishRenderFrame()
     }
 
     mCurrentFrameId = (mCurrentFrameId + 1) % MAX_FRAMES_IN_FLIGHT;
+}
+
+void VulkanGraphicsRenderer::beginRender()
+{
+    VkRenderingAttachmentInfo colorAttachment = makeColorAttachmentInfo(mSwapChainImageViews[mSwapchainImageIndex], nullptr);
+    VkRenderingAttachmentInfo depthAttachment = makeDepthAttachmentInfo(mDepthImage.mImageView);
+    VkRenderingInfo renderInfo = makeRenderingInfo(mSwapChainExtent, &colorAttachment, nullptr);
+    vkCmdBeginRendering(getCurrentCommandBuffer(), &renderInfo);
+}
+
+void VulkanGraphicsRenderer::finishRender()
+{
+    vkCmdEndRendering(getCurrentCommandBuffer());
 }
 
 void VulkanGraphicsRenderer::cleanup()
@@ -380,6 +391,12 @@ void VulkanGraphicsRenderer::beginImguiFrame()
     ImGui_ImplGlfw_NewFrame();
 
     ImGui::NewFrame();
+}
+
+void VulkanGraphicsRenderer::finishImguiFrame()
+{
+    VkCommandBuffer cmdBuf = getCurrentCommandBuffer();
+    finishImguiFrame(cmdBuf, mSwapChainImageViews[mSwapchainImageIndex]);
 }
 
 void VulkanGraphicsRenderer::finishImguiFrame(VkCommandBuffer commandBuffer, VkImageView targetImageView)

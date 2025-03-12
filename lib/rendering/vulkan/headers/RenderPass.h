@@ -3,8 +3,12 @@
 #include "RenderJob.h"
 #include "Vertex.h"
 #include "MeshBank.h"
+#include "Descriptor.h"
+#include "Fundamentals.h"
 
-#include <vector>
+#include <vulkan/vulkan.h>
+
+#include <array>
 
 namespace Bunny::Render
 {
@@ -16,15 +20,29 @@ class MaterialBank;
 class ForwardPass
 {
   public:
+    ForwardPass(const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer,
+      const MaterialBank* materialBank, const MeshBank<NormalVertex>* meshBank);
+
     void initializePass();
+    void updateSceneData(const AllocatedBuffer& sceneBuffer);
+    void updateLightData(const AllocatedBuffer& lightBuffer);
     void renderBatch(const RenderBatch& batch);
     void cleanup();
 
+    VkDescriptorSetLayout getSceneDescLayout() const {return mSceneDescLayout;}
+    VkDescriptorSetLayout getObjectDescLayout() const {return mObjectDescLayout;}
+
   private:
-    VulkanRenderResources* mVulkanResources;
-    VulkanGraphicsRenderer* mRenderer;
+    const VulkanRenderResources* mVulkanResources;
+    const VulkanGraphicsRenderer* mRenderer;
     const MaterialBank* mMaterialBank;
     const MeshBank<NormalVertex>* mMeshBank;
+
+    VkDescriptorSetLayout mSceneDescLayout;
+    VkDescriptorSetLayout mObjectDescLayout;
+    DescriptorAllocator mDescriptorAllocator;
+    std::array<VkDescriptorSet, MAX_FRAMES_IN_FLIGHT> mSceneDescSets;
+    std::array<VkDescriptorSet, MAX_FRAMES_IN_FLIGHT> mObjectDescSets;
 };
 
 } // namespace Bunny::Render

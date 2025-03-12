@@ -6,11 +6,18 @@
 #include "Error.h"
 #include "VulkanRenderResources.h"
 #include "VulkanGraphicsRenderer.h"
+#include "World.h"
+#include "MeshBank.h"
+#include "Material.h"
+#include "MaterialBank.h"
+#include "Vertex.h"
+#include "RenderPass.h"
 
 #include <imgui.h>
 #include <fmt/core.h>
 #include <inicpp.h>
 #include <entt/entt.hpp>
+#include <memory>
 
 using namespace Bunny::Engine;
 
@@ -51,6 +58,30 @@ int main(void)
 
     Bunny::Base::BasicTimer timer;
 
+    Bunny::Render::MeshBank<Bunny::Render::NormalVertex> meshBank(&renderResources);
+    Bunny::Render::MaterialBank materialBank;
+
+    Bunny::Render::ForwardPass forwardPass(&renderResources, &renderer, &materialBank, &meshBank);
+    forwardPass.initializePass();
+
+    Bunny::Render::BasicBlinnPhongMaterial::Builder builder;
+    builder.setColorAttachmentFormat(renderer.getSwapChainImageFormat());
+    builder.setDepthFormat(renderer.getDepthImageFormat());
+    builder.setSceneDescriptorSetLayout(forwardPass.getSceneDescLayout());
+    builder.setObjectDescriptorSetLayout(forwardPass.getObjectDescLayout());
+    std::unique_ptr<Bunny::Render::BasicBlinnPhongMaterial> blinnPhongMaterial = builder.buildMaterial(renderResources.getDevice());
+    Bunny::Render::MaterialInstance blinnPhongInstance = blinnPhongMaterial->makeInstance();
+
+    materialBank.addMaterial(std::move(blinnPhongMaterial));
+    materialBank.addMaterialInstance(blinnPhongInstance);
+
+    World bunnyWorld;
+    WorldLoader worldLoader(&renderResources, &materialBank, &meshBank);
+    worldLoader.loadTestWorld(bunnyWorld);
+
+    WorldRenderDataTranslator worldTranslator(&renderResources, &meshBank, &materialBank);
+    worldTranslator.initialize();
+
     float accumulatedTime = 0;
     constexpr float interval = 0.5f;
     uint32_t accumulatedFrames = 0;
@@ -73,7 +104,14 @@ int main(void)
             break;
         }
 
+        worldTranslator.translateSceneData(&bunnyWorld);
+        worldTranslator.translateObjectData(&bunnyWorld);
+
+        forwardPass.updateSceneData(worldTranslator.getSceneBuffer());
+        forwardPass.updateLightData(worldTranslator.getLightBuffer());
+
         renderer.beginRenderFrame();
+        renderer.beginImguiFrame();
 
         ImGui::Begin("Hello!");
         ImGui::Text("Hi there!");
@@ -83,10 +121,26 @@ int main(void)
         ImGui::Begin("Game Stats");
         ImGui::Text(fmt::format("FPS: {}", fps).c_str());
         ImGui::End();
-    
-        renderer.finishRenderFrame();
 
+        renderer.finishImguiFrame();
+
+        renderer.beginRender();
+
+        for (const Bunny::Render::RenderBatch& batch : worldTranslator.getRenderBatches())
+        {
+            forwardPass.renderBatch(batch);
+        }
+
+        renderer.finishRender();
+        renderer.finishRenderFrame();
+//
     }
+
+    worldTranslator.cleanup();
+    forwardPass.cleanup();
+
+    meshBank.cleanup();
+    materialBank.cleanup();
 
     renderer.cleanup();
     renderResources.cleanup();

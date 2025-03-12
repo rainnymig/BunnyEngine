@@ -15,6 +15,11 @@ BasicBlinnPhongMaterial::BasicBlinnPhongMaterial(Base::BunnyGuard<Builder> guard
     mId = std::hash<std::string_view>{}(getName());
 }
 
+void BasicBlinnPhongMaterial::cleanup()
+{
+    cleanupPipeline();
+}
+
 void BasicBlinnPhongMaterial::cleanupPipeline()
 {
     if (mDevice == nullptr)
@@ -32,10 +37,15 @@ MaterialInstance BasicBlinnPhongMaterial::makeInstance()
 {
     //  Note: maybe create instance cache instead of recreating every time
 
+    static int instanceIdCounter = 1;
+
     MaterialInstance newInstance;
 
     newInstance.mpBaseMaterial = &mPipeline;
     // mDescriptorAllocator.allocate(mDevice, &mDescriptorSetLayout, &newInstance.mDescriptorSet);
+
+    std::string instanceName = fmt::format("{}_inst_{}", getName(), instanceIdCounter++);
+    newInstance.mId = std::hash<std::string>{}(instanceName);
 
     return newInstance;
 }

@@ -25,11 +25,19 @@ namespace Bunny::Render
 
         void beginRenderFrame();
         void finishRenderFrame();
+        void beginRender();
+        void finishRender();
+        void beginImguiFrame();
+        void finishImguiFrame();
+        void finishImguiFrame(VkCommandBuffer commandBuffer, VkImageView targetImageView);
 
         void cleanup();
         ~VulkanGraphicsRenderer();
 
         VkCommandBuffer getCurrentCommandBuffer() const {return mFrameResources.at(mCurrentFrameId).mCommandBuffer;}
+        uint32_t getCurrentFrameIdx() const {return mCurrentFrameId;}
+        VkFormat getSwapChainImageFormat() const {return mSwapChainImageFormat;}
+        VkFormat getDepthImageFormat() const {return mDepthImage.mFormat;}
 
     private:
 
@@ -53,9 +61,6 @@ namespace Bunny::Render
     
         BunnyResult createDepthResource();
         void destroyDepthResource();
-    
-        void beginImguiFrame();
-        void finishImguiFrame(VkCommandBuffer commandBuffer, VkImageView targetImageView);
 
         SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface) const;
         VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) const;
