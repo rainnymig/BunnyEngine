@@ -247,53 +247,6 @@ void addQuad(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3, cons
     addVertex(p3, normal, color, tex3, indices, vertices, vertexToIndexMap);
 }
 
-Mesh* createCubeMeshToBank(MeshAssetsBank* bank, BaseVulkanRenderer* renderer)
-{
-    const auto id = bank->mMeshes.size();
-    bank->mMeshes[id] = std::make_unique<Mesh>();
-    Mesh* newMesh = bank->mMeshes.at(id).get();
-    newMesh->mName = "Cube";
-
-    newMesh->mSurfaces.resize(1);
-    Surface& cubeSurface = newMesh->mSurfaces[0];
-    cubeSurface.mMaterial = renderer->getMaterial()->makeInstance();
-    cubeSurface.mStartIndex = 0;
-
-    std::vector<uint32_t> indices;
-    std::vector<NormalVertex> vertices;
-    std::unordered_map<NormalVertex, uint32_t, NormalVertex::Hash> vertexToIndexMap;
-
-    constexpr glm::vec4 red{1.0f, 0.0, 0.0, 1.0};
-    constexpr glm::vec4 green{0.0f, 1.0, 0.0, 1.0};
-    constexpr glm::vec4 blue{0.0f, 0.0, 1.0, 1.0};
-    constexpr glm::vec4 yellow{1.0f, 1.0, 0.0, 1.0};
-    constexpr glm::vec4 fuchsia{1.0f, 0.0, 1.0, 1.0};
-    constexpr glm::vec4 aqua{0.0f, 1.0, 1.0, 1.0};
-    //  front   -z
-    addQuad({-0.5, 0.5, -0.5}, {-0.5, -0.5, -0.5}, {0.5, -0.5, -0.5}, {0.5, 0.5, -0.5}, aqua, {0, 0}, 1, indices,
-        vertices, vertexToIndexMap);
-    //  right   +x
-    addQuad({0.5, 0.5, -0.5}, {0.5, -0.5, -0.5}, {0.5, -0.5, 0.5}, {0.5, 0.5, 0.5}, red, {0, 0}, 1, indices, vertices,
-        vertexToIndexMap);
-    //  up      +y
-    addQuad({-0.5, 0.5, 0.5}, {-0.5, 0.5, -0.5}, {0.5, 0.5, -0.5}, {0.5, 0.5, 0.5}, green, {0, 0}, 1, indices, vertices,
-        vertexToIndexMap);
-    //  left    -x
-    addQuad({-0.5, 0.5, 0.5}, {-0.5, -0.5, 0.5}, {-0.5, -0.5, -0.5}, {-0.5, 0.5, -0.5}, yellow, {0, 0}, 1, indices,
-        vertices, vertexToIndexMap);
-    //  bottom  -y
-    addQuad({-0.5, -0.5, -0.5}, {-0.5, -0.5, 0.5}, {0.5, -0.5, 0.5}, {0.5, -0.5, -0.5}, fuchsia, {0, 0}, 1, indices,
-        vertices, vertexToIndexMap);
-    //  back    +z
-    addQuad({0.5, 0.5, 0.5}, {0.5, -0.5, 0.5}, {-0.5, -0.5, 0.5}, {-0.5, 0.5, 0.5}, blue, {0, 0}, 1, indices, vertices,
-        vertexToIndexMap);
-
-    cubeSurface.mIndexCount = indices.size();
-    renderer->createAndMapMeshBuffers(newMesh, vertices, indices);
-
-    return newMesh;
-}
-
 const IdType createCubeMeshToBank(MeshBank<NormalVertex>* meshBank, IdType materialId)
 {
     MeshLite newMesh;
