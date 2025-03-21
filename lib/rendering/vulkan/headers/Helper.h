@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Vertex.h"
-#include "Mesh.h"
 #include "MeshBank.h"
 
 #include <vulkan/vulkan.h>
@@ -45,7 +44,6 @@ void addQuad(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3, cons
     const glm::vec4& color, const glm::vec2& texCoordBase, const float scale, std::vector<uint32_t>& indices,
     std::vector<NormalVertex>& vertices,
     std::unordered_map<NormalVertex, uint32_t, NormalVertex::Hash>& vertexToIndexMap);
-Mesh* createCubeMeshToBank(MeshAssetsBank* bank, BaseVulkanRenderer* renderer);
 const IdType createCubeMeshToBank(MeshBank<NormalVertex>* meshBank, IdType materialId);
 
 } // namespace Bunny::Render
