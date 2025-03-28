@@ -82,6 +82,9 @@ int main(void)
     WorldRenderDataTranslator worldTranslator(&renderResources, &meshBank, &materialBank);
     worldTranslator.initialize();
 
+    forwardPass.updateSceneData(worldTranslator.getSceneBuffer());
+    forwardPass.updateLightData(worldTranslator.getLightBuffer());
+
     float accumulatedTime = 0;
     constexpr float interval = 0.5f;
     uint32_t accumulatedFrames = 0;
@@ -107,8 +110,8 @@ int main(void)
         worldTranslator.translateSceneData(&bunnyWorld);
         worldTranslator.translateObjectData(&bunnyWorld);
 
-        forwardPass.updateSceneData(worldTranslator.getSceneBuffer());
-        forwardPass.updateLightData(worldTranslator.getLightBuffer());
+        // forwardPass.updateSceneData(worldTranslator.getSceneBuffer());
+        // forwardPass.updateLightData(worldTranslator.getLightBuffer());
 
         renderer.beginRenderFrame();
 
