@@ -31,6 +31,7 @@ namespace Bunny::Render
         void finishImguiFrame();
         void finishImguiFrame(VkCommandBuffer commandBuffer, VkImageView targetImageView);
 
+        void waitForRenderFinish();
         void cleanup();
         ~VulkanGraphicsRenderer();
 

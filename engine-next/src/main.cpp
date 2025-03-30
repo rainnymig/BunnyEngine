@@ -41,7 +41,7 @@ int main(void)
     inputManager.setupWithWindow(window);
 
     Bunny::Render::VulkanRenderResources renderResources;
-    
+
     if (!BUNNY_SUCCESS(renderResources.initialize(&window)))
     {
         PRINT_AND_ABORT("Fail to initialize render resources.")
@@ -69,7 +69,8 @@ int main(void)
     builder.setDepthFormat(renderer.getDepthImageFormat());
     builder.setSceneDescriptorSetLayout(forwardPass.getSceneDescLayout());
     builder.setObjectDescriptorSetLayout(forwardPass.getObjectDescLayout());
-    std::unique_ptr<Bunny::Render::BasicBlinnPhongMaterial> blinnPhongMaterial = builder.buildMaterial(renderResources.getDevice());
+    std::unique_ptr<Bunny::Render::BasicBlinnPhongMaterial> blinnPhongMaterial =
+        builder.buildMaterial(renderResources.getDevice());
     Bunny::Render::MaterialInstance blinnPhongInstance = blinnPhongMaterial->makeInstance();
 
     materialBank.addMaterial(std::move(blinnPhongMaterial));
@@ -89,7 +90,7 @@ int main(void)
     constexpr float interval = 0.5f;
     uint32_t accumulatedFrames = 0;
     float fps = 0;
-    while(true)
+    while (true)
     {
         timer.tick();
 
@@ -97,12 +98,12 @@ int main(void)
         accumulatedFrames++;
         if (accumulatedTime > interval)
         {
-            fps = accumulatedFrames/accumulatedTime;
+            fps = accumulatedFrames / accumulatedTime;
             accumulatedFrames = 0;
             accumulatedTime = 0;
         }
 
-        if(window.processWindowEvent())
+        if (window.processWindowEvent())
         {
             break;
         }
@@ -130,17 +131,17 @@ int main(void)
         ImGui::Text("Hi there!");
         ImGui::End();
 
-
         ImGui::Begin("Game Stats");
         ImGui::Text(fmt::format("FPS: {}", fps).c_str());
         ImGui::End();
 
         renderer.finishImguiFrame();
 
-
         renderer.finishRenderFrame();
-//
+        //
     }
+
+    renderer.waitForRenderFinish();
 
     worldTranslator.cleanup();
     forwardPass.cleanup();
