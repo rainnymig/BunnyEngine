@@ -170,7 +170,8 @@ void VulkanGraphicsRenderer::finishRenderFrame()
 
 void VulkanGraphicsRenderer::beginRender()
 {
-    VkRenderingAttachmentInfo colorAttachment = makeColorAttachmentInfo(mSwapChainImageViews[mSwapchainImageIndex], nullptr);
+    VkRenderingAttachmentInfo colorAttachment =
+        makeColorAttachmentInfo(mSwapChainImageViews[mSwapchainImageIndex], nullptr);
     VkRenderingAttachmentInfo depthAttachment = makeDepthAttachmentInfo(mDepthImage.mImageView);
     VkRenderingInfo renderInfo = makeRenderingInfo(mSwapChainExtent, &colorAttachment, nullptr);
     vkCmdBeginRendering(getCurrentCommandBuffer(), &renderInfo);
@@ -181,14 +182,18 @@ void VulkanGraphicsRenderer::finishRender()
     vkCmdEndRendering(getCurrentCommandBuffer());
 }
 
-void VulkanGraphicsRenderer::cleanup()
+void VulkanGraphicsRenderer::waitForRenderFinish()
 {
     //  wait for rendering operations to finish before cleaning up
     if (mRenderResources->getDevice() != VK_NULL_HANDLE)
     {
         vkDeviceWaitIdle(mRenderResources->getDevice());
     }
+}
 
+void VulkanGraphicsRenderer::cleanup()
+{
+    waitForRenderFinish();
     mDeletionStack.Flush();
 }
 

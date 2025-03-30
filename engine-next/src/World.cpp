@@ -20,12 +20,13 @@ namespace Bunny::Engine
 {
 WorldLoader::WorldLoader(const Render::VulkanRenderResources* vulkanResources, Render::MaterialBank* materialBank,
     Render::MeshBank<Render::NormalVertex>* meshBank)
-    : mVulkanResources(vulkanResources), mMaterialBank(materialBank), mMeshBank(meshBank)
+    : mVulkanResources(vulkanResources),
+      mMaterialBank(materialBank),
+      mMeshBank(meshBank)
 {
 }
 
-BunnyResult WorldLoader::loadGltfToWorld(
-    std::string_view filePath, World& outWorld)
+BunnyResult WorldLoader::loadGltfToWorld(std::string_view filePath, World& outWorld)
 {
     std::filesystem::path path(filePath);
     constexpr auto gltfOptions = fastgltf::Options::DontRequireValidAssetMember | fastgltf::Options::AllowDouble |
@@ -60,8 +61,8 @@ BunnyResult WorldLoader::loadGltfToWorld(
         indices.clear();
         vertices.clear();
 
-        glm::vec3 maxCorner {-100000, -100000, -100000};
-        glm::vec3 minCorner {100000, 100000, 100000};
+        glm::vec3 maxCorner{-100000, -100000, -100000};
+        glm::vec3 minCorner{100000, 100000, 100000};
 
         //  create mesh surfaces
         for (auto&& primitive : mesh.primitives)
@@ -140,7 +141,7 @@ BunnyResult WorldLoader::loadGltfToWorld(
 
         //  calculate bounding sphere of mesh
         newMesh.mBounds.mCenter = (minCorner + maxCorner) / 2.0f;
-        newMesh.mBounds.mRadius = glm::length(maxCorner-minCorner) / 2.0f;
+        newMesh.mBounds.mRadius = glm::length(maxCorner - minCorner) / 2.0f;
 
         //  create mesh buffers
         mMeshBank->addMesh(vertices, indices, newMesh);
@@ -182,7 +183,7 @@ BunnyResult WorldLoader::loadGltfToWorld(
         //  load node mesh if present
         if (node.meshIndex.has_value())
         {
-            std::string meshName {gltf.meshes.at(node.meshIndex.value()).name.c_str()};
+            std::string meshName{gltf.meshes.at(node.meshIndex.value()).name.c_str()};
             size_t meshId = std::hash<std::string>{}(meshName);
             outWorld.mEntityRegistry.emplace<MeshComponent>(nodeEntity, meshId);
         }
@@ -193,10 +194,11 @@ BunnyResult WorldLoader::loadGltfToWorld(
     {
         fastgltf::Node& node = gltf.nodes[i];
         const auto nodeEntity = nodeIdxToEntity.at(i);
-        
+
         for (auto c : node.children)
         {
-            HierarchyComponent& childHierarchyComp = outWorld.mEntityRegistry.emplace_or_replace<HierarchyComponent>(nodeIdxToEntity.at(c));
+            HierarchyComponent& childHierarchyComp =
+                outWorld.mEntityRegistry.emplace_or_replace<HierarchyComponent>(nodeIdxToEntity.at(c));
             childHierarchyComp.mParent = nodeEntity;
         }
     }
@@ -218,10 +220,10 @@ BunnyResult WorldLoader::loadTestWorld(World& outWorld)
     //  create scene structure
     //  create grid of cubes to fill the scene
 
-    constexpr int resolution = 16;
+    constexpr int resolution = 32;
     constexpr float gap = 4;
     std::vector<glm::vec3> positions;
-    glm::vec3 startingPos {-gap * resolution / 2, -gap * resolution / 2, -gap * resolution / 2};
+    glm::vec3 startingPos{-gap * resolution / 2, -gap * resolution / 2, -gap * resolution / 2};
     size_t idx = 0;
     for (int z = 0; z < resolution; z++)
     {
@@ -229,11 +231,8 @@ BunnyResult WorldLoader::loadTestWorld(World& outWorld)
         {
             for (int x = 0; x < resolution; x++)
             {
-                positions.emplace_back(glm::vec3{
-                    startingPos.x + x * gap,
-                    startingPos.y + y * gap,
-                    startingPos.z + z * gap
-                });
+                positions.emplace_back(
+                    glm::vec3{startingPos.x + x * gap, startingPos.y + y * gap, startingPos.z + z * gap});
             }
         }
     }
@@ -253,7 +252,7 @@ BunnyResult WorldLoader::loadTestWorld(World& outWorld)
     //  nodes
     for (int idx = 0; idx < positions.size(); idx++)
     {
-        Base::Transform nodeTransform (positions[idx], {0, 0, 0}, {1, 1, 1});
+        Base::Transform nodeTransform(positions[idx], {0, 0, 0}, {1, 1, 1});
         const auto nodeEntity = outWorld.mEntityRegistry.create();
         outWorld.mEntityRegistry.emplace<TransformComponent>(nodeEntity, nodeTransform);
         outWorld.mEntityRegistry.emplace<MeshComponent>(nodeEntity, meshId);
@@ -271,7 +270,7 @@ BunnyResult WorldLoader::loadTestWorld(World& outWorld)
         const auto lightEntity = outWorld.mEntityRegistry.create();
         Render::DirectionalLight dirLight{
             .mDirection = glm::normalize(glm::vec3{-1, -1, 1}
-            ),
+              ),
             .mColor = {1,  1,  1},
         };
         outWorld.mEntityRegistry.emplace<DirectionLightComponent>(lightEntity, dirLight);
@@ -280,9 +279,11 @@ BunnyResult WorldLoader::loadTestWorld(World& outWorld)
     return BUNNY_HAPPY;
 }
 
-WorldRenderDataTranslator::WorldRenderDataTranslator(const Render::VulkanRenderResources* vulkanResources, 
+WorldRenderDataTranslator::WorldRenderDataTranslator(const Render::VulkanRenderResources* vulkanResources,
     const Render::MeshBank<Render::NormalVertex>* meshBank, const Render::MaterialBank* materialBank)
-    : mVulkanResources(vulkanResources), mMeshBank(meshBank), mMaterialBank(materialBank)
+    : mVulkanResources(vulkanResources),
+      mMeshBank(meshBank),
+      mMaterialBank(materialBank)
 {
 }
 
@@ -292,9 +293,10 @@ BunnyResult WorldRenderDataTranslator::initialize()
 
     mObjectData.resize(World::MAX_OBJECT_COUNT);
 
-    mObjectDataBuffer = mVulkanResources->createBuffer(MAX_OBJECT_BUFFER_SIZE, 
-        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,         //  storage buffer?
-        VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+    mObjectDataBuffer = mVulkanResources->createBuffer(MAX_OBJECT_BUFFER_SIZE,
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, //  storage buffer?
+        VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT |
+            VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT,
         VMA_MEMORY_USAGE_AUTO);
 
     mSceneDataBuffer = mVulkanResources->createBuffer(sizeof(Render::SceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
@@ -311,13 +313,13 @@ BunnyResult WorldRenderDataTranslator::initialize()
 BunnyResult WorldRenderDataTranslator::translateSceneData(const World* world)
 {
     const auto camComps = world->mEntityRegistry.view<CameraComponent>();
-    
+
     if (camComps.empty())
     {
         return BUNNY_SAD;
     }
 
-    for(auto [entity, cam]: camComps.each()) 
+    for (auto [entity, cam] : camComps.each())
     {
         mSceneData.mProjMatrix = cam.mCamera.getProjMatrix();
         mSceneData.mViewMatrix = cam.mCamera.getViewMatrix();
@@ -330,7 +332,7 @@ BunnyResult WorldRenderDataTranslator::translateSceneData(const World* world)
         void* mappedSceneData = mSceneDataBuffer.mAllocationInfo.pMappedData;
         memcpy(mappedSceneData, &mSceneData, sizeof(Render::SceneData));
     }
-    
+
     const auto lightComps = world->mEntityRegistry.view<DirectionLightComponent>();
     if (lightComps.empty())
     {
@@ -356,49 +358,50 @@ BunnyResult WorldRenderDataTranslator::translateSceneData(const World* world)
 
 BunnyResult WorldRenderDataTranslator::translateObjectData(const World* world)
 {
-    mRenderBatches.clear();
+    // mRenderBatches.clear();
 
-    auto meshTransComp = world->mEntityRegistry.view<MeshComponent, TransformComponent>();
+    static size_t idx = 0;
 
-    size_t idx = 0;
-    size_t countInBatch = 0;
-    Render::RenderBatch currentBatch {
-        .mMaterialInstanceId = 0,
-        .mMeshId = 0,
-        .mObjectBuffer = &mObjectDataBuffer,
-        .mInstanceCount = 0
-    };
-    for (auto [entity, mesh, transform] : meshTransComp.each())
+    if (mRenderBatches.empty())
     {
-        if (mesh.mMeshId != currentBatch.mMeshId)
+        auto meshTransComp = world->mEntityRegistry.view<MeshComponent, TransformComponent>();
+
+        // size_t idx = 0;
+        size_t countInBatch = 0;
+        Render::RenderBatch currentBatch{
+            .mMaterialInstanceId = 0, .mMeshId = 0, .mObjectBuffer = &mObjectDataBuffer, .mInstanceCount = 0};
+        for (auto [entity, mesh, transform] : meshTransComp.each())
         {
-            if (countInBatch > 0)
+            if (mesh.mMeshId != currentBatch.mMeshId)
             {
-                currentBatch.mInstanceCount = countInBatch;
-                mRenderBatches.push_back(currentBatch);
+                if (countInBatch > 0)
+                {
+                    currentBatch.mInstanceCount = countInBatch;
+                    mRenderBatches.push_back(currentBatch);
 
-                countInBatch = 0;
+                    countInBatch = 0;
+                }
+                currentBatch.mMeshId = mesh.mMeshId;
+                currentBatch.mMaterialInstanceId = mMaterialBank->getDefaultMaterialId();
             }
-            currentBatch.mMeshId = mesh.mMeshId;
-            currentBatch.mMaterialInstanceId = mMaterialBank->getDefaultMaterialId();
+
+            Render::ObjectData& obj = mObjectData[idx];
+            obj.model = getEntityGlobalTransform(world->mEntityRegistry, entity, transform.mTransform.mMatrix);
+            obj.invTransModel = glm::transpose(glm::inverse(obj.model));
+
+            countInBatch++;
+            idx++;
         }
-
-        Render::ObjectData& obj = mObjectData[idx];
-        obj.model = getEntityGlobalTransform(world->mEntityRegistry, entity, transform.mTransform.mMatrix);
-        obj.invTransModel = glm::transpose(glm::inverse(obj.model));
-
-        countInBatch++;
-        idx++;
-    }
-    if (countInBatch > 0)
-    {
-        currentBatch.mInstanceCount = countInBatch;
-        mRenderBatches.push_back(currentBatch);
+        if (countInBatch > 0)
+        {
+            currentBatch.mInstanceCount = countInBatch;
+            mRenderBatches.push_back(currentBatch);
+        }
     }
 
     {
         void* mappedObjectData = mObjectDataBuffer.mAllocationInfo.pMappedData;
-        memcpy(mappedObjectData, mObjectData.data(), idx*sizeof(Render::ObjectData));
+        memcpy(mappedObjectData, mObjectData.data(), idx * sizeof(Render::ObjectData));
     }
 
     return BUNNY_HAPPY;
@@ -414,7 +417,8 @@ void WorldRenderDataTranslator::cleanup()
 glm::mat4x4 WorldRenderDataTranslator::getEntityGlobalTransform(
     const entt::registry& registry, entt::entity entity, const glm::mat4x4& transformMat)
 {
-    if (const auto* hierComp = registry.try_get<HierarchyComponent>(entity); hierComp && hierComp->mParent != entt::null)
+    if (const auto* hierComp = registry.try_get<HierarchyComponent>(entity);
+        hierComp && hierComp->mParent != entt::null)
     {
         const auto parentNode = hierComp->mParent;
         const TransformComponent& transComp = registry.get<TransformComponent>(parentNode);
