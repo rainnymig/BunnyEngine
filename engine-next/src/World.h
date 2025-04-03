@@ -52,7 +52,9 @@ struct CameraComponent
 class World
 {
   public:
-    constexpr static size_t MAX_OBJECT_COUNT = 1000000;
+    constexpr static size_t MAX_OBJECT_COUNT = 10000;
+
+    void update(float deltaTime);
 
     entt::registry mEntityRegistry;
 };

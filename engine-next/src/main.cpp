@@ -108,6 +108,8 @@ int main(void)
             break;
         }
 
+        bunnyWorld.update(timer.getDeltaTime());
+
         worldTranslator.translateSceneData(&bunnyWorld);
         worldTranslator.translateObjectData(&bunnyWorld);
 
@@ -126,10 +128,6 @@ int main(void)
         renderer.finishRender();
 
         renderer.beginImguiFrame();
-
-        ImGui::Begin("Hello!");
-        ImGui::Text("Hi there!");
-        ImGui::End();
 
         ImGui::Begin("Game Stats");
         ImGui::Text(fmt::format("FPS: {}", fps).c_str());
