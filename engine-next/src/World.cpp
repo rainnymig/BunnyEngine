@@ -7,6 +7,7 @@
 
 #include <glm/mat4x4.hpp>
 #include <glm/ext/matrix_transform.hpp>
+#include <glm/gtx/euler_angles.hpp>
 
 #include <fastgltf/glm_element_traits.hpp>
 #include <fastgltf/core.hpp>
@@ -24,6 +25,18 @@ WorldLoader::WorldLoader(const Render::VulkanRenderResources* vulkanResources, R
       mMaterialBank(materialBank),
       mMeshBank(meshBank)
 {
+}
+
+
+void World::update(float deltaTime)
+{
+    const glm::mat4 rotMat = glm::eulerAngleZ<float>(glm::pi<float>() * deltaTime);
+
+    auto transComps = mEntityRegistry.view<TransformComponent>();
+
+    transComps.each([deltaTime, &rotMat](TransformComponent& transComp){
+        transComp.mTransform.mMatrix = rotMat * transComp.mTransform.mMatrix;
+    });
 }
 
 BunnyResult WorldLoader::loadGltfToWorld(std::string_view filePath, World& outWorld)
@@ -220,7 +233,7 @@ BunnyResult WorldLoader::loadTestWorld(World& outWorld)
     //  create scene structure
     //  create grid of cubes to fill the scene
 
-    constexpr int resolution = 32;
+    constexpr int resolution = 8;
     constexpr float gap = 4;
     std::vector<glm::vec3> positions;
     glm::vec3 startingPos{-gap * resolution / 2, -gap * resolution / 2, -gap * resolution / 2};
@@ -358,45 +371,40 @@ BunnyResult WorldRenderDataTranslator::translateSceneData(const World* world)
 
 BunnyResult WorldRenderDataTranslator::translateObjectData(const World* world)
 {
-    // mRenderBatches.clear();
+    mRenderBatches.clear();
 
-    static size_t idx = 0;
+    auto meshTransComp = world->mEntityRegistry.view<MeshComponent, TransformComponent>();
 
-    if (mRenderBatches.empty())
+    size_t idx = 0;
+    size_t countInBatch = 0;
+    Render::RenderBatch currentBatch{
+        .mMaterialInstanceId = 0, .mMeshId = 0, .mObjectBuffer = &mObjectDataBuffer, .mInstanceCount = 0};
+    for (auto [entity, mesh, transform] : meshTransComp.each())
     {
-        auto meshTransComp = world->mEntityRegistry.view<MeshComponent, TransformComponent>();
-
-        // size_t idx = 0;
-        size_t countInBatch = 0;
-        Render::RenderBatch currentBatch{
-            .mMaterialInstanceId = 0, .mMeshId = 0, .mObjectBuffer = &mObjectDataBuffer, .mInstanceCount = 0};
-        for (auto [entity, mesh, transform] : meshTransComp.each())
+        if (mesh.mMeshId != currentBatch.mMeshId)
         {
-            if (mesh.mMeshId != currentBatch.mMeshId)
+            if (countInBatch > 0)
             {
-                if (countInBatch > 0)
-                {
-                    currentBatch.mInstanceCount = countInBatch;
-                    mRenderBatches.push_back(currentBatch);
+                currentBatch.mInstanceCount = countInBatch;
+                mRenderBatches.push_back(currentBatch);
 
-                    countInBatch = 0;
-                }
-                currentBatch.mMeshId = mesh.mMeshId;
-                currentBatch.mMaterialInstanceId = mMaterialBank->getDefaultMaterialId();
+                countInBatch = 0;
             }
-
-            Render::ObjectData& obj = mObjectData[idx];
-            obj.model = getEntityGlobalTransform(world->mEntityRegistry, entity, transform.mTransform.mMatrix);
-            obj.invTransModel = glm::transpose(glm::inverse(obj.model));
-
-            countInBatch++;
-            idx++;
+            currentBatch.mMeshId = mesh.mMeshId;
+            currentBatch.mMaterialInstanceId = mMaterialBank->getDefaultMaterialId();
         }
-        if (countInBatch > 0)
-        {
-            currentBatch.mInstanceCount = countInBatch;
-            mRenderBatches.push_back(currentBatch);
-        }
+
+        Render::ObjectData& obj = mObjectData[idx];
+        obj.model = getEntityGlobalTransform(world->mEntityRegistry, entity, transform.mTransform.mMatrix);
+        obj.invTransModel = glm::transpose(glm::inverse(obj.model));
+
+        countInBatch++;
+        idx++;
+    }
+    if (countInBatch > 0)
+    {
+        currentBatch.mInstanceCount = countInBatch;
+        mRenderBatches.push_back(currentBatch);
     }
 
     {
