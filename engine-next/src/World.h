@@ -49,6 +49,25 @@ struct CameraComponent
     Render::Camera mCamera;
 };
 
+class BaseWorld
+{
+  public:
+    virtual void update(float deltaTime);
+};
+
+class OrganizedWorld : public BaseWorld
+{
+    struct MeshObjectData
+    {
+        glm::mat4 mTransform;
+        glm::mat4 mInvTransposedTransform;
+        Render::IdType mMeshId;
+    };
+
+  protected:
+    std::vector<MeshObjectData> mSortedMeshObjectData;
+};
+
 class World
 {
   public:

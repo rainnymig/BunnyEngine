@@ -1,5 +1,7 @@
 #version 450
 
+layout (local_size_x = 256) in;
+
 //
 //  input buffer holding object transform and bounding box and mesh id, sorted by mesh id
 //  input uniform buffer holding view frustum data

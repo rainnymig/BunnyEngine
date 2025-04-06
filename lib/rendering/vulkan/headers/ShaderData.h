@@ -29,51 +29,31 @@ struct ObjectData
     glm::mat4 invTransModel;
 };
 
-
 //  object data for culling with bounding sphere
 struct SphereCullObjectData
 {
-    glm::vec4 mBoundingSphere;  //  x, y, z: center, w: radius
+    glm::vec4 mBoundingSphere; //  x, y, z: center, w: radius
     glm::mat4 mTransform;
-    IdType mMeshId;
-    IdType mSurfaceId;
 };
 
-//  surfaces of a mesh should have different material instances (or materials)
-//  if multiple surfaces have same, they should be merged
-//  mesh1: surface 11 - matInst1, surface12 - matInst2
-//  mesh2: surface 21 - matInst1, surface22 - matInst3
+//  the following are for all surfaces of one material (pipeline)
+
+//  now assume all surface of a mesh have same material instance
+//  mesh1: surface 11, surface12 - matInst1
+//  mesh2: surface 21, surface22 - matInst2
 
 //  game objects in world
-//  {1, mesh1}
-//  {2, mesh2}
-//  {3, mesh1}
-//  {4, mesh1}
-//  {5, mesh1}
-//  {6, mesh2}
-//  {7, mesh1}
-//  {8, mesh2}
-//  {9, mesh2}
+//  {1, mesh1Id}
+//  {2, mesh2Id}
+//  {3, mesh1Id}
+//  {4, mesh1Id}
+//  {5, mesh1Id}
+//  {6, mesh2Id}
+//  {7, mesh1Id}
+//  {8, mesh2Id}
+//  {9, mesh2Id}
 
 //  sorted game objects in world
-//  {1, mesh1, surface 11, matInst1}
-//  {3, mesh1, surface 11, matInst1}
-//  {4, mesh1, surface 11, matInst1}
-//  {7, mesh1, surface 11, matInst1}
-//  {5, mesh1, surface 11, matInst1}
-//  {1, mesh1, surface 12, matInst2}
-//  {3, mesh1, surface 12, matInst2}
-//  {4, mesh1, surface 12, matInst2}
-//  {7, mesh1, surface 12, matInst2}
-//  {5, mesh1, surface 12, matInst2}
-//  {2, mesh2, surface 21, matInst1}
-//  {8, mesh2, surface 21, matInst1}
-//  {9, mesh2, surface 21, matInst1}
-//  {6, mesh2, surface 21, matInst1}
-//  {2, mesh2, surface 22, matInst3}
-//  {8, mesh2, surface 22, matInst3}
-//  {9, mesh2, surface 22, matInst3}
-//  {6, mesh2, surface 22, matInst3}
 
 //  {1, mesh1}
 //  {3, mesh1}
@@ -106,9 +86,19 @@ struct SphereCullObjectData
 //  {transform8, mesh2Id}
 //  {transform9, mesh2Id}
 
+//  culler output remaining object count per mesh
+//  (mesh1) instanceCountMesh1
+//  (mesh2) instanceCountMesh2
+
+//  surface to mesh mapping for culler (can also be reversed)
+//  (surface11) mesh1Id
+//  (surface12) mesh1Id
+//  (surface21) mesh2Id
+//  (surface22) mesh2Id
+
 //  culler output buffer VkDrawIndexedIndirectCommand
 //  { indexCountSurface11, instanceCountMesh1, firstIndexSurface11, vertexOffsetMesh1, firstInstance(0) }
-//  { indexCountSurface12, instanceCountMesh1, firstIndexSurface12, vertexOffsetMesh1, firstInstance(sum of prev) }
+//  { indexCountSurface12, instanceCountMesh1, firstIndexSurface12, vertexOffsetMesh1, firstInstance(0) }
 //  { indexCountSurface21, instanceCountMesh2, firstIndexSurface21, vertexOffsetMesh2, firstInstance(sum of prev) }
 //  { indexCountSurface22, instanceCountMesh2, firstIndexSurface22, vertexOffsetMesh2, firstInstance(sum of prev) }
 
@@ -122,12 +112,12 @@ struct SphereCullObjectData
 //      transform matrix
 //      inversed transposed transform matrix
 //      matInstId
-//  
+//
 //  pixel shader input
 //  per material instance       - from uniform buffer through material instance id
 //      material parameters
 //      material textures (or texture-sampler combis)
-//      
+//
 
 struct CullResultData
 {

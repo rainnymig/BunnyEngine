@@ -9,5 +9,11 @@
 
 namespace Bunny::Render
 {
+class CullPass
+{
+    CullPass();
 
+    void initializePass();
+    void cleanup();
+};
 } // namespace Bunny::Render
