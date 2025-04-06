@@ -21,16 +21,13 @@ class ForwardPass
 {
   public:
     ForwardPass(const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer,
-      const MaterialBank* materialBank, const MeshBank<NormalVertex>* meshBank);
+        const MaterialBank* materialBank, const MeshBank<NormalVertex>* meshBank);
 
-    void initializePass();
+    void initializePass(VkDescriptorSetLayout sceneLayout, VkDescriptorSetLayout objectLayout);
     void updateSceneData(const AllocatedBuffer& sceneBuffer);
     void updateLightData(const AllocatedBuffer& lightBuffer);
     void renderBatch(const RenderBatch& batch);
     void cleanup();
-
-    VkDescriptorSetLayout getSceneDescLayout() const {return mSceneDescLayout;}
-    VkDescriptorSetLayout getObjectDescLayout() const {return mObjectDescLayout;}
 
   private:
     const VulkanRenderResources* mVulkanResources;

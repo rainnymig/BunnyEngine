@@ -3,7 +3,9 @@
 struct Light 
 {
     vec3 direction;
+    float pad1;
     vec3 color;
+    float pad2;
 };
 
 #define MAX_LIGHT_COUNT 8
@@ -33,21 +35,21 @@ void main()
     vec3 ambientColor = light.color * ambientStrength;
 
     //  diffuse
-    float diffuseStrength = 0.5f;
+    float diffuseStrength = 0.4f;
     vec3 dirToLight = (-light.direction).xyz;
     float diff = max(dot(normal, dirToLight), 0.0f);
     vec3 diffuseColor = light.color * diff * diffuseStrength;
 
     //  specular
+    float specularStrength = 0.8f;
     vec3 dirToCamera = normalize(lightData.cameraPos - fragPos);
     vec3 halfwayVec = normalize(dirToCamera + dirToLight);
-    float spec = pow(max(dot(halfwayVec, normal), 0.0f), 32);
-    float specularStrength = 0.5f;
+    float spec = pow(max(dot(halfwayVec, normal), 0.0f), 64);
     vec3 specularColor = light.color * spec * specularStrength;
 
-
     //  combined
-    //vec3 result = (ambientColor + diffuseColor + specularColor) * color;
-    vec3 result = color;
+    vec3 result = (ambientColor + diffuseColor + specularColor) * color;
+    // vec3 result = light.color * spec;
+    // vec3 result = color;
     outColor = vec4(result, 1.0f);
 }

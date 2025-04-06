@@ -29,7 +29,7 @@ WorldLoader::WorldLoader(const Render::VulkanRenderResources* vulkanResources, R
 
 void World::update(float deltaTime)
 {
-    const glm::mat4 rotMat = glm::eulerAngleZ<float>(glm::pi<float>() * deltaTime);
+    const glm::mat4 rotMat = glm::eulerAngleY<float>(glm::pi<float>() * deltaTime / 4);
 
     auto transComps = mEntityRegistry.view<TransformComponent>();
 
@@ -232,8 +232,8 @@ BunnyResult WorldLoader::loadTestWorld(World& outWorld)
     //  create scene structure
     //  create grid of cubes to fill the scene
 
-    constexpr int resolution = 8;
-    constexpr float gap = 4;
+    constexpr int resolution = 4;
+    constexpr float gap = 2;
     std::vector<glm::vec3> positions;
     glm::vec3 startingPos{-gap * resolution / 2, -gap * resolution / 2, -gap * resolution / 2};
     size_t idx = 0;
@@ -273,7 +273,7 @@ BunnyResult WorldLoader::loadTestWorld(World& outWorld)
     //  camera
     {
         const auto cameraEntity = outWorld.mEntityRegistry.create();
-        Render::Camera camera(glm::vec3{5, 5, -5});
+        Render::Camera camera(glm::vec3{0, 10, -15});
         outWorld.mEntityRegistry.emplace<CameraComponent>(cameraEntity, camera);
     }
 
@@ -281,9 +281,9 @@ BunnyResult WorldLoader::loadTestWorld(World& outWorld)
     {
         const auto lightEntity = outWorld.mEntityRegistry.create();
         Render::DirectionalLight dirLight{
-            .mDirection = glm::normalize(glm::vec3{-1, -1, 1}
+            .mDirection = glm::normalize(glm::vec3{0, -1, -2}
               ),
-            .mColor = {1,  1,  1},
+            .mColor = {1, 1,  1 },
         };
         outWorld.mEntityRegistry.emplace<DirectionLightComponent>(lightEntity, dirLight);
     }

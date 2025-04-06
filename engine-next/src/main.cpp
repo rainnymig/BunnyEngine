@@ -61,30 +61,30 @@ int main(void)
     Bunny::Render::MeshBank<Bunny::Render::NormalVertex> meshBank(&renderResources);
     Bunny::Render::MaterialBank materialBank;
 
-    // Bunny::Render::ForwardPass forwardPass(&renderResources, &renderer, &materialBank, &meshBank);
-    // forwardPass.initializePass();
+    Bunny::Render::BasicBlinnPhongMaterial::Builder builder;
+    builder.setColorAttachmentFormat(renderer.getSwapChainImageFormat());
+    builder.setDepthFormat(renderer.getDepthImageFormat());
+    std::unique_ptr<Bunny::Render::BasicBlinnPhongMaterial> blinnPhongMaterial =
+        builder.buildMaterial(renderResources.getDevice());
+    Bunny::Render::MaterialInstance blinnPhongInstance = blinnPhongMaterial->makeInstance();
 
-    // Bunny::Render::BasicBlinnPhongMaterial::Builder builder;
-    // builder.setColorAttachmentFormat(renderer.getSwapChainImageFormat());
-    // builder.setDepthFormat(renderer.getDepthImageFormat());
-    // builder.setSceneDescriptorSetLayout(forwardPass.getSceneDescLayout());
-    // builder.setObjectDescriptorSetLayout(forwardPass.getObjectDescLayout());
-    // std::unique_ptr<Bunny::Render::BasicBlinnPhongMaterial> blinnPhongMaterial =
-    //     builder.buildMaterial(renderResources.getDevice());
-    // Bunny::Render::MaterialInstance blinnPhongInstance = blinnPhongMaterial->makeInstance();
+    Bunny::Render::ForwardPass forwardPass(&renderResources, &renderer, &materialBank, &meshBank);
+    forwardPass.initializePass(
+        blinnPhongMaterial->getSceneDescSetLayout(), blinnPhongMaterial->getObjectDescSetLayout());
 
-    // materialBank.addMaterial(std::move(blinnPhongMaterial));
-    // materialBank.addMaterialInstance(blinnPhongInstance);
+    materialBank.addMaterial(std::move(blinnPhongMaterial));
+    materialBank.addMaterialInstance(blinnPhongInstance);
 
-    // World bunnyWorld;
-    // WorldLoader worldLoader(&renderResources, &materialBank, &meshBank);
-    // worldLoader.loadTestWorld(bunnyWorld);
+    World bunnyWorld;
+    WorldLoader worldLoader(&renderResources, &materialBank, &meshBank);
+    worldLoader.loadTestWorld(bunnyWorld);
 
-    // WorldRenderDataTranslator worldTranslator(&renderResources, &meshBank, &materialBank);
-    // worldTranslator.initialize();
+    WorldRenderDataTranslator worldTranslator(&renderResources, &meshBank, &materialBank);
+    worldTranslator.initialize();
 
-    // forwardPass.updateSceneData(worldTranslator.getSceneBuffer());
-    // forwardPass.updateLightData(worldTranslator.getLightBuffer());
+    worldTranslator.translateSceneData(&bunnyWorld);
+    forwardPass.updateSceneData(worldTranslator.getSceneBuffer());
+    forwardPass.updateLightData(worldTranslator.getLightBuffer());
 
     float accumulatedTime = 0;
     constexpr float interval = 0.5f;
@@ -108,10 +108,10 @@ int main(void)
             break;
         }
 
-        // bunnyWorld.update(timer.getDeltaTime());
+        bunnyWorld.update(timer.getDeltaTime());
 
-        // worldTranslator.translateSceneData(&bunnyWorld);
-        // worldTranslator.translateObjectData(&bunnyWorld);
+        worldTranslator.translateSceneData(&bunnyWorld);
+        worldTranslator.translateObjectData(&bunnyWorld);
 
         // forwardPass.updateSceneData(worldTranslator.getSceneBuffer());
         // forwardPass.updateLightData(worldTranslator.getLightBuffer());
@@ -120,10 +120,10 @@ int main(void)
 
         renderer.beginRender();
 
-        // for (const Bunny::Render::RenderBatch& batch : worldTranslator.getRenderBatches())
-        // {
-        //     forwardPass.renderBatch(batch);
-        // }
+        for (const Bunny::Render::RenderBatch& batch : worldTranslator.getRenderBatches())
+        {
+            forwardPass.renderBatch(batch);
+        }
 
         renderer.finishRender();
 
@@ -141,8 +141,8 @@ int main(void)
 
     renderer.waitForRenderFinish();
 
-    // worldTranslator.cleanup();
-    // forwardPass.cleanup();
+    worldTranslator.cleanup();
+    forwardPass.cleanup();
 
     meshBank.cleanup();
     materialBank.cleanup();

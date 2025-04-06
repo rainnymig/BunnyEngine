@@ -173,7 +173,7 @@ void VulkanGraphicsRenderer::beginRender()
     VkRenderingAttachmentInfo colorAttachment =
         makeColorAttachmentInfo(mSwapChainImageViews[mSwapchainImageIndex], nullptr);
     VkRenderingAttachmentInfo depthAttachment = makeDepthAttachmentInfo(mDepthImage.mImageView);
-    VkRenderingInfo renderInfo = makeRenderingInfo(mSwapChainExtent, &colorAttachment, nullptr);
+    VkRenderingInfo renderInfo = makeRenderingInfo(mSwapChainExtent, &colorAttachment, &depthAttachment);
     vkCmdBeginRendering(getCurrentCommandBuffer(), &renderInfo);
 }
 

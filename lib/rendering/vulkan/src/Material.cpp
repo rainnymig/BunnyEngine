@@ -1,6 +1,7 @@
 #include "Material.h"
 
 #include "Shader.h"
+#include "Error.h"
 #include "ErrorCheck.h"
 #include "Vertex.h"
 #include "PipelineBuilder.h"
@@ -9,8 +10,11 @@
 
 namespace Bunny::Render
 {
-BasicBlinnPhongMaterial::BasicBlinnPhongMaterial(Base::BunnyGuard<Builder> guard, VkDevice device)
-    : mDevice(device)
+Material::~Material()
+{
+}
+
+BasicBlinnPhongMaterial::BasicBlinnPhongMaterial(Base::BunnyGuard<Builder> guard, VkDevice device) : mDevice(device)
 {
     mId = std::hash<std::string_view>{}(getName());
 }
@@ -30,7 +34,11 @@ void BasicBlinnPhongMaterial::cleanupPipeline()
     // mDescriptorAllocator.destroyPools(mDevice);
     vkDestroyPipeline(mDevice, mPipeline.mPipeline, nullptr);
     vkDestroyPipelineLayout(mDevice, mPipeline.mPipelineLayout, nullptr);
+    vkDestroyDescriptorSetLayout(mDevice, mSceneDescSetLayout, nullptr);
+    vkDestroyDescriptorSetLayout(mDevice, mObjectDescSetLayout, nullptr);
     // vkDestroyDescriptorSetLayout(mDevice, mDescriptorSetLayout, nullptr);
+
+    mDevice = nullptr;
 }
 
 MaterialInstance BasicBlinnPhongMaterial::makeInstance()
@@ -91,7 +99,17 @@ std::unique_ptr<BasicBlinnPhongMaterial> BasicBlinnPhongMaterial::Builder::build
 
     std::unique_ptr<BasicBlinnPhongMaterial> material = std::make_unique<BasicBlinnPhongMaterial>(CARROT, device);
 
-    material->mPipeline = buildPipeline(device);
+    if (!BUNNY_SUCCESS(
+            buildDescriptorSetLayouts(device, material->mSceneDescSetLayout, material->mObjectDescSetLayout)))
+    {
+        PRINT_AND_RETURN_VALUE("Fail to build descriptor set layouts for Basic Blinn Phong Material", nullptr);
+    }
+
+    if (!BUNNY_SUCCESS(
+            buildPipeline(device, material->mSceneDescSetLayout, material->mObjectDescSetLayout, material->mPipeline)))
+    {
+        PRINT_AND_RETURN_VALUE("Fail to build pipeline for Basic Blinn Phong Material", nullptr);
+    }
 
     //  no material descriptor required for now
     //  init descriptor allocator
@@ -104,32 +122,29 @@ std::unique_ptr<BasicBlinnPhongMaterial> BasicBlinnPhongMaterial::Builder::build
     return std::move(material);
 }
 
-MaterialPipeline BasicBlinnPhongMaterial::Builder::buildPipeline(VkDevice device) const
+BunnyResult BasicBlinnPhongMaterial::Builder::buildPipeline(VkDevice device, VkDescriptorSetLayout sceneLayout,
+    VkDescriptorSetLayout objectLayout, MaterialPipeline& outPipeline) const
 {
     VkPipeline pipeline;
     VkPipelineLayout pipelineLayout;
 
     //  load shader file
-    Shader vertexShader(VERTEX_SHADER_PATH, device);
-    Shader fragmentShader(FRAGMENT_SHADER_PATH, device);
+    Shader vertexShader(mVertexShaderPath, device);
+    Shader fragmentShader(mFragmentShaderPath, device);
 
     //  build pipeline
 
-    //  no material descriptor required for now
-    //  build material descriptor set layout
-    // buildDescriptorSetLayout(device);
-
-    VkDescriptorSetLayout layouts[] = {mSceneDescSetLayout, mObjectDescSetLayout};
+    VkDescriptorSetLayout layouts[] = {sceneLayout, objectLayout};
 
     //  pipeline layout
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.setLayoutCount = 2;
     pipelineLayoutInfo.pSetLayouts = layouts;
-    pipelineLayoutInfo.pushConstantRangeCount = mPushConstantRanges.size();
-    pipelineLayoutInfo.pPushConstantRanges = mPushConstantRanges.empty() ? nullptr : mPushConstantRanges.data();
+    pipelineLayoutInfo.pushConstantRangeCount = 0;
+    pipelineLayoutInfo.pPushConstantRanges = nullptr;
 
-    VK_HARD_CHECK(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout));
+    VK_CHECK_OR_RETURN_BUNNY_SAD(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout))
 
     //  vertex info
     auto bindingDescription = getBindingDescription<NormalVertex>(0, VertexInputRate::Vertex);
@@ -144,13 +159,57 @@ MaterialPipeline BasicBlinnPhongMaterial::Builder::buildPipeline(VkDevice device
     builder.setMultisamplingNone();
     builder.disableBlending(); //  opaque pipeline
     builder.enableDepthTest(VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL);
+    // builder.enableDepthTest(VK_TRUE, VK_COMPARE_OP_GREATER_OR_EQUAL);
     builder.setColorAttachmentFormat(mColorFormat);
     builder.setDepthFormat(mDepthFormat);
     builder.setPipelineLayout(pipelineLayout);
 
     pipeline = builder.build(device);
 
-    return MaterialPipeline{.mPipeline = pipeline, .mPipelineLayout = pipelineLayout};
+    if (pipeline == nullptr)
+    {
+        PRINT_AND_RETURN_VALUE("Can not build Basic Blinn Phong Material pipeline", BUNNY_SAD)
+    }
+
+    outPipeline.mPipeline = pipeline;
+    outPipeline.mPipelineLayout = pipelineLayout;
+
+    return BUNNY_HAPPY;
+}
+
+BunnyResult BasicBlinnPhongMaterial::Builder::buildDescriptorSetLayouts(
+    VkDevice device, VkDescriptorSetLayout& outSceneLayout, VkDescriptorSetLayout& outObjectLayout) const
+{
+    //  object data desc sets
+    DescriptorLayoutBuilder layoutBuilder;
+    {
+        VkDescriptorSetLayoutBinding uniformBufferLayout{};
+        uniformBufferLayout.binding = 0;
+        uniformBufferLayout.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER; //  storage buffer?
+        uniformBufferLayout.descriptorCount = 1;
+        uniformBufferLayout.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        uniformBufferLayout.pImmutableSamplers = nullptr;
+        layoutBuilder.addBinding(uniformBufferLayout);
+    }
+    outObjectLayout = layoutBuilder.build(device);
+
+    //  scene data desc sets
+    layoutBuilder.clear();
+    {
+        VkDescriptorSetLayoutBinding uniformBufferLayout{};
+        uniformBufferLayout.binding = 0;
+        uniformBufferLayout.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        uniformBufferLayout.descriptorCount = 1;
+        uniformBufferLayout.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        uniformBufferLayout.pImmutableSamplers = nullptr;
+        layoutBuilder.addBinding(uniformBufferLayout);
+        uniformBufferLayout.binding = 1;
+        uniformBufferLayout.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        layoutBuilder.addBinding(uniformBufferLayout);
+    }
+    outSceneLayout = layoutBuilder.build(device);
+
+    return BUNNY_HAPPY;
 }
 
 } // namespace Bunny::Render

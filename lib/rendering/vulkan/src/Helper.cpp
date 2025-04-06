@@ -195,7 +195,7 @@ void addTriangle(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3, 
     std::vector<NormalVertex>& vertices,
     std::unordered_map<NormalVertex, uint32_t, NormalVertex::Hash>& vertexToIndexMap)
 {
-        //  p1 - - p3 - u
+    //  p1 - - p3 - u
     //  |     /
     //  |   /
     //  | /
@@ -205,7 +205,8 @@ void addTriangle(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3, 
 
     glm::vec3 v12 = p2 - p1;
     glm::vec3 v13 = p3 - p1;
-    glm::vec3 normal = glm::normalize(glm::cross(v12, v13));
+    // glm::vec3 normal = glm::normalize(glm::cross(v12, v13));
+    glm::vec3 normal = glm::normalize(glm::cross(v13, v12)); //  revisit this direction later
 
     glm::vec2 tex1 = texCoordBase;
     glm::vec2 tex2 = texCoordBase + glm::vec2{0, scale};
@@ -221,7 +222,7 @@ void addQuad(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3, cons
     std::vector<NormalVertex>& vertices,
     std::unordered_map<NormalVertex, uint32_t, NormalVertex::Hash>& vertexToIndexMap)
 {
-        //  p1 - - p4 - u
+    //  p1 - - p4 - u
     //  |     / |
     //  |   /   |
     //  | /     |
@@ -231,7 +232,8 @@ void addQuad(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3, cons
 
     glm::vec3 v12 = p2 - p1;
     glm::vec3 v14 = p4 - p1;
-    glm::vec3 normal = glm::normalize(glm::cross(v12, v14));
+    // glm::vec3 normal = glm::normalize(glm::cross(v12, v14));
+    glm::vec3 normal = glm::normalize(glm::cross(v14, v12)); //  revisit this direction later
 
     glm::vec2 tex1 = texCoordBase;
     glm::vec2 tex2 = texCoordBase + glm::vec2{0, scale};
@@ -258,7 +260,6 @@ const IdType createCubeMeshToBank(MeshBank<NormalVertex>* meshBank, IdType mater
     cubeSurface.mFirstIndex = 0;
     cubeSurface.mMaterialInstanceId = materialId;
 
-
     std::vector<uint32_t> indices;
     std::vector<NormalVertex> vertices;
     std::unordered_map<NormalVertex, uint32_t, NormalVertex::Hash> vertexToIndexMap;
@@ -269,6 +270,7 @@ const IdType createCubeMeshToBank(MeshBank<NormalVertex>* meshBank, IdType mater
     constexpr glm::vec4 yellow{1.0f, 1.0, 0.0, 1.0};
     constexpr glm::vec4 fuchsia{1.0f, 0.0, 1.0, 1.0};
     constexpr glm::vec4 aqua{0.0f, 1.0, 1.0, 1.0};
+    constexpr glm::vec4 white{1.0f, 1.0, 1.0, 1.0};
     //  front   -z
     addQuad({-0.5, 0.5, -0.5}, {-0.5, -0.5, -0.5}, {0.5, -0.5, -0.5}, {0.5, 0.5, -0.5}, aqua, {0, 0}, 1, indices,
         vertices, vertexToIndexMap);
