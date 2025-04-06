@@ -11,7 +11,7 @@
 #include "Material.h"
 #include "MaterialBank.h"
 #include "Vertex.h"
-#include "RenderPass.h"
+#include "ForwardPass.h"
 
 #include <imgui.h>
 #include <fmt/core.h>
