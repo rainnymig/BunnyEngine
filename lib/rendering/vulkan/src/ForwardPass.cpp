@@ -1,4 +1,4 @@
-#include "RenderPass.h"
+#include "ForwardPass.h"
 
 #include "Material.h"
 #include "MaterialBank.h"
