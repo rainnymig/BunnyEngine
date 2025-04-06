@@ -27,14 +27,13 @@ WorldLoader::WorldLoader(const Render::VulkanRenderResources* vulkanResources, R
 {
 }
 
-
 void World::update(float deltaTime)
 {
     const glm::mat4 rotMat = glm::eulerAngleZ<float>(glm::pi<float>() * deltaTime);
 
     auto transComps = mEntityRegistry.view<TransformComponent>();
 
-    transComps.each([deltaTime, &rotMat](TransformComponent& transComp){
+    transComps.each([deltaTime, &rotMat](TransformComponent& transComp) {
         transComp.mTransform.mMatrix = rotMat * transComp.mTransform.mMatrix;
     });
 }
@@ -437,6 +436,10 @@ glm::mat4x4 WorldRenderDataTranslator::getEntityGlobalTransform(
     {
         return transformMat;
     }
+}
+
+void BaseWorld::update(float deltaTime)
+{
 }
 
 } // namespace Bunny::Engine

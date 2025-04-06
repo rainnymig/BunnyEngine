@@ -2,7 +2,7 @@ add_library(VulkanRenderer)
 
 target_sources(VulkanRenderer
     PUBLIC
-        headers/Culling.h
+        headers/CullPass.h
         headers/Descriptor.h
         headers/ErrorCheck.h
         headers/Fundamentals.h
@@ -22,7 +22,7 @@ target_sources(VulkanRenderer
         headers/VulkanGraphicsRenderer.h
         headers/VulkanRenderResources.h
     PRIVATE
-        src/Culling.cpp
+        src/CullPass.cpp
         src/Descriptor.cpp
         src/Helper.cpp
         src/Material.cpp

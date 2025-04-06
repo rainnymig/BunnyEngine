@@ -1,9 +1,6 @@
-#include "Culling.h"
+#include "CullPass.h"
 
 namespace Bunny::Render
 {
-    class Culling
-    {
 
-    };
 } // namespace Bunny::Render

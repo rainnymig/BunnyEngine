@@ -28,10 +28,11 @@ struct MaterialInstance
 class Material
 {
   public:
-    IdType getId() const {return mId;}
-    const MaterialPipeline& getMaterialPipeline() const {return mPipeline;}
-    
+    IdType getId() const { return mId; }
+    const MaterialPipeline& getMaterialPipeline() const { return mPipeline; }
     virtual void cleanup() = 0;
+    virtual ~Material() {}
+
   protected:
     IdType mId;
     MaterialPipeline mPipeline;
@@ -74,10 +75,11 @@ class BasicBlinnPhongMaterial : public Material
     static constexpr std::string_view VERTEX_SHADER_PATH{"./basic_instanced_vert.spv"};
     static constexpr std::string_view FRAGMENT_SHADER_PATH{"./basic_updated_frag.spv"};
 
+    VkDevice mDevice;
+
     // void buildDescriptorSetLayout(VkDevice device);
 
     // DescriptorAllocator mDescriptorAllocator;
-    VkDevice mDevice;
     // VkDescriptorSetLayout mDescriptorSetLayout;
 };
 } // namespace Bunny::Render
