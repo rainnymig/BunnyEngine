@@ -82,7 +82,6 @@ int main(void)
     WorldRenderDataTranslator worldTranslator(&renderResources, &meshBank, &materialBank);
     worldTranslator.initialize();
 
-    worldTranslator.translateSceneData(&bunnyWorld);
     forwardPass.updateSceneData(worldTranslator.getSceneBuffer());
     forwardPass.updateLightData(worldTranslator.getLightBuffer());
 
@@ -112,9 +111,6 @@ int main(void)
 
         worldTranslator.translateSceneData(&bunnyWorld);
         worldTranslator.translateObjectData(&bunnyWorld);
-
-        // forwardPass.updateSceneData(worldTranslator.getSceneBuffer());
-        // forwardPass.updateLightData(worldTranslator.getLightBuffer());
 
         renderer.beginRenderFrame();
 

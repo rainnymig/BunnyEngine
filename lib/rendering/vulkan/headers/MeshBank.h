@@ -23,7 +23,7 @@ struct SurfaceLite
     IdType mMaterialInstanceId;
 };
 
-template<typename BoundType>
+template <typename BoundType>
 struct MeshLiteT
 {
     IdType mId;
@@ -51,20 +51,22 @@ class MeshBank
   private:
     AllocatedBuffer mVertexBuffer;
     AllocatedBuffer mIndexBuffer;
+    AllocatedBuffer mBoundsBuffer;
     std::vector<VertexType> mVertexBufferData;
     std::vector<IndexType> mIndexBufferData;
+    std::vector<Base::BoundingSphere> mBoundsData; //  maybe template this as well
     std::unordered_map<IdType, MeshLite> mMeshes;
     const VulkanRenderResources* mVulkanResources;
 };
 
 template <typename VertexType, typename IndexType>
-inline MeshBank<VertexType, IndexType>::~MeshBank()
+MeshBank<VertexType, IndexType>::~MeshBank()
 {
     cleanup();
 }
 
 template <typename VertexType, typename IndexType>
-inline void MeshBank<VertexType, IndexType>::addMesh(
+void MeshBank<VertexType, IndexType>::addMesh(
     std::span<VertexType> vertices, std::span<IndexType> indices, const MeshLite& mesh)
 {
     //  take the current number of vertices in the vertex buffer
@@ -83,30 +85,36 @@ inline void MeshBank<VertexType, IndexType>::addMesh(
     {
         surface.mFirstIndex += indexOffset;
     }
+    mBoundsData.push_back(mesh.mBounds);
 }
+
 template <typename VertexType, typename IndexType>
-inline void MeshBank<VertexType, IndexType>::buildMeshBuffers()
+void MeshBank<VertexType, IndexType>::buildMeshBuffers()
 {
     const VkDeviceSize vertexSize = mVertexBufferData.size() * sizeof(VertexType);
     const VkDeviceSize indexSize = mIndexBufferData.size() * sizeof(IndexType);
+    const VkDeviceSize boundsSize = mBoundsData.size() * sizeof(Base::BoundingSphere);
 
     mVulkanResources->createAndMapBuffer(mVertexBufferData.data(), vertexSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
         VMA_ALLOCATION_CREATE_MAPPED_BIT, VMA_MEMORY_USAGE_GPU_ONLY, mVertexBuffer);
     mVulkanResources->createAndMapBuffer(mIndexBufferData.data(), indexSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
         VMA_ALLOCATION_CREATE_MAPPED_BIT, VMA_MEMORY_USAGE_GPU_ONLY, mIndexBuffer);
-}
-
-template<typename VertexType, typename IndexType>
-inline void MeshBank<VertexType, IndexType>::bindMeshBuffers(VkCommandBuffer cmdBuf) const
-{
-    VkBuffer vertexBuffers[] = { mVertexBuffer.mBuffer };
-    VkDeviceSize offsets[] = { 0 };
-    vkCmdBindVertexBuffers(cmdBuf, 0, 1, vertexBuffers, offsets);
-    vkCmdBindIndexBuffer(cmdBuf, mIndexBuffer.mBuffer, 0, VK_INDEX_TYPE_UINT32);
+    mVulkanResources->createAndMapBuffer(mBoundsData.data(), boundsSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+        VMA_ALLOCATION_CREATE_MAPPED_BIT, VMA_MEMORY_USAGE_GPU_ONLY, mBoundsBuffer); //  bounds of meshes for culling
 }
 
 template <typename VertexType, typename IndexType>
-inline void MeshBank<VertexType, IndexType>::cleanup()
+void MeshBank<VertexType, IndexType>::bindMeshBuffers(VkCommandBuffer cmdBuf) const
+{
+    VkBuffer vertexBuffers[] = {mVertexBuffer.mBuffer};
+    VkDeviceSize offsets[] = {0};
+    vkCmdBindVertexBuffers(cmdBuf, 0, 1, vertexBuffers, offsets);
+    vkCmdBindIndexBuffer(cmdBuf, mIndexBuffer.mBuffer, 0, VK_INDEX_TYPE_UINT32);
+    //  bounds buffer shall be bound in cull (compute) pass
+}
+
+template <typename VertexType, typename IndexType>
+void MeshBank<VertexType, IndexType>::cleanup()
 {
     if (mVertexBuffer.mBuffer != nullptr)
     {
@@ -116,7 +124,12 @@ inline void MeshBank<VertexType, IndexType>::cleanup()
     {
         mVulkanResources->destroyBuffer(mIndexBuffer);
     }
+    if (mBoundsBuffer.mBuffer != nullptr)
+    {
+        mVulkanResources->destroyBuffer(mBoundsBuffer);
+    }
     mVertexBufferData.clear();
     mIndexBufferData.clear();
+    mBoundsData.clear();
 }
 } // namespace Bunny::Render
