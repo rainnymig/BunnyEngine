@@ -3,6 +3,7 @@
 #include "Descriptor.h"
 #include "Fundamentals.h"
 
+#include "BunnyResult.h"
 #include "BunnyGuard.h"
 
 #include <vulkan/vulkan.h>
@@ -31,7 +32,7 @@ class Material
     IdType getId() const { return mId; }
     const MaterialPipeline& getMaterialPipeline() const { return mPipeline; }
     virtual void cleanup() = 0;
-    virtual ~Material() {}
+    virtual ~Material();
 
   protected:
     IdType mId;
@@ -44,24 +45,25 @@ class BasicBlinnPhongMaterial : public Material
     class Builder
     {
       public:
-        void setPushConstantRanges(std::span<VkPushConstantRange> ranges)
-        {
-            mPushConstantRanges.assign(ranges.begin(), ranges.end());
-        }
         void setColorAttachmentFormat(VkFormat format) { mColorFormat = format; }
         void setDepthFormat(VkFormat format) { mDepthFormat = format; }
-        void setSceneDescriptorSetLayout(VkDescriptorSetLayout layout) { mSceneDescSetLayout = layout; }
-        void setObjectDescriptorSetLayout(VkDescriptorSetLayout layout) { mObjectDescSetLayout = layout; }
+        void setShaderPaths(const std::string& vertexShader, const std::string& fragmentShader)
+        {
+            mVertexShaderPath = vertexShader;
+            mFragmentShaderPath = fragmentShader;
+        }
         std::unique_ptr<BasicBlinnPhongMaterial> buildMaterial(VkDevice device) const;
 
       private:
-        MaterialPipeline buildPipeline(VkDevice device) const;
+        BunnyResult buildPipeline(VkDevice device, VkDescriptorSetLayout sceneLayout,
+            VkDescriptorSetLayout objectLayout, MaterialPipeline& outPipeline) const;
+        BunnyResult buildDescriptorSetLayouts(
+            VkDevice device, VkDescriptorSetLayout& outSceneLayout, VkDescriptorSetLayout& outObjectLayout) const;
 
-        std::vector<VkPushConstantRange> mPushConstantRanges;
+        std::string mVertexShaderPath{"./basic_instanced_vert.spv"};
+        std::string mFragmentShaderPath{"./basic_updated_frag.spv"};
         VkFormat mColorFormat = VK_FORMAT_B8G8R8A8_SRGB;
         VkFormat mDepthFormat = VK_FORMAT_D32_SFLOAT;
-        VkDescriptorSetLayout mSceneDescSetLayout = nullptr;
-        VkDescriptorSetLayout mObjectDescSetLayout = nullptr;
     };
 
     BasicBlinnPhongMaterial(Base::BunnyGuard<Builder> guard, VkDevice device);
@@ -71,13 +73,13 @@ class BasicBlinnPhongMaterial : public Material
     constexpr std::string_view getName() const { return "Basic Blinn Phong"; }
     MaterialInstance makeInstance();
 
+    VkDescriptorSetLayout getSceneDescSetLayout() const { return mSceneDescSetLayout; }
+    VkDescriptorSetLayout getObjectDescSetLayout() const { return mObjectDescSetLayout; }
+
   private:
-    static constexpr std::string_view VERTEX_SHADER_PATH{"./basic_instanced_vert.spv"};
-    static constexpr std::string_view FRAGMENT_SHADER_PATH{"./basic_updated_frag.spv"};
-
     VkDevice mDevice;
-
-    // void buildDescriptorSetLayout(VkDevice device);
+    VkDescriptorSetLayout mSceneDescSetLayout = nullptr;
+    VkDescriptorSetLayout mObjectDescSetLayout = nullptr;
 
     // DescriptorAllocator mDescriptorAllocator;
     // VkDescriptorSetLayout mDescriptorSetLayout;
