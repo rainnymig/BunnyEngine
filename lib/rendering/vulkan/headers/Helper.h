@@ -2,9 +2,11 @@
 
 #include "Vertex.h"
 #include "MeshBank.h"
+#include "MaterialBank.h"
 
 #include <vulkan/vulkan.h>
 #include <glm/vec3.hpp>
+#include <fastgltf/core.hpp>
 
 #include <vector>
 #include <string_view>
@@ -32,18 +34,18 @@ VkRenderingInfo makeRenderingInfo(
 void transitionImageLayout(
     VkCommandBuffer commandBuffer, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 
-
-void addVertex(const glm::vec3& position, const glm::vec3& normal, const glm::vec4& color,
-    const glm::vec2& texCoord, std::vector<uint32_t>& indices, std::vector<NormalVertex>& vertices,
+void addVertex(const glm::vec3& position, const glm::vec3& normal, const glm::vec4& color, const glm::vec2& texCoord,
+    std::vector<uint32_t>& indices, std::vector<NormalVertex>& vertices,
     std::unordered_map<NormalVertex, uint32_t, NormalVertex::Hash>& vertexToIndexMap);
 void addTriangle(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3, const glm::vec4& color,
     const glm::vec2& texCoordBase, const float scale, std::vector<uint32_t>& indices,
     std::vector<NormalVertex>& vertices,
     std::unordered_map<NormalVertex, uint32_t, NormalVertex::Hash>& vertexToIndexMap);
-void addQuad(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3, const glm::vec3& p4,
-    const glm::vec4& color, const glm::vec2& texCoordBase, const float scale, std::vector<uint32_t>& indices,
+void addQuad(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3, const glm::vec3& p4, const glm::vec4& color,
+    const glm::vec2& texCoordBase, const float scale, std::vector<uint32_t>& indices,
     std::vector<NormalVertex>& vertices,
     std::unordered_map<NormalVertex, uint32_t, NormalVertex::Hash>& vertexToIndexMap);
 const IdType createCubeMeshToBank(MeshBank<NormalVertex>* meshBank, IdType materialId);
+void loadMeshFromGltf(MeshBank<NormalVertex>* meshBank, MaterialBank* materialBank, fastgltf::Asset& gltfAsset);
 
 } // namespace Bunny::Render

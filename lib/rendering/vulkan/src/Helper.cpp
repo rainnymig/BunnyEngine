@@ -2,6 +2,10 @@
 
 #include "ErrorCheck.h"
 
+#include <fastgltf/glm_element_traits.hpp>
+#include <fastgltf/tools.hpp>
+#include <fastgltf/util.hpp>
+
 namespace Bunny::Render
 {
 VkCommandPoolCreateInfo makeCommandPoolCreateInfo(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flags)
@@ -253,8 +257,6 @@ const IdType createCubeMeshToBank(MeshBank<NormalVertex>* meshBank, IdType mater
 {
     MeshLite newMesh;
     newMesh.mName = "Cube";
-    IdType meshId = std::hash<std::string>{}(newMesh.mName);
-    newMesh.mId = meshId;
 
     SurfaceLite cubeSurface;
     cubeSurface.mFirstIndex = 0;
@@ -295,9 +297,108 @@ const IdType createCubeMeshToBank(MeshBank<NormalVertex>* meshBank, IdType mater
     newMesh.mBounds.mCenter = glm::vec3{0, 0, 0};
     newMesh.mBounds.mRadius = 0.9f; //  the exact radius should be sqrt(3)/2;
 
-    meshBank->addMesh(vertices, indices, newMesh);
+    return meshBank->addMesh(vertices, indices, newMesh);
+}
 
-    return meshId;
+void loadMeshFromGltf(MeshBank<NormalVertex>* meshBank, MaterialBank* materialBank, fastgltf::Asset& gltfAsset)
+{
+    std::vector<uint32_t> indices;
+    std::vector<Render::NormalVertex> vertices;
+    for (fastgltf::Mesh& mesh : gltfAsset.meshes)
+    {
+        Render::MeshLite newMesh;
+        newMesh.mName = mesh.name;
+
+        indices.clear();
+        vertices.clear();
+
+        glm::vec3 maxCorner{-100000, -100000, -100000};
+        glm::vec3 minCorner{100000, 100000, 100000};
+
+        //  create mesh surfaces
+        for (auto&& primitive : mesh.primitives)
+        {
+            Render::SurfaceLite newSurface;
+            newSurface.mFirstIndex = indices.size();
+            size_t initialVtx = vertices.size();
+
+            //  load indices
+            {
+                fastgltf::Accessor& indexAccessor = gltfAsset.accessors[primitive.indicesAccessor.value()];
+                newSurface.mIndexCount = indexAccessor.count;
+                indices.reserve(indices.size() + indexAccessor.count);
+                fastgltf::iterateAccessor<uint32_t>(
+                    gltfAsset, indexAccessor, [&](uint32_t idx) { indices.push_back(idx); });
+            }
+
+            //  load vertex positions
+            //  calculate bounding sphere in the process
+            {
+                fastgltf::Accessor& posAccessor =
+                    gltfAsset.accessors[primitive.findAttribute("POSITION")->accessorIndex];
+                vertices.resize(vertices.size() + posAccessor.count);
+
+                fastgltf::iterateAccessorWithIndex<glm::vec3>(
+                    gltfAsset, posAccessor, [&vertices, &minCorner, &maxCorner, initialVtx](glm::vec3 vec, size_t idx) {
+                        Render::NormalVertex newVertex;
+                        newVertex.mPosition = vec;
+                        newVertex.mNormal = {1, 0, 0};
+                        newVertex.mColor = {0.8f, 0.8f, 0.8f, 1.0f};
+                        newVertex.mTexCoord = {0, 0};
+                        vertices[initialVtx + idx] = newVertex;
+
+                        minCorner.x = std::min(minCorner.x, vec.x);
+                        minCorner.y = std::min(minCorner.y, vec.y);
+                        minCorner.z = std::min(minCorner.z, vec.z);
+                        maxCorner.x = std::max(maxCorner.x, vec.x);
+                        maxCorner.y = std::max(maxCorner.y, vec.y);
+                        maxCorner.z = std::max(maxCorner.z, vec.z);
+                    });
+            }
+
+            //  load vertex normal
+            auto normalAttr = primitive.findAttribute("NORMAL");
+            if (normalAttr != primitive.attributes.end())
+            {
+                fastgltf::Accessor& normalAccessor = gltfAsset.accessors[normalAttr->accessorIndex];
+                fastgltf::iterateAccessorWithIndex<glm::vec3>(gltfAsset, normalAccessor,
+                    [&vertices, initialVtx](glm::vec3 norm, size_t idx) { vertices[initialVtx + idx].mNormal = norm; });
+            }
+
+            //  load vertex color
+            auto colorAttr = primitive.findAttribute("COLOR_0");
+            if (colorAttr != primitive.attributes.end())
+            {
+                fastgltf::Accessor& colorAccessor = gltfAsset.accessors[colorAttr->accessorIndex];
+                fastgltf::iterateAccessorWithIndex<glm::vec4>(gltfAsset, colorAccessor,
+                    [&vertices, initialVtx](glm::vec4 col, size_t idx) { vertices[initialVtx + idx].mColor = col; });
+            }
+
+            //  load vertex texcoord
+            auto TexCoordAttr = primitive.findAttribute("TEXCOORD_0");
+            if (TexCoordAttr != primitive.attributes.end())
+            {
+                fastgltf::Accessor& texCoordAccessor = gltfAsset.accessors[TexCoordAttr->accessorIndex];
+                fastgltf::iterateAccessorWithIndex<glm::vec2>(
+                    gltfAsset, texCoordAccessor, [&vertices, initialVtx](glm::vec2 coord, size_t idx) {
+                        vertices[initialVtx + idx].mTexCoord = coord;
+                    });
+            }
+
+            //  load material
+            //  for now all use default material
+            newSurface.mMaterialInstanceId = materialBank->getDefaultMaterialId();
+
+            newMesh.mSurfaces.push_back(newSurface);
+        }
+
+        //  calculate bounding sphere of mesh
+        newMesh.mBounds.mCenter = (minCorner + maxCorner) / 2.0f;
+        newMesh.mBounds.mRadius = glm::length(maxCorner - minCorner) / 2.0f;
+
+        //  create mesh buffers
+        meshBank->addMesh(vertices, indices, newMesh);
+    }
 }
 
 } // namespace Bunny::Render

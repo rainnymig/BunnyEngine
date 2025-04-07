@@ -4,6 +4,7 @@
 #include "Vertex.h"
 #include "MaterialBank.h"
 #include "Helper.h"
+#include "Fundamentals.h"
 
 #include <glm/mat4x4.hpp>
 #include <glm/ext/matrix_transform.hpp>
@@ -62,102 +63,7 @@ BunnyResult WorldLoader::loadGltfToWorld(std::string_view filePath, World& outWo
     //  load textures
 
     //  load meshes
-    std::vector<uint32_t> indices;
-    std::vector<Render::NormalVertex> vertices;
-    for (fastgltf::Mesh& mesh : gltf.meshes)
-    {
-        Render::MeshLite newMesh;
-        newMesh.mName = mesh.name;
-        newMesh.mId = std::hash<std::string>{}(newMesh.mName);
-
-        indices.clear();
-        vertices.clear();
-
-        glm::vec3 maxCorner{-100000, -100000, -100000};
-        glm::vec3 minCorner{100000, 100000, 100000};
-
-        //  create mesh surfaces
-        for (auto&& primitive : mesh.primitives)
-        {
-            Render::SurfaceLite newSurface;
-            newSurface.mFirstIndex = indices.size();
-            size_t initialVtx = vertices.size();
-
-            //  load indices
-            {
-                fastgltf::Accessor& indexAccessor = gltf.accessors[primitive.indicesAccessor.value()];
-                newSurface.mIndexCount = indexAccessor.count;
-                indices.reserve(indices.size() + indexAccessor.count);
-                fastgltf::iterateAccessor<uint32_t>(gltf, indexAccessor, [&](uint32_t idx) { indices.push_back(idx); });
-            }
-
-            //  load vertex positions
-            //  calculate bounding sphere in the process
-            {
-                fastgltf::Accessor& posAccessor = gltf.accessors[primitive.findAttribute("POSITION")->accessorIndex];
-                vertices.resize(vertices.size() + posAccessor.count);
-
-                fastgltf::iterateAccessorWithIndex<glm::vec3>(
-                    gltf, posAccessor, [&vertices, &minCorner, &maxCorner, initialVtx](glm::vec3 vec, size_t idx) {
-                        Render::NormalVertex newVertex;
-                        newVertex.mPosition = vec;
-                        newVertex.mNormal = {1, 0, 0};
-                        newVertex.mColor = {0.8f, 0.8f, 0.8f, 1.0f};
-                        newVertex.mTexCoord = {0, 0};
-                        vertices[initialVtx + idx] = newVertex;
-
-                        minCorner.x = std::min(minCorner.x, vec.x);
-                        minCorner.y = std::min(minCorner.y, vec.y);
-                        minCorner.z = std::min(minCorner.z, vec.z);
-                        maxCorner.x = std::max(maxCorner.x, vec.x);
-                        maxCorner.y = std::max(maxCorner.y, vec.y);
-                        maxCorner.z = std::max(maxCorner.z, vec.z);
-                    });
-            }
-
-            //  load vertex normal
-            auto normalAttr = primitive.findAttribute("NORMAL");
-            if (normalAttr != primitive.attributes.end())
-            {
-                fastgltf::Accessor& normalAccessor = gltf.accessors[normalAttr->accessorIndex];
-                fastgltf::iterateAccessorWithIndex<glm::vec3>(gltf, normalAccessor,
-                    [&vertices, initialVtx](glm::vec3 norm, size_t idx) { vertices[initialVtx + idx].mNormal = norm; });
-            }
-
-            //  load vertex color
-            auto colorAttr = primitive.findAttribute("COLOR_0");
-            if (colorAttr != primitive.attributes.end())
-            {
-                fastgltf::Accessor& colorAccessor = gltf.accessors[colorAttr->accessorIndex];
-                fastgltf::iterateAccessorWithIndex<glm::vec4>(gltf, colorAccessor,
-                    [&vertices, initialVtx](glm::vec4 col, size_t idx) { vertices[initialVtx + idx].mColor = col; });
-            }
-
-            //  load vertex texcoord
-            auto TexCoordAttr = primitive.findAttribute("TEXCOORD_0");
-            if (TexCoordAttr != primitive.attributes.end())
-            {
-                fastgltf::Accessor& texCoordAccessor = gltf.accessors[TexCoordAttr->accessorIndex];
-                fastgltf::iterateAccessorWithIndex<glm::vec2>(
-                    gltf, texCoordAccessor, [&vertices, initialVtx](glm::vec2 coord, size_t idx) {
-                        vertices[initialVtx + idx].mTexCoord = coord;
-                    });
-            }
-
-            //  load material
-            //  for now all use default material
-            newSurface.mMaterialInstanceId = mMaterialBank->getDefaultMaterialId();
-
-            newMesh.mSurfaces.push_back(newSurface);
-        }
-
-        //  calculate bounding sphere of mesh
-        newMesh.mBounds.mCenter = (minCorner + maxCorner) / 2.0f;
-        newMesh.mBounds.mRadius = glm::length(maxCorner - minCorner) / 2.0f;
-
-        //  create mesh buffers
-        mMeshBank->addMesh(vertices, indices, newMesh);
-    }
+    Render::loadMeshFromGltf(mMeshBank, mMaterialBank, gltf);
 
     //  save the mapping from fastgltf node idx to entity
     //  to convert the children
@@ -196,7 +102,7 @@ BunnyResult WorldLoader::loadGltfToWorld(std::string_view filePath, World& outWo
         if (node.meshIndex.has_value())
         {
             std::string meshName{gltf.meshes.at(node.meshIndex.value()).name.c_str()};
-            size_t meshId = std::hash<std::string>{}(meshName);
+            size_t meshId = mMeshBank->getMeshIdFromName(meshName);
             outWorld.mEntityRegistry.emplace<MeshComponent>(nodeEntity, meshId);
         }
     }
@@ -220,18 +126,12 @@ BunnyResult WorldLoader::loadGltfToWorld(std::string_view filePath, World& outWo
 
 BunnyResult WorldLoader::loadTestWorld(World& outWorld)
 {
-    //  vecters to hold indices and vertices for creating buffers
-    // std::vector<uint32_t> indices;
-    // std::vector<NormalVertex> vertices;
-    // std::unordered_map<NormalVertex, uint32_t, NormalVertex::Hash> vertexToIndexMap;
-
     //  create meshes and save them in the mesh asset bank
-    const Render::IdType meshId = createCubeMeshToBank(mMeshBank, mMaterialBank->getDefaultMaterialId());
+    const Render::IdType meshId = Render::createCubeMeshToBank(mMeshBank, mMaterialBank->getDefaultMaterialId());
     mMeshBank->buildMeshBuffers();
 
     //  create scene structure
     //  create grid of cubes to fill the scene
-
     constexpr int resolution = 4;
     constexpr float gap = 2;
     std::vector<glm::vec3> positions;
@@ -376,8 +276,10 @@ BunnyResult WorldRenderDataTranslator::translateObjectData(const World* world)
 
     size_t idx = 0;
     size_t countInBatch = 0;
-    Render::RenderBatch currentBatch{
-        .mMaterialInstanceId = 0, .mMeshId = 0, .mObjectBuffer = &mObjectDataBuffer, .mInstanceCount = 0};
+    Render::RenderBatch currentBatch{.mMaterialInstanceId = 0,
+        .mMeshId = Render::BUNNY_INVALID_ID,
+        .mObjectBuffer = &mObjectDataBuffer,
+        .mInstanceCount = 0};
     for (auto [entity, mesh, transform] : meshTransComp.each())
     {
         if (mesh.mMeshId != currentBatch.mMeshId)
