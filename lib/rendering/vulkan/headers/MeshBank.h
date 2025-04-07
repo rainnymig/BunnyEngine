@@ -8,6 +8,7 @@
 
 #include <vector>
 #include <string>
+#include <string_view>
 #include <span>
 #include <unordered_map>
 #include <algorithm>
@@ -30,6 +31,7 @@ struct MeshLiteT
     std::string mName;
     std::vector<SurfaceLite> mSurfaces;
     BoundType mBounds;
+    uint32_t mVertexOffset = 0;
 };
 
 using MeshLite = MeshLiteT<Base::BoundingSphere>;
@@ -42,10 +44,12 @@ class MeshBank
     ~MeshBank();
 
     //  the indices should be unprocessed, i.e. as they are starting from 0
-    void addMesh(std::span<VertexType> vertices, std::span<IndexType> indices, const MeshLite& mesh);
+    IdType addMesh(std::span<VertexType> vertices, std::span<IndexType> indices, const MeshLite& mesh);
     void buildMeshBuffers();
     void bindMeshBuffers(VkCommandBuffer cmdBuf) const;
     const MeshLite& getMesh(IdType id) const { return mMeshes.at(id); }
+    const MeshLite& getMesh(std::string_view name) const { return mMeshes.at(getMeshIdFromName(name)); }
+    const IdType getMeshIdFromName(std::string_view name) const { return mMeshNameToIdMap.at(name); }
     void cleanup();
 
   private:
@@ -55,7 +59,8 @@ class MeshBank
     std::vector<VertexType> mVertexBufferData;
     std::vector<IndexType> mIndexBufferData;
     std::vector<Base::BoundingSphere> mBoundsData; //  maybe template this as well
-    std::unordered_map<IdType, MeshLite> mMeshes;
+    std::vector<MeshLite> mMeshes;
+    std::unordered_map<std::string_view, IdType> mMeshNameToIdMap;
     const VulkanRenderResources* mVulkanResources;
 };
 
@@ -66,7 +71,7 @@ MeshBank<VertexType, IndexType>::~MeshBank()
 }
 
 template <typename VertexType, typename IndexType>
-void MeshBank<VertexType, IndexType>::addMesh(
+IdType MeshBank<VertexType, IndexType>::addMesh(
     std::span<VertexType> vertices, std::span<IndexType> indices, const MeshLite& mesh)
 {
     //  take the current number of vertices in the vertex buffer
@@ -78,14 +83,28 @@ void MeshBank<VertexType, IndexType>::addMesh(
     //  vertices can be directly insert into the buffer
     mVertexBufferData.insert(mVertexBufferData.end(), vertices.begin(), vertices.end());
     //  indices need to add the offset first
-    std::transform(indices.begin(), indices.end(), std::back_inserter(mIndexBufferData),
-        [vertexOffset](IndexType index) { return index + vertexOffset; });
-    mMeshes[mesh.mId] = mesh;
-    for (SurfaceLite& surface : mMeshes[mesh.mId].mSurfaces)
+    //  update: no need, vertex offset set in mesh instead
+    // std::transform(indices.begin(), indices.end(), std::back_inserter(mIndexBufferData),
+    //     [vertexOffset](IndexType index) { return index + vertexOffset; });
+    mIndexBufferData.insert(mIndexBufferData.end(), indices.begin(), indices.end());
+
+    //  assign an id for the new mesh
+    //  the id is it's index in the mMeshes vector
+    //  this makes it easier to find the mesh using the id
+    const IdType meshId = mMeshes.size();
+    mMeshes.push_back(mesh);
+    mMeshes[meshId].mId = meshId;
+    mMeshes[meshId].mVertexOffset = vertexOffset;
+    for (SurfaceLite& surface : mMeshes[meshId].mSurfaces)
     {
         surface.mFirstIndex += indexOffset;
     }
-    mBoundsData.push_back(mesh.mBounds);
+    mBoundsData.push_back(mMeshes[meshId].mBounds);
+
+    //  update mesh name to id mapping to enable get mesh from name
+    mMeshNameToIdMap[mMeshes[meshId].mName] = meshId;
+
+    return meshId;
 }
 
 template <typename VertexType, typename IndexType>

@@ -117,7 +117,7 @@ void ForwardPass::renderBatch(const RenderBatch& batch)
         if (surface.mMaterialInstanceId == batch.mMaterialInstanceId)
         {
             vkCmdDrawIndexed(mRenderer->getCurrentCommandBuffer(), surface.mIndexCount, batch.mInstanceCount,
-                surface.mFirstIndex, 0, 0);
+                surface.mFirstIndex, meshToRender.mVertexOffset, 0);
         }
     }
 }
