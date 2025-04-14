@@ -18,6 +18,43 @@ layout (local_size_x = 256) in;
 //      draw count      - number of draws, should be the number of elements in the draw indirect parameter buffer
 //      
 
+struct DrawCommand
+{
+    uint indexCount;
+    uint instanceCount;
+    uint firstIndex;
+    int vertexOffset;
+    uint firstInstance;
+    vec3 padding;
+};
+
+struct ObjectData
+{
+    mat4 model;
+    mat4 invTransModel;
+};
+
+struct BoundingSphere
+{
+    vec3 center;
+    float radius;
+}
+
+layout(std140, set = 1, binding = 0) buffer ObjectDataBuffer
+{
+    ObjectData objectData[];
+};
+
+layout(std::140, set = 3, binding = 0) buffer DrawCommandBuffer
+{
+    DrawCommand commands[];
+};
+
+layout(set = 3, binding = 2) uniform CullingData
+{
+    
+};
+
 void main()
 {
 
