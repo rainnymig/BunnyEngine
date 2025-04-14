@@ -55,6 +55,7 @@ target_link_libraries(VulkanRenderer
         fmt::fmt
         imgui
         fastgltf::fastgltf
+        glm
     )
     
-add_compile_definitions(GLM_FORCE_DEPTH_ZERO_TO_ONE GLM_FORCE_RADIANS)
+add_compile_definitions(GLM_FORCE_DEPTH_ZERO_TO_ONE GLM_FORCE_RADIANS GLM_FORCE_RIGHT_HANDED)

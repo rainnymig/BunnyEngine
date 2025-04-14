@@ -173,7 +173,7 @@ BunnyResult WorldLoader::loadTestWorld(World& outWorld)
     //  camera
     {
         const auto cameraEntity = outWorld.mEntityRegistry.create();
-        Render::Camera camera(glm::vec3{0, 10, -15});
+        Render::Camera camera(glm::vec3{0, 5, 15}, glm::vec3{-glm::pi<float>() / 8, 0, 0});
         outWorld.mEntityRegistry.emplace<CameraComponent>(cameraEntity, camera);
     }
 
@@ -181,9 +181,9 @@ BunnyResult WorldLoader::loadTestWorld(World& outWorld)
     {
         const auto lightEntity = outWorld.mEntityRegistry.create();
         Render::DirectionalLight dirLight{
-            .mDirection = glm::normalize(glm::vec3{0, -1, -2}
+            .mDirection = glm::normalize(glm::vec3{-1, -3, -2}
               ),
-            .mColor = {1, 1,  1 },
+            .mColor = {1,  1,  1 },
         };
         outWorld.mEntityRegistry.emplace<DirectionLightComponent>(lightEntity, dirLight);
     }
