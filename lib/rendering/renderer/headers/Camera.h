@@ -3,7 +3,7 @@
 #include <Transform.h>
 
 #include <glm/trigonometric.hpp>
-#include <glm/mat4x4.hpp>
+#include <glm/matrix.hpp>
 
 namespace Bunny::Render
 {
@@ -12,8 +12,11 @@ class Camera
 {
   public:
     //  fov angle is in vertical direction, is radians
-    Camera(const glm::vec3& lookFrom = {0, 5, 10}, const glm::vec3& lookAt = {0, 0, 0}, float fov = glm::radians(45.0f),
-        float aspectRatio = 16.0f / 9.0f);
+    Camera(const glm::vec3& lookFrom = {0, 0, 10}, const glm::vec3& pitchYawRoll = {0, 0, 0},
+        float fov = glm::radians(45.0f), float aspectRatio = 16.0f / 9.0f);
+
+    void setPosition(const glm::vec3& position);
+    void setRotation(const glm::vec3& pitchYawRoll);
 
     void setAspectRatio(float ratio);
 
@@ -26,14 +29,13 @@ class Camera
     static constexpr float FarPlaneDistance = 100.0f;
 
   private:
-
     void updateMatrices();
 
     glm::mat4 mViewMatrix;
     glm::mat4 mProjMatrix;
     glm::mat4 mViewProjMatrix;
     glm::vec3 mPosition;
-    glm::vec3 mLookAt;
+    glm::vec3 mPitchYawRoll;
     float mFov;
     float mAspectRatio;
 };

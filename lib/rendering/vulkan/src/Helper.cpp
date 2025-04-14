@@ -209,8 +209,8 @@ void addTriangle(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3, 
 
     glm::vec3 v12 = p2 - p1;
     glm::vec3 v13 = p3 - p1;
-    // glm::vec3 normal = glm::normalize(glm::cross(v12, v13));
-    glm::vec3 normal = glm::normalize(glm::cross(v13, v12)); //  revisit this direction later
+    glm::vec3 normal = glm::normalize(glm::cross(v12, v13));
+    // glm::vec3 normal = glm::normalize(glm::cross(v13, v12)); //  revisit this direction later
 
     glm::vec2 tex1 = texCoordBase;
     glm::vec2 tex2 = texCoordBase + glm::vec2{0, scale};
@@ -236,8 +236,8 @@ void addQuad(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3, cons
 
     glm::vec3 v12 = p2 - p1;
     glm::vec3 v14 = p4 - p1;
-    // glm::vec3 normal = glm::normalize(glm::cross(v12, v14));
-    glm::vec3 normal = glm::normalize(glm::cross(v14, v12)); //  revisit this direction later
+    glm::vec3 normal = glm::normalize(glm::cross(v12, v14));
+    // glm::vec3 normal = glm::normalize(glm::cross(v14, v12)); //  revisit this direction later
 
     glm::vec2 tex1 = texCoordBase;
     glm::vec2 tex2 = texCoordBase + glm::vec2{0, scale};
@@ -274,22 +274,22 @@ const IdType createCubeMeshToBank(MeshBank<NormalVertex>* meshBank, IdType mater
     constexpr glm::vec4 aqua{0.0f, 1.0, 1.0, 1.0};
     constexpr glm::vec4 white{1.0f, 1.0, 1.0, 1.0};
     //  front   -z
-    addQuad({-0.5, 0.5, -0.5}, {-0.5, -0.5, -0.5}, {0.5, -0.5, -0.5}, {0.5, 0.5, -0.5}, aqua, {0, 0}, 1, indices,
+    addQuad({-0.5, 0.5, -0.5}, {0.5, 0.5, -0.5}, {0.5, -0.5, -0.5}, {-0.5, -0.5, -0.5}, aqua, {0, 0}, 1, indices,
         vertices, vertexToIndexMap);
     //  right   +x
-    addQuad({0.5, 0.5, -0.5}, {0.5, -0.5, -0.5}, {0.5, -0.5, 0.5}, {0.5, 0.5, 0.5}, red, {0, 0}, 1, indices, vertices,
+    addQuad({0.5, 0.5, -0.5}, {0.5, 0.5, 0.5}, {0.5, -0.5, 0.5}, {0.5, -0.5, -0.5}, red, {0, 0}, 1, indices, vertices,
         vertexToIndexMap);
     //  up      +y
-    addQuad({-0.5, 0.5, 0.5}, {-0.5, 0.5, -0.5}, {0.5, 0.5, -0.5}, {0.5, 0.5, 0.5}, green, {0, 0}, 1, indices, vertices,
+    addQuad({-0.5, 0.5, 0.5}, {0.5, 0.5, 0.5}, {0.5, 0.5, -0.5}, {-0.5, 0.5, -0.5}, green, {0, 0}, 1, indices, vertices,
         vertexToIndexMap);
     //  left    -x
-    addQuad({-0.5, 0.5, 0.5}, {-0.5, -0.5, 0.5}, {-0.5, -0.5, -0.5}, {-0.5, 0.5, -0.5}, yellow, {0, 0}, 1, indices,
+    addQuad({-0.5, 0.5, 0.5}, {-0.5, 0.5, -0.5}, {-0.5, -0.5, -0.5}, {-0.5, -0.5, 0.5}, yellow, {0, 0}, 1, indices,
         vertices, vertexToIndexMap);
     //  bottom  -y
-    addQuad({-0.5, -0.5, -0.5}, {-0.5, -0.5, 0.5}, {0.5, -0.5, 0.5}, {0.5, -0.5, -0.5}, fuchsia, {0, 0}, 1, indices,
+    addQuad({-0.5, -0.5, -0.5}, {0.5, -0.5, -0.5}, {0.5, -0.5, 0.5}, {-0.5, -0.5, 0.5}, fuchsia, {0, 0}, 1, indices,
         vertices, vertexToIndexMap);
     //  back    +z
-    addQuad({0.5, 0.5, 0.5}, {0.5, -0.5, 0.5}, {-0.5, -0.5, 0.5}, {-0.5, 0.5, 0.5}, blue, {0, 0}, 1, indices, vertices,
+    addQuad({0.5, 0.5, 0.5}, {-0.5, 0.5, 0.5}, {-0.5, -0.5, 0.5}, {0.5, -0.5, 0.5}, blue, {0, 0}, 1, indices, vertices,
         vertexToIndexMap);
 
     cubeSurface.mIndexCount = indices.size();
