@@ -81,9 +81,11 @@ int main(void)
 
     WorldRenderDataTranslator worldTranslator(&renderResources, &meshBank, &materialBank);
     worldTranslator.initialize();
+    worldTranslator.rebuildObjectDataBuffer(&bunnyWorld);
 
     forwardPass.updateSceneData(worldTranslator.getSceneBuffer());
     forwardPass.updateLightData(worldTranslator.getLightBuffer());
+    forwardPass.updateObjectData(worldTranslator.getObjectBuffer(), worldTranslator.getObjectBufferSize());
 
     float accumulatedTime = 0;
     constexpr float interval = 0.5f;
@@ -107,19 +109,21 @@ int main(void)
             break;
         }
 
-        bunnyWorld.update(timer.getDeltaTime());
+        // bunnyWorld.update(timer.getDeltaTime());
 
         worldTranslator.translateSceneData(&bunnyWorld);
-        worldTranslator.translateObjectData(&bunnyWorld);
+        // worldTranslator.rebuildObjectDataBuffer(&bunnyWorld);
+        // worldTranslator.translateObjectData(&bunnyWorld);
 
         renderer.beginRenderFrame();
 
         renderer.beginRender();
 
-        for (const Bunny::Render::RenderBatch& batch : worldTranslator.getRenderBatches())
-        {
-            forwardPass.renderBatch(batch);
-        }
+        // for (const Bunny::Render::RenderBatch& batch : worldTranslator.getRenderBatches())
+        // {
+        //     forwardPass.renderBatch(batch);
+        // }
+        forwardPass.renderAll();
 
         renderer.finishRender();
 

@@ -45,7 +45,7 @@ layout(std140, set = 1, binding = 0) buffer ObjectDataBuffer
     ObjectData objectData[];
 };
 
-layout(std::140, set = 3, binding = 0) buffer DrawCommandBuffer
+layout(std140, set = 3, binding = 0) buffer DrawCommandBuffer
 {
     DrawCommand commands[];
 };

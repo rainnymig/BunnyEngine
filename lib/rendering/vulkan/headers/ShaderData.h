@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Light.h"
+#include "Fundamentals.h"
 
 #include <glm/matrix.hpp>
 #include <glm/vec3.hpp>
@@ -27,6 +28,8 @@ struct ObjectData
 {
     glm::mat4 model;
     glm::mat4 invTransModel;
+    IdType meshId;
+    glm::vec3 padding;
 };
 
 //  object data for culling with bounding sphere

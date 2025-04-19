@@ -29,7 +29,7 @@ struct RenderBatch
     //  may need startIndex and indexCount for a surface, since a mesh can have surfaces of different materials
 
     const AllocatedBuffer* mObjectBuffer; //  should hold an array of ObjectData for rendering
-                                   //  i.e. should be used directly as uniform buffer
+                                          //  i.e. should be used directly as uniform buffer
     size_t mInstanceCount;
 };
 } // namespace Bunny::Render

@@ -253,7 +253,7 @@ void addQuad(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3, cons
     addVertex(p3, normal, color, tex3, indices, vertices, vertexToIndexMap);
 }
 
-const IdType createCubeMeshToBank(MeshBank<NormalVertex>* meshBank, IdType materialId)
+const IdType createCubeMeshToBank(MeshBank<NormalVertex>* meshBank, IdType materialId, IdType materialInstanceId)
 {
     MeshLite newMesh;
     newMesh.mName = "Cube";
@@ -261,6 +261,7 @@ const IdType createCubeMeshToBank(MeshBank<NormalVertex>* meshBank, IdType mater
     SurfaceLite cubeSurface;
     cubeSurface.mFirstIndex = 0;
     cubeSurface.mMaterialInstanceId = materialId;
+    cubeSurface.mMaterialInstanceId = materialInstanceId;
 
     std::vector<uint32_t> indices;
     std::vector<NormalVertex> vertices;
@@ -387,7 +388,8 @@ void loadMeshFromGltf(MeshBank<NormalVertex>* meshBank, MaterialBank* materialBa
 
             //  load material
             //  for now all use default material
-            newSurface.mMaterialInstanceId = materialBank->getDefaultMaterialId();
+            newSurface.mMaterialId = materialBank->getDefaultMaterialId();
+            newSurface.mMaterialInstanceId = materialBank->getDefaultMaterialInstanceId();
 
             newMesh.mSurfaces.push_back(newSurface);
         }

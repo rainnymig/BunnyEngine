@@ -64,6 +64,19 @@ void ForwardPass::updateLightData(const AllocatedBuffer& lightBuffer)
     }
 }
 
+void ForwardPass::updateObjectData(const AllocatedBuffer& objectBuffer, size_t bufferSize)
+{
+    Render::DescriptorWriter writer;
+    writer.writeBuffer(0, objectBuffer.mBuffer, bufferSize, 0,
+        VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); //  storage buffer?
+    for (VkDescriptorSet set : mObjectDescSets)
+    {
+        writer.updateSet(mVulkanResources->getDevice(), set);
+    }
+
+    // writer.updateSet(mVulkanResources->getDevice(), mObjectDescSets[mRenderer->getCurrentFrameIdx()]);
+}
+
 void ForwardPass::renderBatch(const RenderBatch& batch)
 {
 
@@ -107,19 +120,53 @@ void ForwardPass::renderBatch(const RenderBatch& batch)
     //  draw indexed indirect
     //  temp
     //  should draw all meshes (surfaces) that has the same pipeline (material) and desc set (material instance)
-    // vkCmdDrawIndexedIndirect(mRenderer->getCurrentCommandBuffer(), nullptr, 0, 0, 1);
+    vkCmdDrawIndexedIndirect(mRenderer->getCurrentCommandBuffer(), mMeshBank->getDrawCommandsBuffer().mBuffer, 0, 1,
+        sizeof(VkDrawIndexedIndirectCommand));
 
     //  temp
     //  this can be converted draw indirect
-    const MeshLite& meshToRender = mMeshBank->getMesh(batch.mMeshId);
-    for (const SurfaceLite& surface : meshToRender.mSurfaces)
+    // const MeshLite& meshToRender = mMeshBank->getMesh(batch.mMeshId);
+    // for (const SurfaceLite& surface : meshToRender.mSurfaces)
+    // {
+    //     if (surface.mMaterialInstanceId == batch.mMaterialInstanceId)
+    //     {
+    //         vkCmdDrawIndexed(mRenderer->getCurrentCommandBuffer(), surface.mIndexCount, batch.mInstanceCount,
+    //             surface.mFirstIndex, meshToRender.mVertexOffset, 0);
+    //     }
+    // }
+}
+
+void ForwardPass::renderAll()
+{
+    mMeshBank->bindMeshBuffers(mRenderer->getCurrentCommandBuffer());
+
+    const MaterialInstance& matInstance =
+        mMaterialBank->getMaterialInstance(mMaterialBank->getDefaultMaterialInstanceId());
+
+    vkCmdBindPipeline(
+        mRenderer->getCurrentCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, matInstance.mpBaseMaterial->mPipeline);
+
+    //  bind scene and object data
+    //  best to bind this before for all batches
+    //  but now we need the pipeline layout so have to do it here
+    //  optimize later
+    vkCmdBindDescriptorSets(mRenderer->getCurrentCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS,
+        matInstance.mpBaseMaterial->mPipelineLayout, 0, 1, &mSceneDescSets[mRenderer->getCurrentFrameIdx()], 0,
+        nullptr);
+
+    vkCmdBindDescriptorSets(mRenderer->getCurrentCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS,
+        matInstance.mpBaseMaterial->mPipelineLayout, 1, 1, &mObjectDescSets[mRenderer->getCurrentFrameIdx()], 0,
+        nullptr);
+
+    if (matInstance.mDescriptorSet != nullptr)
     {
-        if (surface.mMaterialInstanceId == batch.mMaterialInstanceId)
-        {
-            vkCmdDrawIndexed(mRenderer->getCurrentCommandBuffer(), surface.mIndexCount, batch.mInstanceCount,
-                surface.mFirstIndex, meshToRender.mVertexOffset, 0);
-        }
+        //  set 2 is material data, so start set is 2
+        vkCmdBindDescriptorSets(mRenderer->getCurrentCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS,
+            matInstance.mpBaseMaterial->mPipelineLayout, 2, 1, &matInstance.mDescriptorSet, 0, nullptr);
     }
+
+    vkCmdDrawIndexedIndirect(mRenderer->getCurrentCommandBuffer(), mMeshBank->getDrawCommandsBuffer().mBuffer, 0, 1,
+        sizeof(VkDrawIndexedIndirectCommand));
 }
 
 void ForwardPass::cleanup()

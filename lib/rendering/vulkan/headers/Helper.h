@@ -45,7 +45,7 @@ void addQuad(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3, cons
     const glm::vec2& texCoordBase, const float scale, std::vector<uint32_t>& indices,
     std::vector<NormalVertex>& vertices,
     std::unordered_map<NormalVertex, uint32_t, NormalVertex::Hash>& vertexToIndexMap);
-const IdType createCubeMeshToBank(MeshBank<NormalVertex>* meshBank, IdType materialId);
+const IdType createCubeMeshToBank(MeshBank<NormalVertex>* meshBank, IdType materialId, IdType materialInstanceId);
 void loadMeshFromGltf(MeshBank<NormalVertex>* meshBank, MaterialBank* materialBank, fastgltf::Asset& gltfAsset);
 
 } // namespace Bunny::Render

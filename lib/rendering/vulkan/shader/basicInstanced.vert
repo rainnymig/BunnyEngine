@@ -13,6 +13,11 @@ struct ObjectData
 {
     mat4 model;
     mat4 invTransModel;
+    uint meshId;
+    // vec3 padding;
+    // vec4 padding2;
+    // vec4 padding3;
+    // vec4 padding4;
 };
 
 /*  buffer layouts  */
@@ -23,7 +28,7 @@ layout(set = 0, binding = 0) uniform SceneData
     mat4 viewProj;
 } sceneData;
 
-layout(std140, set = 1, binding = 0) buffer ObjectDataBuffer
+layout(std430, set = 1, binding = 0) buffer ObjectDataBuffer
 {
     ObjectData objectData[];
 };

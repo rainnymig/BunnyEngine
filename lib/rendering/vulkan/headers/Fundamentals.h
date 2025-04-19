@@ -26,7 +26,7 @@ struct AllocatedBuffer
 //  frame
 static constexpr size_t MAX_FRAMES_IN_FLIGHT = 2;
 
-using IdType = size_t;
+using IdType = uint32_t;
 
 //  wrapping this std::numeric_limits::max in parenthesis because windows defines min/max macro and will mess up things
 //  here don't want to use /NOMINMAX
