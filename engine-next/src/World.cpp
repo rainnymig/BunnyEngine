@@ -102,7 +102,7 @@ BunnyResult WorldLoader::loadGltfToWorld(std::string_view filePath, World& outWo
         if (node.meshIndex.has_value())
         {
             std::string meshName{gltf.meshes.at(node.meshIndex.value()).name.c_str()};
-            size_t meshId = mMeshBank->getMeshIdFromName(meshName);
+            Render::IdType meshId = mMeshBank->getMeshIdFromName(meshName);
             outWorld.mEntityRegistry.emplace<MeshComponent>(nodeEntity, meshId);
         }
     }
@@ -127,7 +127,8 @@ BunnyResult WorldLoader::loadGltfToWorld(std::string_view filePath, World& outWo
 BunnyResult WorldLoader::loadTestWorld(World& outWorld)
 {
     //  create meshes and save them in the mesh asset bank
-    const Render::IdType meshId = Render::createCubeMeshToBank(mMeshBank, mMaterialBank->getDefaultMaterialId());
+    const Render::IdType meshId = Render::createCubeMeshToBank(
+        mMeshBank, mMaterialBank->getDefaultMaterialId(), mMaterialBank->getDefaultMaterialInstanceId());
     mMeshBank->buildMeshBuffers();
 
     //  create scene structure
@@ -201,15 +202,15 @@ WorldRenderDataTranslator::WorldRenderDataTranslator(const Render::VulkanRenderR
 
 BunnyResult WorldRenderDataTranslator::initialize()
 {
-    constexpr VkDeviceSize MAX_OBJECT_BUFFER_SIZE = sizeof(Render::ObjectData) * World::MAX_OBJECT_COUNT;
+    // constexpr VkDeviceSize MAX_OBJECT_BUFFER_SIZE = sizeof(Render::ObjectData) * World::MAX_OBJECT_COUNT;
 
-    mObjectData.resize(World::MAX_OBJECT_COUNT);
+    // mObjectData.resize(World::MAX_OBJECT_COUNT);
 
-    mObjectDataBuffer = mVulkanResources->createBuffer(MAX_OBJECT_BUFFER_SIZE,
-        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, //  storage buffer?
-        VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT |
-            VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT,
-        VMA_MEMORY_USAGE_AUTO);
+    // mObjectDataBuffer = mVulkanResources->createBuffer(MAX_OBJECT_BUFFER_SIZE,
+    //     VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, //  storage buffer?
+    //     VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT |
+    //         VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT,
+    //     VMA_MEMORY_USAGE_AUTO);
 
     mSceneDataBuffer = mVulkanResources->createBuffer(sizeof(Render::SceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
         VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
@@ -311,6 +312,36 @@ BunnyResult WorldRenderDataTranslator::translateObjectData(const World* world)
     {
         void* mappedObjectData = mObjectDataBuffer.mAllocationInfo.pMappedData;
         memcpy(mappedObjectData, mObjectData.data(), idx * sizeof(Render::ObjectData));
+    }
+
+    return BUNNY_HAPPY;
+}
+
+BunnyResult WorldRenderDataTranslator::rebuildObjectDataBuffer(const World* world)
+{
+    mObjectData.clear();
+
+    auto meshTransComp = world->mEntityRegistry.view<MeshComponent, TransformComponent>();
+    for (auto [entity, mesh, transform] : meshTransComp.each())
+    {
+        glm::mat4 modelMat = getEntityGlobalTransform(world->mEntityRegistry, entity, transform.mTransform.mMatrix);
+        glm::mat4 invTransModel = glm::transpose(glm::inverse(modelMat));
+        mObjectData.emplace_back(modelMat, invTransModel, mesh.mMeshId);
+    }
+
+    std::sort(mObjectData.begin(), mObjectData.end(),
+        [](const Render::ObjectData& lhs, const Render::ObjectData& rhs) { return lhs.meshId < rhs.meshId; });
+
+    //  build object data buffer
+    mObjectDataBuffer = mVulkanResources->createBuffer(mObjectData.size() * sizeof(Render::ObjectData),
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+        VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT |
+            VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT,
+        VMA_MEMORY_USAGE_AUTO);
+
+    {
+        void* mappedObjectData = mObjectDataBuffer.mAllocationInfo.pMappedData;
+        memcpy(mappedObjectData, mObjectData.data(), mObjectData.size() * sizeof(Render::ObjectData));
     }
 
     return BUNNY_HAPPY;

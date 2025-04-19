@@ -1,13 +1,12 @@
 #include "MaterialBank.h"
 
-
 namespace Bunny::Render
 {
 void MaterialBank::cleanup()
 {
     mMaterialInstances.clear();
 
-    for (auto& [id, material] : mMaterials)
+    for (auto& material : mMaterials)
     {
         material->cleanup();
     }
@@ -17,19 +16,21 @@ void MaterialBank::cleanup()
 
 void MaterialBank::addMaterial(std::unique_ptr<Material>&& material)
 {
-    mMaterials[material->getId()] = std::move(material);
+    const IdType matId = mMaterials.size();
+    mMaterials.emplace_back(std::move(material));
+    mMaterials[matId]->mId = matId;
 }
 
 void MaterialBank::addMaterialInstance(MaterialInstance materialInstance)
 {
-    //  helper
-    //  take the first material instance as default material instance
-    if (mMaterialInstances.empty())
-    {
-        mDefaultMaterialInstanceId = materialInstance.mId;
-    }
+    const IdType instId = mMaterialInstances.size();
+    mMaterialInstances.emplace_back(materialInstance);
+    mMaterialInstances[instId].mId = instId;
+}
 
-    mMaterialInstances[materialInstance.mId] = materialInstance;
+const Material* MaterialBank::getMaterial(IdType materialId) const
+{
+    return mMaterials.at(materialId).get();
 }
 
 const MaterialInstance& MaterialBank::getMaterialInstance(IdType instanceId) const

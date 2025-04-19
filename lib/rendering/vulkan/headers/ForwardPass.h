@@ -26,7 +26,9 @@ class ForwardPass
     void initializePass(VkDescriptorSetLayout sceneLayout, VkDescriptorSetLayout objectLayout);
     void updateSceneData(const AllocatedBuffer& sceneBuffer);
     void updateLightData(const AllocatedBuffer& lightBuffer);
+    void updateObjectData(const AllocatedBuffer& objectBuffer, size_t bufferSize);
     void renderBatch(const RenderBatch& batch);
+    void renderAll();
     void cleanup();
 
   private:

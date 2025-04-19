@@ -21,6 +21,7 @@ struct SurfaceLite
 {
     uint32_t mFirstIndex; //  the idx of the first index in the shared index buffer
     uint32_t mIndexCount; //  the number of indices
+    IdType mMaterialId;
     IdType mMaterialInstanceId;
 };
 
@@ -50,17 +51,23 @@ class MeshBank
     const MeshLite& getMesh(IdType id) const { return mMeshes.at(id); }
     const MeshLite& getMesh(std::string_view name) const { return mMeshes.at(getMeshIdFromName(name)); }
     const IdType getMeshIdFromName(std::string_view name) const { return mMeshNameToIdMap.at(name); }
+    const AllocatedBuffer& getDrawCommandsBuffer() const { return mDrawCommandsBuffer; }
     void cleanup();
 
   private:
     AllocatedBuffer mVertexBuffer;
     AllocatedBuffer mIndexBuffer;
     AllocatedBuffer mBoundsBuffer;
+    AllocatedBuffer mDrawCommandsBuffer;
+
     std::vector<VertexType> mVertexBufferData;
     std::vector<IndexType> mIndexBufferData;
     std::vector<Base::BoundingSphere> mBoundsData; //  maybe template this as well
+    std::vector<VkDrawIndexedIndirectCommand> mDrawCommandsData;
+
     std::vector<MeshLite> mMeshes;
     std::unordered_map<std::string_view, IdType> mMeshNameToIdMap;
+
     const VulkanRenderResources* mVulkanResources;
 };
 
@@ -98,6 +105,11 @@ IdType MeshBank<VertexType, IndexType>::addMesh(
     for (SurfaceLite& surface : mMeshes[meshId].mSurfaces)
     {
         surface.mFirstIndex += indexOffset;
+
+        //  add a draw indirect command for each surface in the mesh
+        //  the real instance count and first instance are the result of culling stage
+        // mDrawCommandsData.emplace_back(surface.mIndexCount, 0, surface.mFirstIndex, vertexOffset, 0);
+        mDrawCommandsData.emplace_back(surface.mIndexCount, 64, surface.mFirstIndex, vertexOffset, 0);
     }
     mBoundsData.push_back(mMeshes[meshId].mBounds);
 
@@ -113,6 +125,7 @@ void MeshBank<VertexType, IndexType>::buildMeshBuffers()
     const VkDeviceSize vertexSize = mVertexBufferData.size() * sizeof(VertexType);
     const VkDeviceSize indexSize = mIndexBufferData.size() * sizeof(IndexType);
     const VkDeviceSize boundsSize = mBoundsData.size() * sizeof(Base::BoundingSphere);
+    const VkDeviceSize drawCommandsSize = mDrawCommandsData.size() * sizeof(VkDrawIndexedIndirectCommand);
 
     mVulkanResources->createAndMapBuffer(mVertexBufferData.data(), vertexSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
         VMA_ALLOCATION_CREATE_MAPPED_BIT, VMA_MEMORY_USAGE_GPU_ONLY, mVertexBuffer);
@@ -120,6 +133,9 @@ void MeshBank<VertexType, IndexType>::buildMeshBuffers()
         VMA_ALLOCATION_CREATE_MAPPED_BIT, VMA_MEMORY_USAGE_GPU_ONLY, mIndexBuffer);
     mVulkanResources->createAndMapBuffer(mBoundsData.data(), boundsSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
         VMA_ALLOCATION_CREATE_MAPPED_BIT, VMA_MEMORY_USAGE_GPU_ONLY, mBoundsBuffer); //  bounds of meshes for culling
+    mVulkanResources->createAndMapBuffer(mDrawCommandsData.data(), drawCommandsSize,
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, VMA_ALLOCATION_CREATE_MAPPED_BIT,
+        VMA_MEMORY_USAGE_GPU_ONLY, mDrawCommandsBuffer);
 }
 
 template <typename VertexType, typename IndexType>
@@ -135,20 +151,14 @@ void MeshBank<VertexType, IndexType>::bindMeshBuffers(VkCommandBuffer cmdBuf) co
 template <typename VertexType, typename IndexType>
 void MeshBank<VertexType, IndexType>::cleanup()
 {
-    if (mVertexBuffer.mBuffer != nullptr)
-    {
-        mVulkanResources->destroyBuffer(mVertexBuffer);
-    }
-    if (mIndexBuffer.mBuffer != nullptr)
-    {
-        mVulkanResources->destroyBuffer(mIndexBuffer);
-    }
-    if (mBoundsBuffer.mBuffer != nullptr)
-    {
-        mVulkanResources->destroyBuffer(mBoundsBuffer);
-    }
+    mVulkanResources->destroyBuffer(mVertexBuffer);
+    mVulkanResources->destroyBuffer(mIndexBuffer);
+    mVulkanResources->destroyBuffer(mBoundsBuffer);
+    mVulkanResources->destroyBuffer(mDrawCommandsBuffer);
+
     mVertexBufferData.clear();
     mIndexBufferData.clear();
     mBoundsData.clear();
+    mDrawCommandsData.clear();
 }
 } // namespace Bunny::Render

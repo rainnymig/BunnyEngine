@@ -77,7 +77,7 @@ BunnyResult VulkanRenderResources::initialize(Base::Window* window)
 
     //  enable usage of std430 uniform buffer
     //  https://docs.vulkan.org/guide/latest/shader_memory_layout.html#VK_KHR_uniform_buffer_standard_layout
-    // features12.uniformBufferStandardLayout = true;
+    features12.uniformBufferStandardLayout = true;
 
     VkPhysicalDeviceFeatures featureBasic{};
     featureBasic.samplerAnisotropy = true;

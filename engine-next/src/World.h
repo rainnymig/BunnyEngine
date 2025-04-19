@@ -102,11 +102,14 @@ class WorldRenderDataTranslator
     BunnyResult initialize();
     BunnyResult translateSceneData(const World* world);
     BunnyResult translateObjectData(const World* world);
+    BunnyResult rebuildObjectDataBuffer(const World* world);
     void cleanup();
 
     const Render::AllocatedBuffer& getSceneBuffer() const { return mSceneDataBuffer; }
     const Render::AllocatedBuffer& getLightBuffer() const { return mLightDataBuffer; }
     const std::vector<Render::RenderBatch>& getRenderBatches() const { return mRenderBatches; }
+    const Render::AllocatedBuffer& getObjectBuffer() const { return mObjectDataBuffer; }
+    const size_t getObjectBufferSize() const { return mObjectData.size() * sizeof(Render::ObjectData); }
 
   private:
     static glm::mat4x4 getEntityGlobalTransform(

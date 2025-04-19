@@ -16,7 +16,6 @@ Material::~Material()
 
 BasicBlinnPhongMaterial::BasicBlinnPhongMaterial(Base::BunnyGuard<Builder> guard, VkDevice device) : mDevice(device)
 {
-    mId = std::hash<std::string_view>{}(getName());
 }
 
 void BasicBlinnPhongMaterial::cleanup()
@@ -51,9 +50,6 @@ MaterialInstance BasicBlinnPhongMaterial::makeInstance()
 
     newInstance.mpBaseMaterial = &mPipeline;
     // mDescriptorAllocator.allocate(mDevice, &mDescriptorSetLayout, &newInstance.mDescriptorSet);
-
-    std::string instanceName = fmt::format("{}_inst_{}", getName(), instanceIdCounter++);
-    newInstance.mId = std::hash<std::string>{}(instanceName);
 
     return newInstance;
 }

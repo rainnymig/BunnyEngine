@@ -29,13 +29,13 @@ struct MaterialInstance
 class Material
 {
   public:
-    IdType getId() const { return mId; }
     const MaterialPipeline& getMaterialPipeline() const { return mPipeline; }
     virtual void cleanup() = 0;
     virtual ~Material();
 
-  protected:
     IdType mId;
+
+  protected:
     MaterialPipeline mPipeline;
 };
 

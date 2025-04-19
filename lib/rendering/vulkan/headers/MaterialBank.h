@@ -11,21 +11,21 @@ namespace Bunny::Render
 
 class MaterialBank
 {
-public:
-
+  public:
     void cleanup();
 
     void addMaterial(std::unique_ptr<Material>&& material);
     void addMaterialInstance(MaterialInstance materialInstance);
 
+    const Material* getMaterial(IdType materialId) const;
     const MaterialInstance& getMaterialInstance(IdType instanceId) const;
-    
-    //  helper function to return a default material
-    const IdType getDefaultMaterialId() const { return mDefaultMaterialInstanceId; }
 
-private:
-    std::unordered_map<IdType, std::unique_ptr<Material>> mMaterials;
-    std::unordered_map<IdType, MaterialInstance> mMaterialInstances;
-    IdType mDefaultMaterialInstanceId;
+    //  helper function to return a default material
+    constexpr IdType getDefaultMaterialId() const { return 0; }
+    constexpr IdType getDefaultMaterialInstanceId() const { return 0; }
+
+  private:
+    std::vector<std::unique_ptr<Material>> mMaterials;
+    std::vector<MaterialInstance> mMaterialInstances;
 };
 } // namespace Bunny::Render
