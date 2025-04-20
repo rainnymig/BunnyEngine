@@ -7,6 +7,11 @@ target_sources(EngineNext
         src/Config.cpp
         src/World.h
         src/World.cpp
+        src/WorldComponents.h
+        src/WorldDataTranslator.cpp
+        src/WorldDataTranslator.h
+        src/WorldLoader.cpp
+        src/WorldLoader.h
 )
 
 target_link_libraries(EngineNext PRIVATE Base fmt::fmt VulkanRenderer inicpp EnTT::EnTT imgui fastgltf::fastgltf glm)

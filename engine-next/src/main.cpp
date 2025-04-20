@@ -7,6 +7,8 @@
 #include "VulkanRenderResources.h"
 #include "VulkanGraphicsRenderer.h"
 #include "World.h"
+#include "WorldLoader.h"
+#include "WorldDataTranslator.h"
 #include "MeshBank.h"
 #include "Material.h"
 #include "MaterialBank.h"
@@ -69,6 +71,8 @@ int main(void)
     Bunny::Render::MaterialInstance blinnPhongInstance = blinnPhongMaterial->makeInstance();
 
     Bunny::Render::ForwardPass forwardPass(&renderResources, &renderer, &materialBank, &meshBank);
+
+    //  optimize later: detach these layouts from specific material
     forwardPass.initializePass(
         blinnPhongMaterial->getSceneDescSetLayout(), blinnPhongMaterial->getObjectDescSetLayout());
 
@@ -79,13 +83,17 @@ int main(void)
     WorldLoader worldLoader(&renderResources, &materialBank, &meshBank);
     worldLoader.loadTestWorld(bunnyWorld);
 
+    forwardPass.buildDrawCommands();
+
     WorldRenderDataTranslator worldTranslator(&renderResources, &meshBank, &materialBank);
     worldTranslator.initialize();
-    worldTranslator.rebuildObjectDataBuffer(&bunnyWorld);
+    worldTranslator.initObjectDataBuffer(&bunnyWorld);
 
-    forwardPass.updateSceneData(worldTranslator.getSceneBuffer());
-    forwardPass.updateLightData(worldTranslator.getLightBuffer());
-    forwardPass.updateObjectData(worldTranslator.getObjectBuffer(), worldTranslator.getObjectBufferSize());
+    forwardPass.updateDrawInstanceCounts(worldTranslator.getMeshInstanceCounts());
+
+    forwardPass.linkSceneData(worldTranslator.getSceneBuffer());
+    forwardPass.linkLightData(worldTranslator.getLightBuffer());
+    forwardPass.linkObjectData(worldTranslator.getObjectBuffer(), worldTranslator.getObjectBufferSize());
 
     float accumulatedTime = 0;
     constexpr float interval = 0.5f;
@@ -109,20 +117,15 @@ int main(void)
             break;
         }
 
-        // bunnyWorld.update(timer.getDeltaTime());
+        bunnyWorld.update(timer.getDeltaTime());
 
-        worldTranslator.translateSceneData(&bunnyWorld);
-        // worldTranslator.rebuildObjectDataBuffer(&bunnyWorld);
-        // worldTranslator.translateObjectData(&bunnyWorld);
+        worldTranslator.updateSceneData(&bunnyWorld);
+        worldTranslator.updateObjectData(&bunnyWorld);
 
         renderer.beginRenderFrame();
 
         renderer.beginRender();
 
-        // for (const Bunny::Render::RenderBatch& batch : worldTranslator.getRenderBatches())
-        // {
-        //     forwardPass.renderBatch(batch);
-        // }
         forwardPass.renderAll();
 
         renderer.finishRender();
