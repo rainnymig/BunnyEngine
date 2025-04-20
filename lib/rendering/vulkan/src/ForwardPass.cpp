@@ -8,6 +8,8 @@
 
 #include <vulkan/vulkan.h>
 
+#include <vector>
+
 namespace Bunny::Render
 {
 ForwardPass::ForwardPass(const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer,
@@ -44,7 +46,57 @@ void ForwardPass::initializePass(VkDescriptorSetLayout sceneLayout, VkDescriptor
     }
 }
 
-void ForwardPass::updateSceneData(const AllocatedBuffer& sceneBuffer)
+void ForwardPass::buildDrawCommands()
+{
+    const std::vector<MeshLite>& meshes = mMeshBank->getMeshes();
+    mDrawCommandsData.clear();
+
+    for (const MeshLite& mesh : meshes)
+    {
+        for (const SurfaceLite& surface : mesh.mSurfaces)
+        {
+            //  add a draw indirect command for each surface in the mesh
+            //  the real instance count and first instance are the result of culling stage
+            mDrawCommandsData.emplace_back(surface.mIndexCount, 0, surface.mFirstIndex, mesh.mVertexOffset, 0);
+        }
+    }
+
+    const VkDeviceSize drawCommandsSize = mDrawCommandsData.size() * sizeof(VkDrawIndexedIndirectCommand);
+
+    mDrawCommandsBuffer = mVulkanResources->createBuffer(drawCommandsSize,
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,
+        VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+        VMA_MEMORY_USAGE_AUTO);
+
+    {
+        void* mappedData = mDrawCommandsBuffer.mAllocationInfo.pMappedData;
+        memcpy(mappedData, mDrawCommandsData.data(), drawCommandsSize);
+    }
+}
+
+void ForwardPass::updateDrawInstanceCounts(std::unordered_map<IdType, size_t> meshInstanceCounts)
+{
+    const std::vector<MeshLite>& meshes = mMeshBank->getMeshes();
+
+    size_t idx = 0;
+    size_t accumulatedInstances = 0;
+    for (const MeshLite& mesh : meshes)
+    {
+        for (const SurfaceLite& surface : mesh.mSurfaces)
+        {
+            mDrawCommandsData[idx].instanceCount = meshInstanceCounts.at(mesh.mId);
+            mDrawCommandsData[idx].firstInstance = accumulatedInstances;
+            idx++;
+        }
+        accumulatedInstances += meshInstanceCounts.at(mesh.mId);
+    }
+
+    const VkDeviceSize drawCommandsSize = mDrawCommandsData.size() * sizeof(VkDrawIndexedIndirectCommand);
+    void* mappedData = mDrawCommandsBuffer.mAllocationInfo.pMappedData;
+    memcpy(mappedData, mDrawCommandsData.data(), drawCommandsSize);
+}
+
+void ForwardPass::linkSceneData(const AllocatedBuffer& sceneBuffer)
 {
     DescriptorWriter writer;
     writer.writeBuffer(0, sceneBuffer.mBuffer, sizeof(SceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
@@ -54,7 +106,7 @@ void ForwardPass::updateSceneData(const AllocatedBuffer& sceneBuffer)
     }
 }
 
-void ForwardPass::updateLightData(const AllocatedBuffer& lightBuffer)
+void ForwardPass::linkLightData(const AllocatedBuffer& lightBuffer)
 {
     DescriptorWriter writer;
     writer.writeBuffer(1, lightBuffer.mBuffer, sizeof(LightData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
@@ -64,7 +116,7 @@ void ForwardPass::updateLightData(const AllocatedBuffer& lightBuffer)
     }
 }
 
-void ForwardPass::updateObjectData(const AllocatedBuffer& objectBuffer, size_t bufferSize)
+void ForwardPass::linkObjectData(const AllocatedBuffer& objectBuffer, size_t bufferSize)
 {
     Render::DescriptorWriter writer;
     writer.writeBuffer(0, objectBuffer.mBuffer, bufferSize, 0,
@@ -75,65 +127,6 @@ void ForwardPass::updateObjectData(const AllocatedBuffer& objectBuffer, size_t b
     }
 
     // writer.updateSet(mVulkanResources->getDevice(), mObjectDescSets[mRenderer->getCurrentFrameIdx()]);
-}
-
-void ForwardPass::renderBatch(const RenderBatch& batch)
-{
-
-    //  bind vertex and index buffer
-    //  to be moved to other places!
-    mMeshBank->bindMeshBuffers(mRenderer->getCurrentCommandBuffer());
-
-    const MaterialInstance& matInstance = mMaterialBank->getMaterialInstance(batch.mMaterialInstanceId);
-
-    vkCmdBindPipeline(
-        mRenderer->getCurrentCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, matInstance.mpBaseMaterial->mPipeline);
-
-    //  bind scene data
-    //  best to bind this before for all batches
-    //  but now we need the pipeline layout so have to do it here
-    //  optimize later
-    vkCmdBindDescriptorSets(mRenderer->getCurrentCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS,
-        matInstance.mpBaseMaterial->mPipelineLayout, 0, 1, &mSceneDescSets[mRenderer->getCurrentFrameIdx()], 0,
-        nullptr);
-
-    //  bind object data
-    //  set 1 is object data
-    {
-        Render::DescriptorWriter writer;
-        writer.writeBuffer(0, batch.mObjectBuffer->mBuffer, batch.mInstanceCount * sizeof(ObjectData), 0,
-            VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); //  storage buffer?
-        writer.updateSet(mVulkanResources->getDevice(), mObjectDescSets[mRenderer->getCurrentFrameIdx()]);
-
-        vkCmdBindDescriptorSets(mRenderer->getCurrentCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS,
-            matInstance.mpBaseMaterial->mPipelineLayout, 1, 1, &mObjectDescSets[mRenderer->getCurrentFrameIdx()], 0,
-            nullptr);
-    }
-
-    if (matInstance.mDescriptorSet != nullptr)
-    {
-        //  set 2 is material data, so start set is 2
-        vkCmdBindDescriptorSets(mRenderer->getCurrentCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS,
-            matInstance.mpBaseMaterial->mPipelineLayout, 2, 1, &matInstance.mDescriptorSet, 0, nullptr);
-    }
-
-    //  draw indexed indirect
-    //  temp
-    //  should draw all meshes (surfaces) that has the same pipeline (material) and desc set (material instance)
-    vkCmdDrawIndexedIndirect(mRenderer->getCurrentCommandBuffer(), mMeshBank->getDrawCommandsBuffer().mBuffer, 0, 1,
-        sizeof(VkDrawIndexedIndirectCommand));
-
-    //  temp
-    //  this can be converted draw indirect
-    // const MeshLite& meshToRender = mMeshBank->getMesh(batch.mMeshId);
-    // for (const SurfaceLite& surface : meshToRender.mSurfaces)
-    // {
-    //     if (surface.mMaterialInstanceId == batch.mMaterialInstanceId)
-    //     {
-    //         vkCmdDrawIndexed(mRenderer->getCurrentCommandBuffer(), surface.mIndexCount, batch.mInstanceCount,
-    //             surface.mFirstIndex, meshToRender.mVertexOffset, 0);
-    //     }
-    // }
 }
 
 void ForwardPass::renderAll()
@@ -165,12 +158,15 @@ void ForwardPass::renderAll()
             matInstance.mpBaseMaterial->mPipelineLayout, 2, 1, &matInstance.mDescriptorSet, 0, nullptr);
     }
 
-    vkCmdDrawIndexedIndirect(mRenderer->getCurrentCommandBuffer(), mMeshBank->getDrawCommandsBuffer().mBuffer, 0, 1,
-        sizeof(VkDrawIndexedIndirectCommand));
+    vkCmdDrawIndexedIndirect(
+        mRenderer->getCurrentCommandBuffer(), mDrawCommandsBuffer.mBuffer, 0, 1, sizeof(VkDrawIndexedIndirectCommand));
 }
 
 void ForwardPass::cleanup()
 {
+    mVulkanResources->destroyBuffer(mDrawCommandsBuffer);
+    mDrawCommandsData.clear();
+
     mDescriptorAllocator.destroyPools(mVulkanResources->getDevice());
 }
 } // namespace Bunny::Render

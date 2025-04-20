@@ -1,6 +1,5 @@
 #pragma once
 
-#include "RenderJob.h"
 #include "Vertex.h"
 #include "MeshBank.h"
 #include "Descriptor.h"
@@ -9,6 +8,7 @@
 #include <vulkan/vulkan.h>
 
 #include <array>
+#include <unordered_map>
 
 namespace Bunny::Render
 {
@@ -24,10 +24,11 @@ class ForwardPass
         const MaterialBank* materialBank, const MeshBank<NormalVertex>* meshBank);
 
     void initializePass(VkDescriptorSetLayout sceneLayout, VkDescriptorSetLayout objectLayout);
-    void updateSceneData(const AllocatedBuffer& sceneBuffer);
-    void updateLightData(const AllocatedBuffer& lightBuffer);
-    void updateObjectData(const AllocatedBuffer& objectBuffer, size_t bufferSize);
-    void renderBatch(const RenderBatch& batch);
+    void buildDrawCommands();
+    void updateDrawInstanceCounts(std::unordered_map<IdType, size_t> meshInstanceCounts);
+    void linkSceneData(const AllocatedBuffer& sceneBuffer);
+    void linkLightData(const AllocatedBuffer& lightBuffer);
+    void linkObjectData(const AllocatedBuffer& objectBuffer, size_t bufferSize);
     void renderAll();
     void cleanup();
 
@@ -36,6 +37,9 @@ class ForwardPass
     const VulkanGraphicsRenderer* mRenderer;
     const MaterialBank* mMaterialBank;
     const MeshBank<NormalVertex>* mMeshBank;
+
+    AllocatedBuffer mDrawCommandsBuffer;
+    std::vector<VkDrawIndexedIndirectCommand> mDrawCommandsData;
 
     VkDescriptorSetLayout mSceneDescLayout;
     VkDescriptorSetLayout mObjectDescLayout;
