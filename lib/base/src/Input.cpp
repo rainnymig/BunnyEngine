@@ -10,22 +10,23 @@
 
 namespace Bunny::Base
 {
-    InputManager* InputManager::msKeyReceiverInstance = nullptr;
+InputManager* InputManager::msKeyReceiverInstance = nullptr;
 
-    void InputManager::setupWithWindow(const Window& window)
+void InputManager::setupWithWindow(const Window& window)
+{
+    assert(msKeyReceiverInstance == nullptr);
+
+    InputManager::msKeyReceiverInstance = this;
+
+    GLFWwindow* glfwWindow = window.getRawGlfwWindow();
+
+    glfwSetKeyCallback(glfwWindow, &InputManager::onKeyCallback);
+}
+
+void InputManager::onKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    if (const char* keyName = glfwGetKeyName(key, scancode))
     {
-        assert(msKeyReceiverInstance == nullptr);
-
-        InputManager::msKeyReceiverInstance = this;
-
-        GLFWwindow* glfwWindow = window.getRawGlfwWindow();
-
-        glfwSetKeyCallback(glfwWindow, &InputManager::onKeyCallback);
-    }
-
-    void InputManager::onKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
-    {
-        const char* keyName = glfwGetKeyName(key, scancode);
         if (action == GLFW_PRESS)
         {
             fmt::print("Key pressed, {}\n", keyName);
@@ -35,5 +36,6 @@ namespace Bunny::Base
             fmt::print("Key released, {}\n", keyName);
         }
     }
+}
 
 } // namespace Bunny::Base

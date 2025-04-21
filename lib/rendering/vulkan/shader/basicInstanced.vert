@@ -14,10 +14,6 @@ struct ObjectData
     mat4 model;
     mat4 invTransModel;
     uint meshId;
-    // vec3 padding;
-    // vec4 padding2;
-    // vec4 padding3;
-    // vec4 padding4;
 };
 
 /*  buffer layouts  */
