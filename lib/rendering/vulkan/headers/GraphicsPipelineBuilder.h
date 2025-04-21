@@ -9,10 +9,10 @@ namespace Bunny::Render
 
 //  This class is a helper for building a graphics VkPipeline
 //  Mostly taken from the similar class in [Vulkan Guide](https://vkguide.dev/docs/new_chapter_3/building_pipeline/)
-class PipelineBuilder
+class GraphicsPipelineBuilder
 {
   public:
-    PipelineBuilder();
+    GraphicsPipelineBuilder();
     VkPipeline build(VkDevice device);
     void clear();
 

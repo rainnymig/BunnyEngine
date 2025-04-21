@@ -2,15 +2,16 @@ add_library(VulkanRenderer)
 
 target_sources(VulkanRenderer
     PUBLIC
+        headers/ComputePipelineBuilder.h
         headers/CullingPass.h
         headers/Descriptor.h
         headers/ErrorCheck.h
         headers/Fundamentals.h
+        headers/GraphicsPipelineBuilder.h
         headers/Helper.h
         headers/Material.h
         headers/MaterialBank.h
         headers/MeshBank.h
-        headers/PipelineBuilder.h
         headers/QueueFamilyIndices.h
         headers/ForwardPass.h
         headers/Shader.h
@@ -21,14 +22,15 @@ target_sources(VulkanRenderer
         headers/VulkanGraphicsRenderer.h
         headers/VulkanRenderResources.h
     PRIVATE
+        src/ComputePipelineBuilder.cpp
         src/CullingPass.cpp
         src/Descriptor.cpp
         src/Helper.cpp
         src/Material.cpp
         src/MaterialBank.cpp
         src/MeshBank.cpp
-        src/PipelineBuilder.cpp
         src/ForwardPass.cpp
+        src/GraphicsPipelineBuilder.cpp
         src/Shader.cpp
         src/Vertex.cpp
         src/VulkanGraphicsRenderer.cpp
