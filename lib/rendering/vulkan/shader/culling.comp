@@ -30,8 +30,16 @@ struct DrawCommand
 
 struct ObjectData
 {
-    mat4 model;
+    mat4 modelNoScale;  //  TransMat*RotMat
     mat4 invTransModel;
+    vec3 modelScale;
+    uint meshId;
+};
+
+struct Plane
+{
+    vec3 normal;            //  plane normal, should be normalized
+    float distToOrigin;     //  distance from plane to the origin point
 };
 
 struct BoundingSphere
@@ -40,22 +48,47 @@ struct BoundingSphere
     float radius;
 }
 
-layout(std140, set = 1, binding = 0) buffer ObjectDataBuffer
+layout(std430, set = 1, binding = 0) buffer ObjectDataBuffer
 {
     ObjectData objectData[];
 };
 
-layout(std140, set = 3, binding = 0) buffer DrawCommandBuffer
+layout(std430, set = 2, binding = 1) buffer Bounds
+{
+    BoundingSphere boundingSpheres[];
+};
+
+layout(std430, set = 2, binding = 0) uniform ViewFrustum
+{
+    Plane frustumPlanes[6];
+}
+
+layout(std430, set = 3, binding = 0) buffer DrawCommandBuffer
 {
     DrawCommand commands[];
 };
 
-layout(set = 3, binding = 2) uniform CullingData
+bool isObjectInView(ObjectData obj)
 {
+    bool isInView = true;
+
+    BoundingSphere bs = boundingSpheres[obj.meshId];
+    vec3 center = (obj.modelNoScale * vec4(bs.center, 1.0)).xyz;
+    float radius = bs.radius * max(modelScale.x, max(modelScale.y, modelScale.z));
+
+    for (int idx = 0; idx < 6; idx++)
+    {
+        Plane plane = frustumPlanes[idx];
+        float objDistToOrigin = dot(center, plane.normal);
+        float objDistToPlane = objDistToOrigin - plane.distToOrigin;
+
+        isInView = isInView && (objDistToPlane > radius);
+    }
     
-};
+    return isInView;
+}
 
 void main()
 {
-
+    ObjectData obj = objectData[gl_GlobalInvocationID.x];
 }
