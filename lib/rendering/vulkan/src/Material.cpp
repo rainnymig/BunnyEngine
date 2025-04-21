@@ -4,7 +4,7 @@
 #include "Error.h"
 #include "ErrorCheck.h"
 #include "Vertex.h"
-#include "PipelineBuilder.h"
+#include "GraphicsPipelineBuilder.h"
 
 #include <cassert>
 
@@ -146,7 +146,7 @@ BunnyResult BasicBlinnPhongMaterial::Builder::buildPipeline(VkDevice device, VkD
     auto bindingDescription = getBindingDescription<NormalVertex>(0, VertexInputRate::Vertex);
     auto attributeDescriptions = NormalVertex::getAttributeDescriptions();
 
-    PipelineBuilder builder;
+    GraphicsPipelineBuilder builder;
     builder.setShaders(vertexShader.getShaderModule(), fragmentShader.getShaderModule());
     builder.setVertexInput(attributeDescriptions.data(), attributeDescriptions.size(), &bindingDescription, 1);
     builder.setInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);

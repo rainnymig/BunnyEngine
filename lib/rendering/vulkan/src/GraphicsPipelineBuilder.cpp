@@ -1,15 +1,15 @@
-#include "PipelineBuilder.h"
+#include "GraphicsPipelineBuilder.h"
 
 #include "Helper.h"
 
 namespace Bunny::Render
 {
-PipelineBuilder::PipelineBuilder()
+GraphicsPipelineBuilder::GraphicsPipelineBuilder()
 {
     clear();
 }
 
-VkPipeline PipelineBuilder::build(VkDevice device)
+VkPipeline GraphicsPipelineBuilder::build(VkDevice device)
 {
     //  make viewport state from our stored viewport and scissor.
     //  at the moment we wont support multiple viewports or scissors
@@ -71,7 +71,7 @@ VkPipeline PipelineBuilder::build(VkDevice device)
     }
 }
 
-void PipelineBuilder::clear()
+void GraphicsPipelineBuilder::clear()
 {
     mVertexInputInfo = {.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
     mInputAssembly = {.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO};
@@ -84,14 +84,14 @@ void PipelineBuilder::clear()
     mShaderStages.clear();
 }
 
-void PipelineBuilder::setShaders(VkShaderModule vertexShader, VkShaderModule fragmentShader)
+void GraphicsPipelineBuilder::setShaders(VkShaderModule vertexShader, VkShaderModule fragmentShader)
 {
     mShaderStages.clear();
     mShaderStages.push_back(makeShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, vertexShader));
     mShaderStages.push_back(makeShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, fragmentShader));
 }
 
-void PipelineBuilder::setInputTopology(VkPrimitiveTopology topology)
+void GraphicsPipelineBuilder::setInputTopology(VkPrimitiveTopology topology)
 {
     mInputAssembly.topology = topology;
 
@@ -100,7 +100,7 @@ void PipelineBuilder::setInputTopology(VkPrimitiveTopology topology)
     mInputAssembly.primitiveRestartEnable = VK_FALSE;
 }
 
-void PipelineBuilder::setVertexInput(const VkVertexInputAttributeDescription* pAttributeDesc,
+void GraphicsPipelineBuilder::setVertexInput(const VkVertexInputAttributeDescription* pAttributeDesc,
     uint32_t attributeDescCount, const VkVertexInputBindingDescription* pBindingDesc, uint32_t bindingDescCount)
 {
     mVertexInputInfo.pNext = nullptr;
@@ -110,19 +110,19 @@ void PipelineBuilder::setVertexInput(const VkVertexInputAttributeDescription* pA
     mVertexInputInfo.pVertexAttributeDescriptions = pAttributeDesc;
 }
 
-void PipelineBuilder::setPolygonMode(VkPolygonMode mode)
+void GraphicsPipelineBuilder::setPolygonMode(VkPolygonMode mode)
 {
     mRasterizer.polygonMode = mode;
     mRasterizer.lineWidth = 1.0f;
 }
 
-void PipelineBuilder::setCulling(VkCullModeFlags cullMode, VkFrontFace frontFace)
+void GraphicsPipelineBuilder::setCulling(VkCullModeFlags cullMode, VkFrontFace frontFace)
 {
     mRasterizer.cullMode = cullMode;
     mRasterizer.frontFace = frontFace;
 }
 
-void PipelineBuilder::setMultisamplingNone()
+void GraphicsPipelineBuilder::setMultisamplingNone()
 {
     mMultisampling.sampleShadingEnable = VK_FALSE;
     // multisampling defaulted to no multisampling (1 sample per pixel)
@@ -134,7 +134,7 @@ void PipelineBuilder::setMultisamplingNone()
     mMultisampling.alphaToOneEnable = VK_FALSE;
 }
 
-void PipelineBuilder::disableBlending()
+void GraphicsPipelineBuilder::disableBlending()
 {
     // default write mask
     mColorBlendAttachment.colorWriteMask =
@@ -143,7 +143,7 @@ void PipelineBuilder::disableBlending()
     mColorBlendAttachment.blendEnable = VK_FALSE;
 }
 
-void PipelineBuilder::enableBlendingAdditive()
+void GraphicsPipelineBuilder::enableBlendingAdditive()
 {
     mColorBlendAttachment.colorWriteMask =
         VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
@@ -156,7 +156,7 @@ void PipelineBuilder::enableBlendingAdditive()
     mColorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
 }
 
-void PipelineBuilder::enableBlendingAlphablend()
+void GraphicsPipelineBuilder::enableBlendingAlphablend()
 {
     mColorBlendAttachment.colorWriteMask =
         VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
@@ -169,19 +169,19 @@ void PipelineBuilder::enableBlendingAlphablend()
     mColorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
 }
 
-void PipelineBuilder::setColorAttachmentFormat(VkFormat format)
+void GraphicsPipelineBuilder::setColorAttachmentFormat(VkFormat format)
 {
     mColorAttachmentformat = format;
     mRenderInfo.colorAttachmentCount = 1;
     mRenderInfo.pColorAttachmentFormats = &mColorAttachmentformat;
 }
 
-void PipelineBuilder::setDepthFormat(VkFormat format)
+void GraphicsPipelineBuilder::setDepthFormat(VkFormat format)
 {
     mRenderInfo.depthAttachmentFormat = format;
 }
 
-void PipelineBuilder::disableDepthTest()
+void GraphicsPipelineBuilder::disableDepthTest()
 {
     mDepthStencil.depthTestEnable = VK_FALSE;
     mDepthStencil.depthWriteEnable = VK_FALSE;
@@ -194,7 +194,7 @@ void PipelineBuilder::disableDepthTest()
     mDepthStencil.maxDepthBounds = 1.f;
 }
 
-void PipelineBuilder::enableDepthTest(bool depthWriteEnable, VkCompareOp op)
+void GraphicsPipelineBuilder::enableDepthTest(bool depthWriteEnable, VkCompareOp op)
 {
     mDepthStencil.depthTestEnable = VK_TRUE;
     mDepthStencil.depthWriteEnable = depthWriteEnable;
@@ -207,7 +207,7 @@ void PipelineBuilder::enableDepthTest(bool depthWriteEnable, VkCompareOp op)
     mDepthStencil.maxDepthBounds = 1.f;
 }
 
-void PipelineBuilder::setPipelineLayout(VkPipelineLayout layout)
+void GraphicsPipelineBuilder::setPipelineLayout(VkPipelineLayout layout)
 {
     mPipelineLayout = layout;
 }
