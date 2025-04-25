@@ -10,6 +10,7 @@
 #include <string_view>
 #include <memory>
 #include <array>
+#include <string>
 
 namespace Bunny::Render
 {
