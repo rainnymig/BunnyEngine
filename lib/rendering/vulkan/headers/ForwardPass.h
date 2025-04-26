@@ -29,7 +29,7 @@ class ForwardPass
     void linkSceneData(const AllocatedBuffer& sceneBuffer);
     void linkLightData(const AllocatedBuffer& lightBuffer);
     void linkObjectData(const AllocatedBuffer& objectBuffer, size_t bufferSize);
-    void renderAll();
+    void draw();
     void cleanup();
 
   private:

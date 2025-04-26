@@ -126,7 +126,7 @@ int main(void)
 
         renderer.beginRender();
 
-        forwardPass.renderAll();
+        forwardPass.draw();
 
         renderer.finishRender();
 

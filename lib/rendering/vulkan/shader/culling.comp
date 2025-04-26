@@ -48,20 +48,20 @@ struct BoundingSphere
     float radius;
 }
 
+layout(std430, set = 0, binding = 0) uniform ViewFrustum
+{
+    Plane frustumPlanes[6];
+}
+
 layout(std430, set = 1, binding = 0) buffer ObjectDataBuffer
 {
     ObjectData objectData[];
 };
 
-layout(std430, set = 2, binding = 1) buffer Bounds
+layout(std430, set = 2, binding = 0) buffer Bounds
 {
     BoundingSphere boundingSpheres[];
 };
-
-layout(std430, set = 2, binding = 0) uniform ViewFrustum
-{
-    Plane frustumPlanes[6];
-}
 
 layout(std430, set = 3, binding = 0) buffer DrawCommandBuffer
 {
