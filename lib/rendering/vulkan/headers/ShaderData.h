@@ -32,13 +32,6 @@ struct ObjectData
     glm::vec3 padding;
 };
 
-//  object data for culling with bounding sphere
-struct SphereCullObjectData
-{
-    glm::vec4 mBoundingSphere; //  x, y, z: center, w: radius
-    glm::mat4 mTransform;
-};
-
 //  the following are for all surfaces of one material (pipeline)
 
 //  now assume all surface of a mesh have same material instance
@@ -121,11 +114,5 @@ struct SphereCullObjectData
 //      material parameters
 //      material textures (or texture-sampler combis)
 //
-
-struct CullResultData
-{
-    glm::mat4 mTransform;
-    glm::mat4 mInversedTransposedTransform;
-};
 
 } // namespace Bunny::Render

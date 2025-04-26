@@ -33,14 +33,10 @@ void ForwardPass::initializePass(VkDescriptorSetLayout sceneLayout, VkDescriptor
     };
     mDescriptorAllocator.init(mVulkanResources->getDevice(), 2, poolSizes);
 
-    for (size_t idx = 0; idx < mObjectDescSets.size(); idx++)
+    for (size_t idx = 0; idx < MAX_FRAMES_IN_FLIGHT; idx++)
     {
         mDescriptorAllocator.allocate(
             mVulkanResources->getDevice(), &mObjectDescLayout, &mObjectDescSets[idx], 1, nullptr);
-    }
-
-    for (size_t idx = 0; idx < mObjectDescSets.size(); idx++)
-    {
         mDescriptorAllocator.allocate(
             mVulkanResources->getDevice(), &mSceneDescLayout, &mSceneDescSets[idx], 1, nullptr);
     }
@@ -119,8 +115,7 @@ void ForwardPass::linkLightData(const AllocatedBuffer& lightBuffer)
 void ForwardPass::linkObjectData(const AllocatedBuffer& objectBuffer, size_t bufferSize)
 {
     Render::DescriptorWriter writer;
-    writer.writeBuffer(0, objectBuffer.mBuffer, bufferSize, 0,
-        VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); //  storage buffer?
+    writer.writeBuffer(0, objectBuffer.mBuffer, bufferSize, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     for (VkDescriptorSet set : mObjectDescSets)
     {
         writer.updateSet(mVulkanResources->getDevice(), set);
@@ -129,7 +124,7 @@ void ForwardPass::linkObjectData(const AllocatedBuffer& objectBuffer, size_t buf
     // writer.updateSet(mVulkanResources->getDevice(), mObjectDescSets[mRenderer->getCurrentFrameIdx()]);
 }
 
-void ForwardPass::renderAll()
+void ForwardPass::draw()
 {
     mMeshBank->bindMeshBuffers(mRenderer->getCurrentCommandBuffer());
 
