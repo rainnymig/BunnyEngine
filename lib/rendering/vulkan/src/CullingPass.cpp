@@ -3,7 +3,9 @@
 #include "VulkanRenderResources.h"
 #include "Shader.h"
 #include "ErrorCheck.h"
+#include "Error.h"
 #include "ComputePipelineBuilder.h"
+#include "Camera.h"
 
 namespace Bunny::Render
 {
@@ -12,6 +14,82 @@ CullingPass::CullingPass(const VulkanRenderResources* vulkanResources) : mVulkan
 }
 
 BunnyResult CullingPass::initializePass()
+{
+    initDescriptorSets();
+    BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(initPipeline())
+
+    return BUNNY_HAPPY;
+}
+
+void CullingPass::cleanup()
+{
+    if (mPipeline != nullptr)
+    {
+        vkDestroyPipeline(mVulkanResources->getDevice(), mPipeline, nullptr);
+        mPipeline = nullptr;
+    }
+
+    if (mPipelineLayout != nullptr)
+    {
+        vkDestroyPipelineLayout(mVulkanResources->getDevice(), mPipelineLayout, nullptr);
+        mPipelineLayout = nullptr;
+    }
+
+    mDescriptorAllocator.destroyPools(mVulkanResources->getDevice());
+
+    if (mStorageBufferLayout != nullptr)
+    {
+        vkDestroyDescriptorSetLayout(mVulkanResources->getDevice(), mStorageBufferLayout, nullptr);
+        mStorageBufferLayout = nullptr;
+    }
+
+    if (mUniformBufferLayout != nullptr)
+    {
+        vkDestroyDescriptorSetLayout(mVulkanResources->getDevice(), mUniformBufferLayout, nullptr);
+        mUniformBufferLayout = nullptr;
+    }
+
+    mVulkanResources->destroyBuffer(mCullingDataBuffer);
+}
+
+void CullingPass::createBuffers()
+{
+    mCullingDataBuffer = mVulkanResources->createBuffer(sizeof(ViewFrustum), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+        VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+        VMA_MEMORY_USAGE_AUTO);
+}
+
+void CullingPass::linkDrawData(const AllocatedBuffer& drawCommandBuffer, size_t bufferSize)
+{
+}
+
+void CullingPass::linkMeshData(const AllocatedBuffer& meshDataBuffer, size_t bufferSize)
+{
+}
+
+void CullingPass::linkObjectData(const AllocatedBuffer& objectBuffer, size_t bufferSize)
+{
+}
+
+void CullingPass::updateCullingData(const Camera& camera)
+{
+    ViewFrustum viewFrustum;
+    camera.getViewFrustum(viewFrustum);
+
+    void* data = mCullingDataBuffer.mAllocationInfo.pMappedData;
+    memcpy(data, &viewFrustum, sizeof(ViewFrustum));
+}
+
+void CullingPass::dispatch()
+{
+}
+
+CullingPass::~CullingPass()
+{
+    cleanup();
+}
+
+void CullingPass::initDescriptorSets()
 {
     //  build descriptor set layouts
     DescriptorLayoutBuilder layoutBuilder;
@@ -57,7 +135,10 @@ BunnyResult CullingPass::initializePass()
         mDescriptorAllocator.allocate(
             mVulkanResources->getDevice(), &mStorageBufferLayout, &mMeshDataDescSets[idx], 1, nullptr);
     }
+}
 
+BunnyResult CullingPass::initPipeline()
+{
     //  load shader
     Shader computeShader(mCullingShaderPath, mVulkanResources->getDevice());
 
@@ -82,60 +163,6 @@ BunnyResult CullingPass::initializePass()
     mPipeline = pipelineBuilder.build(mVulkanResources->getDevice());
 
     return BUNNY_HAPPY;
-}
-
-void CullingPass::cleanup()
-{
-    if (mPipeline != nullptr)
-    {
-        vkDestroyPipeline(mVulkanResources->getDevice(), mPipeline, nullptr);
-        mPipeline = nullptr;
-    }
-
-    if (mPipelineLayout != nullptr)
-    {
-        vkDestroyPipelineLayout(mVulkanResources->getDevice(), mPipelineLayout, nullptr);
-        mPipelineLayout = nullptr;
-    }
-
-    mDescriptorAllocator.destroyPools(mVulkanResources->getDevice());
-
-    if (mStorageBufferLayout != nullptr)
-    {
-        vkDestroyDescriptorSetLayout(mVulkanResources->getDevice(), mStorageBufferLayout, nullptr);
-        mStorageBufferLayout = nullptr;
-    }
-
-    if (mUniformBufferLayout != nullptr)
-    {
-        vkDestroyDescriptorSetLayout(mVulkanResources->getDevice(), mUniformBufferLayout, nullptr);
-        mUniformBufferLayout = nullptr;
-    }
-}
-
-void CullingPass::linkCullData(const AllocatedBuffer& cullBuffer)
-{
-}
-
-void CullingPass::linkDrawData(const AllocatedBuffer& drawCommandBuffer, size_t bufferSize)
-{
-}
-
-void CullingPass::linkMeshData(const AllocatedBuffer& meshDataBuffer, size_t bufferSize)
-{
-}
-
-void CullingPass::linkObjectData(const AllocatedBuffer& objectBuffer, size_t bufferSize)
-{
-}
-
-void CullingPass::dispatch()
-{
-}
-
-CullingPass::~CullingPass()
-{
-    cleanup();
 }
 
 } // namespace Bunny::Render
