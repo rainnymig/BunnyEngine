@@ -54,6 +54,9 @@ class MeshBank
     const IdType getMeshIdFromName(std::string_view name) const { return mMeshNameToIdMap.at(name); }
     void cleanup();
 
+    const AllocatedBuffer& getBoundsBuffer() const { return mBoundsBuffer; }
+    const size_t getBoundsBufferSize() const { return sizeof(Base::BoundingSphere) * mBoundsData.size(); }
+
   private:
     AllocatedBuffer mVertexBuffer;
     AllocatedBuffer mIndexBuffer;

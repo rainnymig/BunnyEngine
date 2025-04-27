@@ -164,4 +164,9 @@ void ForwardPass::cleanup()
 
     mDescriptorAllocator.destroyPools(mVulkanResources->getDevice());
 }
+
+const size_t ForwardPass::getDrawCommandBufferSize() const
+{
+    return sizeof(VkDrawIndexedIndirectCommand) * mDrawCommandsData.size();
+}
 } // namespace Bunny::Render

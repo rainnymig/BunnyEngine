@@ -32,6 +32,9 @@ class ForwardPass
     void draw();
     void cleanup();
 
+    const AllocatedBuffer& getDrawCommandBuffer() const { return mDrawCommandsBuffer; }
+    const size_t getDrawCommandBufferSize() const;
+
   private:
     const VulkanRenderResources* mVulkanResources;
     const VulkanGraphicsRenderer* mRenderer;

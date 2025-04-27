@@ -123,6 +123,19 @@ VkRenderingInfo makeRenderingInfo(
     return renderInfo;
 }
 
+VkBufferMemoryBarrier makeBufferMemoryBarrier(VkBuffer buffer, uint32_t queueIndex)
+{
+    VkBufferMemoryBarrier barrier{.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
+    barrier.buffer = buffer;
+    barrier.offset = 0;
+    barrier.size = VK_WHOLE_SIZE;
+    barrier.srcQueueFamilyIndex = queueIndex;
+    barrier.dstQueueFamilyIndex = queueIndex;
+    barrier.pNext = nullptr;
+
+    return barrier;
+}
+
 bool hasStencilComponent(VkFormat format)
 {
     return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
