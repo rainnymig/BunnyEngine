@@ -1,15 +1,21 @@
 #include "CullingPass.h"
 
 #include "VulkanRenderResources.h"
+#include "VulkanGraphicsRenderer.h"
 #include "Shader.h"
 #include "ErrorCheck.h"
 #include "Error.h"
 #include "ComputePipelineBuilder.h"
 #include "Camera.h"
+#include "Helper.h"
 
 namespace Bunny::Render
 {
-CullingPass::CullingPass(const VulkanRenderResources* vulkanResources) : mVulkanResources(vulkanResources)
+CullingPass::CullingPass(const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer,
+    const MeshBank<NormalVertex>* meshBank)
+    : mVulkanResources(vulkanResources),
+      mRenderer(renderer),
+      mMeshBank(meshBank)
 {
 }
 
@@ -17,6 +23,7 @@ BunnyResult CullingPass::initializePass()
 {
     initDescriptorSets();
     BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(initPipeline())
+    createBuffers();
 
     return BUNNY_HAPPY;
 }
@@ -49,6 +56,7 @@ void CullingPass::cleanup()
         mUniformBufferLayout = nullptr;
     }
 
+    mDrawCommandBuffer = nullptr;
     mVulkanResources->destroyBuffer(mCullingDataBuffer);
 }
 
@@ -61,14 +69,38 @@ void CullingPass::createBuffers()
 
 void CullingPass::linkDrawData(const AllocatedBuffer& drawCommandBuffer, size_t bufferSize)
 {
+    DescriptorWriter writer;
+    writer.writeBuffer(0, drawCommandBuffer.mBuffer, bufferSize, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    for (VkDescriptorSet set : mDrawCommandDescSets)
+    {
+        writer.updateSet(mVulkanResources->getDevice(), set);
+    }
+    mDrawCommandBuffer = &drawCommandBuffer;
 }
 
 void CullingPass::linkMeshData(const AllocatedBuffer& meshDataBuffer, size_t bufferSize)
 {
+    DescriptorWriter writer;
+    writer.writeBuffer(0, meshDataBuffer.mBuffer, bufferSize, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    for (VkDescriptorSet set : mMeshDataDescSets)
+    {
+        writer.updateSet(mVulkanResources->getDevice(), set);
+    }
 }
 
 void CullingPass::linkObjectData(const AllocatedBuffer& objectBuffer, size_t bufferSize)
 {
+    DescriptorWriter writer;
+    writer.writeBuffer(0, objectBuffer.mBuffer, bufferSize, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    for (VkDescriptorSet set : mObjectDescSets)
+    {
+        writer.updateSet(mVulkanResources->getDevice(), set);
+    }
+}
+
+void CullingPass::setObjectCount(uint32_t objectCount)
+{
+    mObjectCount = objectCount;
 }
 
 void CullingPass::updateCullingData(const Camera& camera)
@@ -82,6 +114,24 @@ void CullingPass::updateCullingData(const Camera& camera)
 
 void CullingPass::dispatch()
 {
+    VkCommandBuffer cmd = mRenderer->getCurrentCommandBuffer();
+
+    //  dispatch culling compute shader
+    constexpr static uint32_t computeSizeX = 256;
+    //  +1 to make sure enough threads are dispatched
+    vkCmdDispatch(cmd, mObjectCount / computeSizeX + 1, 1, 1);
+    //  Todo: maybe research later submitting this to compute queue?
+
+    //  set up barrier to make sure the buffers containing the culling result is ready to use
+    VkBufferMemoryBarrier barrier = makeBufferMemoryBarrier(
+        mDrawCommandBuffer->mBuffer, mVulkanResources->getGraphicQueue().mQueueFamilyIndex.value());
+    barrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+    barrier.dstAccessMask = VK_ACCESS_INDIRECT_COMMAND_READ_BIT;
+
+    //  Todo: here we directly start the barrier, maybe we should save it somewhere and start it later
+    //  in case we want to have multiple culling passes and wait all at the end
+    vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT, 0, 0, nullptr,
+        1, &barrier, 0, nullptr);
 }
 
 CullingPass::~CullingPass()

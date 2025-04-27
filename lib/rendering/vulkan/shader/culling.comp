@@ -90,5 +90,7 @@ bool isObjectInView(ObjectData obj)
 
 void main()
 {
-    ObjectData obj = objectData[gl_GlobalInvocationID.x];
+    //  todo: should check whether gl_GlobalInvocationID.x is less than the number of objects
+    //  because we may dispatch more threads than actual number of objects
+    ObjectData obj = objectData[gl_GlobalInvocationID.x]; 
 }
