@@ -7,8 +7,8 @@ namespace Bunny::Render
 struct DirectionalLight
 {
     glm::vec3 mDirection;
-    float mPad1;
+    float mPadding1;
     glm::vec3 mColor;
-    float mPad2;
+    float mPadding2;
 };
 } // namespace Bunny::Render

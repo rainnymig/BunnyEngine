@@ -8,6 +8,20 @@
 namespace Bunny::Render
 {
 
+struct FrustumPlane
+{
+    FrustumPlane() = default;
+    FrustumPlane(const glm::vec3& normal, const glm::vec3 pointOnPlane);
+
+    glm::vec3 mNormal;
+    float mDistToOrigin;
+};
+
+struct ViewFrustum
+{
+    FrustumPlane mPlanes[6];
+};
+
 class Camera
 {
   public:
@@ -24,20 +38,27 @@ class Camera
     glm::mat4 getProjMatrix() const { return mProjMatrix; }
     glm::mat4 getViewProjMatrix() const { return mViewProjMatrix; }
     glm::vec3 getPosition() const { return mPosition; }
-
-    static constexpr float NearPlaneDistance = 0.1f;
-    static constexpr float FarPlaneDistance = 100.0f;
+    void getViewFrustum(ViewFrustum& outFrustum) const;
 
   private:
     void updateMatrices();
+
+    static constexpr float NearPlaneDistance = 0.1f;
+    static constexpr float FarPlaneDistance = 100.0f;
+    static constexpr glm::vec4 StaticForward{0, 0, -1, 0};
+    static constexpr glm::vec4 StaticUp{0, 1, 0, 0};
+    static constexpr glm::vec4 StaticRight{1, 0, 0, 0};
 
     glm::mat4 mViewMatrix;
     glm::mat4 mProjMatrix;
     glm::mat4 mViewProjMatrix;
     glm::vec3 mPosition;
     glm::vec3 mPitchYawRoll;
+    glm::vec3 mForwardVec = StaticForward;
+    glm::vec3 mUpVec = StaticUp;
+    glm::vec3 mRightVec = StaticRight;
     float mFov;
-    float mAspectRatio;
+    float mAspectRatio; //  width/height
 };
 
 } // namespace Bunny::Render
