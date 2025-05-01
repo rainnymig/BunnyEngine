@@ -30,7 +30,7 @@ layout(std430, set = 1, binding = 0) buffer ObjectDataBuffer
     ObjectData objectData[];
 };
 
-layout(std430, set = 3, binding = 1) buffer InstanceToObjectId
+layout(std430, set = 2, binding = 0) buffer InstanceToObjectId
 {
     uint instToObj[];
 };

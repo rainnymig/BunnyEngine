@@ -35,6 +35,7 @@ void BasicBlinnPhongMaterial::cleanupPipeline()
     vkDestroyPipelineLayout(mDevice, mPipeline.mPipelineLayout, nullptr);
     vkDestroyDescriptorSetLayout(mDevice, mSceneDescSetLayout, nullptr);
     vkDestroyDescriptorSetLayout(mDevice, mObjectDescSetLayout, nullptr);
+    vkDestroyDescriptorSetLayout(mDevice, mDrawDescSetLayout, nullptr);
     // vkDestroyDescriptorSetLayout(mDevice, mDescriptorSetLayout, nullptr);
 
     mDevice = nullptr;
@@ -95,14 +96,14 @@ std::unique_ptr<BasicBlinnPhongMaterial> BasicBlinnPhongMaterial::Builder::build
 
     std::unique_ptr<BasicBlinnPhongMaterial> material = std::make_unique<BasicBlinnPhongMaterial>(CARROT, device);
 
-    if (!BUNNY_SUCCESS(
-            buildDescriptorSetLayouts(device, material->mSceneDescSetLayout, material->mObjectDescSetLayout)))
+    if (!BUNNY_SUCCESS(buildDescriptorSetLayouts(
+            device, material->mSceneDescSetLayout, material->mObjectDescSetLayout, material->mDrawDescSetLayout)))
     {
         PRINT_AND_RETURN_VALUE("Fail to build descriptor set layouts for Basic Blinn Phong Material", nullptr);
     }
 
-    if (!BUNNY_SUCCESS(
-            buildPipeline(device, material->mSceneDescSetLayout, material->mObjectDescSetLayout, material->mPipeline)))
+    if (!BUNNY_SUCCESS(buildPipeline(device, material->mSceneDescSetLayout, material->mObjectDescSetLayout,
+            material->mDrawDescSetLayout, material->mPipeline)))
     {
         PRINT_AND_RETURN_VALUE("Fail to build pipeline for Basic Blinn Phong Material", nullptr);
     }
@@ -119,7 +120,7 @@ std::unique_ptr<BasicBlinnPhongMaterial> BasicBlinnPhongMaterial::Builder::build
 }
 
 BunnyResult BasicBlinnPhongMaterial::Builder::buildPipeline(VkDevice device, VkDescriptorSetLayout sceneLayout,
-    VkDescriptorSetLayout objectLayout, MaterialPipeline& outPipeline) const
+    VkDescriptorSetLayout objectLayout, VkDescriptorSetLayout drawLayout, MaterialPipeline& outPipeline) const
 {
     VkPipeline pipeline;
     VkPipelineLayout pipelineLayout;
@@ -130,12 +131,12 @@ BunnyResult BasicBlinnPhongMaterial::Builder::buildPipeline(VkDevice device, VkD
 
     //  build pipeline
 
-    VkDescriptorSetLayout layouts[] = {sceneLayout, objectLayout};
+    VkDescriptorSetLayout layouts[] = {sceneLayout, objectLayout, drawLayout};
 
     //  pipeline layout
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 2;
+    pipelineLayoutInfo.setLayoutCount = 3;
     pipelineLayoutInfo.pSetLayouts = layouts;
     pipelineLayoutInfo.pushConstantRangeCount = 0;
     pipelineLayoutInfo.pPushConstantRanges = nullptr;
@@ -173,21 +174,23 @@ BunnyResult BasicBlinnPhongMaterial::Builder::buildPipeline(VkDevice device, VkD
     return BUNNY_HAPPY;
 }
 
-BunnyResult BasicBlinnPhongMaterial::Builder::buildDescriptorSetLayouts(
-    VkDevice device, VkDescriptorSetLayout& outSceneLayout, VkDescriptorSetLayout& outObjectLayout) const
+BunnyResult BasicBlinnPhongMaterial::Builder::buildDescriptorSetLayouts(VkDevice device,
+    VkDescriptorSetLayout& outSceneLayout, VkDescriptorSetLayout& outObjectLayout,
+    VkDescriptorSetLayout& outDrawLayout) const
 {
     //  object data desc sets
     DescriptorLayoutBuilder layoutBuilder;
     {
         VkDescriptorSetLayoutBinding uniformBufferLayout{};
         uniformBufferLayout.binding = 0;
-        uniformBufferLayout.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER; //  storage buffer?
+        uniformBufferLayout.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
         uniformBufferLayout.descriptorCount = 1;
         uniformBufferLayout.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
         uniformBufferLayout.pImmutableSamplers = nullptr;
         layoutBuilder.addBinding(uniformBufferLayout);
     }
     outObjectLayout = layoutBuilder.build(device);
+    outDrawLayout = layoutBuilder.build(device);
 
     //  scene data desc sets
     layoutBuilder.clear();

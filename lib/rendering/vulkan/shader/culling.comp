@@ -112,6 +112,7 @@ void main()
     ObjectData obj = objectData[objId];
 
     bool inView = isObjectInView(obj);
+    // bool inView = objId % 2 == 0;
 
     if (inView)
     {

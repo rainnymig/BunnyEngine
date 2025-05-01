@@ -76,8 +76,9 @@ int main(void)
     Bunny::Render::CullingPass cullingPass(&renderResources, &renderer, &meshBank);
 
     //  optimize later: detach these layouts from specific material
-    forwardPass.initializePass(
-        blinnPhongMaterial->getSceneDescSetLayout(), blinnPhongMaterial->getObjectDescSetLayout());
+    forwardPass.initializePass(blinnPhongMaterial->getSceneDescSetLayout(),
+        blinnPhongMaterial->getObjectDescSetLayout(), blinnPhongMaterial->getDrawDescSetLayout());
+    cullingPass.initializePass();
 
     materialBank.addMaterial(std::move(blinnPhongMaterial));
     materialBank.addMaterialInstance(blinnPhongInstance);
@@ -93,8 +94,6 @@ int main(void)
     worldTranslator.initObjectDataBuffer(&bunnyWorld);
 
     forwardPass.updateDrawInstanceCounts(worldTranslator.getMeshInstanceCounts());
-
-    cullingPass.initializePass();
 
     forwardPass.linkSceneData(worldTranslator.getSceneBuffer());
     forwardPass.linkLightData(worldTranslator.getLightBuffer());
@@ -127,6 +126,8 @@ int main(void)
         {
             break;
         }
+
+        forwardPass.resetDrawCommands();
 
         worldTranslator.updateSceneData(&bunnyWorld);
 
