@@ -22,6 +22,11 @@ class DepthReducePass
     void cleanup();
     void dispatch();
 
+    const AllocatedImage& getDepthHierarchyImage() const { return mdepthHierarchyImage; }
+    VkSampler getDepthReduceSampler() const { return mDepthReduceSampler; }
+    uint32_t getDepthImageWidth() const { return mDepthWidth; }
+    uint32_t getDepthImageHeight() const { return mDepthHeight; }
+
   private:
     void createDepthHierarchy();
     void createDepthReduceSampler();

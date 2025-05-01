@@ -52,10 +52,10 @@ void CullingPass::cleanup()
         mStorageBufferLayout = nullptr;
     }
 
-    if (mUniformBufferLayout != nullptr)
+    if (mCullDataLayout != nullptr)
     {
-        vkDestroyDescriptorSetLayout(mVulkanResources->getDevice(), mUniformBufferLayout, nullptr);
-        mUniformBufferLayout = nullptr;
+        vkDestroyDescriptorSetLayout(mVulkanResources->getDevice(), mCullDataLayout, nullptr);
+        mCullDataLayout = nullptr;
     }
 
     if (mDrawDataLayout != nullptr)
@@ -75,14 +75,6 @@ void CullingPass::createBuffers()
     mCullingDataBuffer = mVulkanResources->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
         VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
         VMA_MEMORY_USAGE_AUTO);
-
-    //  link culling data buffer
-    DescriptorWriter writer;
-    writer.writeBuffer(0, mCullingDataBuffer.mBuffer, bufferSize, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-    for (VkDescriptorSet set : mCullDataDescSets)
-    {
-        writer.updateSet(mVulkanResources->getDevice(), set);
-    }
 }
 
 void CullingPass::linkDrawData(const AllocatedBuffer& drawCommandBuffer, size_t drawbufferSize,
@@ -119,15 +111,37 @@ void CullingPass::linkObjectData(const AllocatedBuffer& objectBuffer, size_t buf
     }
 }
 
+void CullingPass::linkCullingData(const AllocatedImage& depthHierarchyImage, VkSampler sampler)
+{
+    //  link culling data buffer
+    DescriptorWriter writer;
+    VkDeviceSize bufferSize = sizeof(ViewFrustum);
+    writer.writeBuffer(0, mCullingDataBuffer.mBuffer, bufferSize, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+    writer.writeImage(
+        1, depthHierarchyImage.mImageView, sampler, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+    for (VkDescriptorSet set : mCullDataDescSets)
+    {
+        writer.updateSet(mVulkanResources->getDevice(), set);
+    }
+}
+
 void CullingPass::setObjectCount(uint32_t objectCount)
 {
     mObjectCount = objectCount;
+}
+
+void CullingPass::setDepthImageSizes(uint32_t width, uint32_t height)
+{
+    mDepthImageWidth = width;
+    mDepthImageHeight = height;
 }
 
 void CullingPass::updateCullingData(const Camera& camera)
 {
     ViewFrustum viewFrustum;
     camera.getViewFrustum(viewFrustum);
+    viewFrustum.mDepthImageWidth = mDepthImageWidth;
+    viewFrustum.mDepthImageHeight = mDepthImageHeight;
 
     void* data = mCullingDataBuffer.mAllocationInfo.pMappedData;
     memcpy(data, &viewFrustum, sizeof(ViewFrustum));
@@ -201,6 +215,12 @@ void CullingPass::initDescriptorSets()
     uniformBufferBinding.descriptorCount = 1;
     uniformBufferBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
     uniformBufferBinding.pImmutableSamplers = nullptr;
+    VkDescriptorSetLayoutBinding imageBinding{};
+    imageBinding.binding = 1;
+    imageBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    imageBinding.descriptorCount = 1;
+    imageBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+    imageBinding.pImmutableSamplers = nullptr;
     VkDescriptorSetLayoutBinding storageBufferBinding{};
     storageBufferBinding.binding = 0;
     storageBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
@@ -209,7 +229,8 @@ void CullingPass::initDescriptorSets()
     storageBufferBinding.pImmutableSamplers = nullptr;
 
     layoutBuilder.addBinding(uniformBufferBinding);
-    mUniformBufferLayout = layoutBuilder.build(mVulkanResources->getDevice());
+    layoutBuilder.addBinding(imageBinding);
+    mCullDataLayout = layoutBuilder.build(mVulkanResources->getDevice());
 
     layoutBuilder.clear();
     layoutBuilder.addBinding(storageBufferBinding);
@@ -224,8 +245,9 @@ void CullingPass::initDescriptorSets()
 
     //  set up descriptor allocator
     DescriptorAllocator::PoolSize poolSizes[] = {
-        {.mType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, .mRatio = 8},
-        {.mType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .mRatio = 2}
+        {.mType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,         .mRatio = 8},
+        {.mType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         .mRatio = 2},
+        {.mType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .mRatio = 2}
     };
     mDescriptorAllocator.init(mVulkanResources->getDevice(), 2, poolSizes);
 
@@ -233,7 +255,7 @@ void CullingPass::initDescriptorSets()
     for (size_t idx = 0; idx < MAX_FRAMES_IN_FLIGHT; idx++)
     {
         mDescriptorAllocator.allocate(
-            mVulkanResources->getDevice(), &mUniformBufferLayout, &mCullDataDescSets[idx], 1, nullptr);
+            mVulkanResources->getDevice(), &mCullDataLayout, &mCullDataDescSets[idx], 1, nullptr);
         mDescriptorAllocator.allocate(
             mVulkanResources->getDevice(), &mStorageBufferLayout, &mObjectDescSets[idx], 1, nullptr);
         mDescriptorAllocator.allocate(
@@ -249,8 +271,7 @@ BunnyResult CullingPass::initPipeline()
     Shader computeShader(mCullingShaderPath, mVulkanResources->getDevice());
 
     //  build pipeline layout
-    VkDescriptorSetLayout layouts[] = {
-        mUniformBufferLayout, mStorageBufferLayout, mStorageBufferLayout, mDrawDataLayout};
+    VkDescriptorSetLayout layouts[] = {mCullDataLayout, mStorageBufferLayout, mStorageBufferLayout, mDrawDataLayout};
 
     VkPushConstantRange pushConstRange{
         .stageFlags = VK_SHADER_STAGE_COMPUTE_BIT, .offset = 0, .size = sizeof(uint32_t)};

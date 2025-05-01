@@ -32,10 +32,21 @@ struct BoundingSphere
     float radius;
 };
 
-layout(std140, set = 0, binding = 0) uniform ViewFrustum
+layout(std140, set = 0, binding = 0) uniform CullingData
 {
+    //  view frustum culling
     Plane frustumPlanes[6];
+
+    //  occlusion culling
+    mat4 viewMat;
+    float p00;
+    float p11;
+    float zNear;
+    float depthImageWidth;
+    float depthImageHeight;
 };
+
+layout(set = 0,binding = 1) uniform sampler2D depthHierarchy;
 
 layout(std430, set = 1, binding = 0) buffer ObjectDataBuffer
 {
@@ -62,6 +73,28 @@ layout( push_constant ) uniform PushConsts
     uint objectCount;
 };
 
+// 2D Polyhedral Bounds of a Clipped, Perspective-Projected 3D Sphere. Michael Mara, Morgan McGuire. 2013
+bool projectSphere(vec3 C, float r, float znear, float P00, float P11, out vec4 aabb)
+{
+	if (C.z < r + znear)
+		return false;
+
+	vec2 cx = -C.xz;
+	vec2 vx = vec2(sqrt(dot(cx, cx) - r * r), r);
+	vec2 minx = mat2(vx.x, vx.y, -vx.y, vx.x) * cx;
+	vec2 maxx = mat2(vx.x, -vx.y, vx.y, vx.x) * cx;
+
+	vec2 cy = -C.yz;
+	vec2 vy = vec2(sqrt(dot(cy, cy) - r * r), r);
+	vec2 miny = mat2(vy.x, vy.y, -vy.y, vy.x) * cy;
+	vec2 maxy = mat2(vy.x, -vy.y, vy.y, vy.x) * cy;
+
+	aabb = vec4(minx.x / minx.y * P00, miny.x / miny.y * P11, maxx.x / maxx.y * P00, maxy.x / maxy.y * P11);
+	aabb = aabb.xwzy * vec4(0.5f, -0.5f, 0.5f, -0.5f) + vec4(0.5f); // clip space -> uv space
+
+	return true;
+}
+
 bool isObjectInView(ObjectData obj)
 {
     bool isInView = true;
@@ -77,6 +110,29 @@ bool isObjectInView(ObjectData obj)
         float objDistToPlane = objDistToOrigin - plane.distToOrigin;
 
         isInView = isInView && (objDistToPlane > -radius);
+    }
+
+    if (isInView)
+    {
+        vec4 aabb;
+        vec3 centerViewSpace = (viewMat * vec4(center, 1.0)).xyz;
+
+        //flip Y because we access depth texture that way??
+        centerViewSpace.y *= -1;
+
+        if (projectSphere(centerViewSpace, radius, zNear, p00, p11, aabb))
+		{
+			float width = (aabb.z - aabb.x) * depthImageWidth;
+			float height = (aabb.w - aabb.y) * depthImageHeight;
+
+			float level = floor(log2(max(width, height)));
+
+			// Sampler is set up to do min reduction, so this computes the minimum depth of a 2x2 texel quad
+			float depth = textureLod(depthHierarchy, (aabb.xy + aabb.zw) * 0.5, level).x;
+			float depthSphere = zNear / (centerViewSpace.z - radius);
+
+			isInView = isInView && depthSphere >= depth;
+		}
     }
     
     return isInView;

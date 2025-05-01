@@ -72,6 +72,13 @@ void Camera::getViewFrustum(ViewFrustum& outFrustum) const
     outFrustum.mPlanes[4] = FrustumPlane(glm::normalize(glm::cross(vt, mRightVec)), ptmn);
     //  bottom plane
     outFrustum.mPlanes[5] = FrustumPlane(glm::normalize(glm::cross(mRightVec, vb)), pbmn);
+
+    //  calculate data for occlusion culling
+    outFrustum.mViewMat = getViewMatrix();
+    outFrustum.mP00 = mProjMatrix[0][0];
+    outFrustum.mP11 = mProjMatrix[1][1];
+    outFrustum.mZNear = NearPlaneDistance;
+    //  depth image width and height are filled elsewhere
 }
 
 void Camera::updateMatrices()

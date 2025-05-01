@@ -33,7 +33,9 @@ class CullingPass
         const AllocatedBuffer& instObjectBuffer, size_t instBufferSize);
     void linkMeshData(const AllocatedBuffer& meshDataBuffer, size_t bufferSize);
     void linkObjectData(const AllocatedBuffer& objectBuffer, size_t bufferSize);
+    void linkCullingData(const AllocatedImage& depthHierarchyImage, VkSampler sampler);
     void setObjectCount(uint32_t objectCount);
+    void setDepthImageSizes(uint32_t width, uint32_t height);
     void updateCullingData(const Camera& camera);
     void dispatch();
 
@@ -53,13 +55,15 @@ class CullingPass
     std::array<VkDescriptorSet, MAX_FRAMES_IN_FLIGHT> mDrawCommandDescSets;
     std::array<VkDescriptorSet, MAX_FRAMES_IN_FLIGHT> mMeshDataDescSets;
     VkDescriptorSetLayout mStorageBufferLayout;
-    VkDescriptorSetLayout mUniformBufferLayout;
+    VkDescriptorSetLayout mCullDataLayout;
     VkDescriptorSetLayout mDrawDataLayout;
 
     AllocatedBuffer mCullingDataBuffer;
     const AllocatedBuffer* mDrawCommandBuffer = nullptr;
     const AllocatedBuffer* mInstanceObjectBuffer = nullptr;
     uint32_t mObjectCount = 0;
+    uint32_t mDepthImageWidth;
+    uint32_t mDepthImageHeight;
 
     const VulkanRenderResources* mVulkanResources = nullptr;
     const VulkanGraphicsRenderer* mRenderer = nullptr;
