@@ -23,9 +23,11 @@ class ForwardPass
     ForwardPass(const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer,
         const MaterialBank* materialBank, const MeshBank<NormalVertex>* meshBank);
 
-    void initializePass(VkDescriptorSetLayout sceneLayout, VkDescriptorSetLayout objectLayout);
+    void initializePass(
+        VkDescriptorSetLayout sceneLayout, VkDescriptorSetLayout objectLayout, VkDescriptorSetLayout drawLayout);
     void buildDrawCommands();
     void updateDrawInstanceCounts(std::unordered_map<IdType, size_t> meshInstanceCounts);
+    void resetDrawCommands();
     void linkSceneData(const AllocatedBuffer& sceneBuffer);
     void linkLightData(const AllocatedBuffer& lightBuffer);
     void linkObjectData(const AllocatedBuffer& objectBuffer, size_t bufferSize);
@@ -50,9 +52,11 @@ class ForwardPass
 
     VkDescriptorSetLayout mSceneDescLayout;
     VkDescriptorSetLayout mObjectDescLayout;
+    VkDescriptorSetLayout mDrawDescLayout;
     DescriptorAllocator mDescriptorAllocator;
     std::array<VkDescriptorSet, MAX_FRAMES_IN_FLIGHT> mSceneDescSets;
     std::array<VkDescriptorSet, MAX_FRAMES_IN_FLIGHT> mObjectDescSets;
+    std::array<VkDescriptorSet, MAX_FRAMES_IN_FLIGHT> mDrawDataDescSets;
 };
 
 } // namespace Bunny::Render

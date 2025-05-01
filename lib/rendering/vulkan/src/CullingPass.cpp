@@ -71,9 +71,18 @@ void CullingPass::cleanup()
 
 void CullingPass::createBuffers()
 {
-    mCullingDataBuffer = mVulkanResources->createBuffer(sizeof(ViewFrustum), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+    VkDeviceSize bufferSize = sizeof(ViewFrustum);
+    mCullingDataBuffer = mVulkanResources->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
         VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
         VMA_MEMORY_USAGE_AUTO);
+
+    //  link culling data buffer
+    DescriptorWriter writer;
+    writer.writeBuffer(0, mCullingDataBuffer.mBuffer, bufferSize, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+    for (VkDescriptorSet set : mCullDataDescSets)
+    {
+        writer.updateSet(mVulkanResources->getDevice(), set);
+    }
 }
 
 void CullingPass::linkDrawData(const AllocatedBuffer& drawCommandBuffer, size_t drawbufferSize,

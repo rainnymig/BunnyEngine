@@ -57,11 +57,11 @@ class BasicBlinnPhongMaterial : public Material
 
       private:
         BunnyResult buildPipeline(VkDevice device, VkDescriptorSetLayout sceneLayout,
-            VkDescriptorSetLayout objectLayout, MaterialPipeline& outPipeline) const;
-        BunnyResult buildDescriptorSetLayouts(
-            VkDevice device, VkDescriptorSetLayout& outSceneLayout, VkDescriptorSetLayout& outObjectLayout) const;
+            VkDescriptorSetLayout objectLayout, VkDescriptorSetLayout drawLayout, MaterialPipeline& outPipeline) const;
+        BunnyResult buildDescriptorSetLayouts(VkDevice device, VkDescriptorSetLayout& outSceneLayout,
+            VkDescriptorSetLayout& outObjectLayout, VkDescriptorSetLayout& outDrawLayout) const;
 
-        std::string mVertexShaderPath{"./basic_instanced_vert.spv"};
+        std::string mVertexShaderPath{"./culled_instanced_vert.spv"};
         std::string mFragmentShaderPath{"./basic_updated_frag.spv"};
         VkFormat mColorFormat = VK_FORMAT_B8G8R8A8_SRGB;
         VkFormat mDepthFormat = VK_FORMAT_D32_SFLOAT;
@@ -76,11 +76,13 @@ class BasicBlinnPhongMaterial : public Material
 
     VkDescriptorSetLayout getSceneDescSetLayout() const { return mSceneDescSetLayout; }
     VkDescriptorSetLayout getObjectDescSetLayout() const { return mObjectDescSetLayout; }
+    VkDescriptorSetLayout getDrawDescSetLayout() const { return mDrawDescSetLayout; }
 
   private:
     VkDevice mDevice;
     VkDescriptorSetLayout mSceneDescSetLayout = nullptr;
     VkDescriptorSetLayout mObjectDescSetLayout = nullptr;
+    VkDescriptorSetLayout mDrawDescSetLayout = nullptr;
 
     // DescriptorAllocator mDescriptorAllocator;
     // VkDescriptorSetLayout mDescriptorSetLayout;

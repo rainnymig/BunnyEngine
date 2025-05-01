@@ -21,17 +21,19 @@ ForwardPass::ForwardPass(const VulkanRenderResources* vulkanResources, const Vul
 {
 }
 
-void ForwardPass::initializePass(VkDescriptorSetLayout sceneLayout, VkDescriptorSetLayout objectLayout)
+void ForwardPass::initializePass(
+    VkDescriptorSetLayout sceneLayout, VkDescriptorSetLayout objectLayout, VkDescriptorSetLayout drawLayout)
 {
     mSceneDescLayout = sceneLayout;
     mObjectDescLayout = objectLayout;
+    mDrawDescLayout = drawLayout;
 
     //  create descriptor for object buffer and scene buffer
     DescriptorAllocator::PoolSize poolSizes[] = {
-        {.mType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, .mRatio = 2},
+        {.mType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, .mRatio = 4},
         {.mType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .mRatio = 6}
     };
-    mDescriptorAllocator.init(mVulkanResources->getDevice(), 2, poolSizes);
+    mDescriptorAllocator.init(mVulkanResources->getDevice(), 4, poolSizes);
 
     for (size_t idx = 0; idx < MAX_FRAMES_IN_FLIGHT; idx++)
     {
@@ -39,6 +41,8 @@ void ForwardPass::initializePass(VkDescriptorSetLayout sceneLayout, VkDescriptor
             mVulkanResources->getDevice(), &mObjectDescLayout, &mObjectDescSets[idx], 1, nullptr);
         mDescriptorAllocator.allocate(
             mVulkanResources->getDevice(), &mSceneDescLayout, &mSceneDescSets[idx], 1, nullptr);
+        mDescriptorAllocator.allocate(
+            mVulkanResources->getDevice(), &mDrawDescLayout, &mDrawDataDescSets[idx], 1, nullptr);
     }
 }
 
@@ -80,7 +84,7 @@ void ForwardPass::updateDrawInstanceCounts(std::unordered_map<IdType, size_t> me
     {
         for (const SurfaceLite& surface : mesh.mSurfaces)
         {
-            mDrawCommandsData[idx].instanceCount = meshInstanceCounts.at(mesh.mId);
+            // mDrawCommandsData[idx].instanceCount = meshInstanceCounts.at(mesh.mId);
             mDrawCommandsData[idx].firstInstance = accumulatedInstances;
             idx++;
         }
@@ -99,7 +103,24 @@ void ForwardPass::updateDrawInstanceCounts(std::unordered_map<IdType, size_t> me
         mInstanceObjectBuffer = mVulkanResources->createBuffer(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
             VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, VMA_MEMORY_USAGE_AUTO);
         mInstanceObjectBufferSize = bufferSize;
+
+        //  link instance object buffer to descriptor
+        DescriptorWriter writer;
+        writer.writeBuffer(0, mInstanceObjectBuffer.mBuffer, bufferSize, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+        for (VkDescriptorSet set : mDrawDataDescSets)
+        {
+            writer.updateSet(mVulkanResources->getDevice(), set);
+        }
     }
+}
+
+void ForwardPass::resetDrawCommands()
+{
+    const VkDeviceSize drawCommandsSize = mDrawCommandsData.size() * sizeof(VkDrawIndexedIndirectCommand);
+    void* mappedData = mDrawCommandsBuffer.mAllocationInfo.pMappedData;
+    memcpy(mappedData, mDrawCommandsData.data(), drawCommandsSize);
+
+    //  add barrier?
 }
 
 void ForwardPass::linkSceneData(const AllocatedBuffer& sceneBuffer)
@@ -154,6 +175,10 @@ void ForwardPass::draw()
 
     vkCmdBindDescriptorSets(mRenderer->getCurrentCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS,
         matInstance.mpBaseMaterial->mPipelineLayout, 1, 1, &mObjectDescSets[mRenderer->getCurrentFrameIdx()], 0,
+        nullptr);
+
+    vkCmdBindDescriptorSets(mRenderer->getCurrentCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS,
+        matInstance.mpBaseMaterial->mPipelineLayout, 2, 1, &mDrawDataDescSets[mRenderer->getCurrentFrameIdx()], 0,
         nullptr);
 
     if (matInstance.mDescriptorSet != nullptr)
