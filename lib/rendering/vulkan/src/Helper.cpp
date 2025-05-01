@@ -136,6 +136,25 @@ VkBufferMemoryBarrier makeBufferMemoryBarrier(VkBuffer buffer, uint32_t queueInd
     return barrier;
 }
 
+VkImageMemoryBarrier makeImageMemoryBarrier(VkImage image, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask,
+    VkImageLayout oldLayout, VkImageLayout newLayout, VkImageAspectFlags aspectMask)
+{
+    VkImageMemoryBarrier result = {.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
+
+    result.srcAccessMask = srcAccessMask;
+    result.dstAccessMask = dstAccessMask;
+    result.oldLayout = oldLayout;
+    result.newLayout = newLayout;
+    result.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    result.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    result.image = image;
+    result.subresourceRange.aspectMask = aspectMask;
+    result.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
+    result.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
+
+    return result;
+}
+
 bool hasStencilComponent(VkFormat format)
 {
     return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
@@ -414,6 +433,18 @@ void loadMeshFromGltf(MeshBank<NormalVertex>* meshBank, MaterialBank* materialBa
         //  create mesh buffers
         meshBank->addMesh(vertices, indices, newMesh);
     }
+}
+
+uint32_t findPreviousPow2(uint32_t val)
+{
+    uint32_t result = 1;
+
+    while (result * 2 < val)
+    {
+        result *= 2;
+    }
+
+    return result;
 }
 
 } // namespace Bunny::Render
