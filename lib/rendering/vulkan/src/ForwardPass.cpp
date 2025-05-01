@@ -90,6 +90,16 @@ void ForwardPass::updateDrawInstanceCounts(std::unordered_map<IdType, size_t> me
     const VkDeviceSize drawCommandsSize = mDrawCommandsData.size() * sizeof(VkDrawIndexedIndirectCommand);
     void* mappedData = mDrawCommandsBuffer.mAllocationInfo.pMappedData;
     memcpy(mappedData, mDrawCommandsData.data(), drawCommandsSize);
+
+    //  create instance to object buffer
+    //  the number of items in the array is the total number of instances of all meshes
+    {
+        mVulkanResources->destroyBuffer(mInstanceObjectBuffer);
+        const VkDeviceSize bufferSize = sizeof(uint32_t) * accumulatedInstances;
+        mInstanceObjectBuffer = mVulkanResources->createBuffer(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+            VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, VMA_MEMORY_USAGE_AUTO);
+        mInstanceObjectBufferSize = bufferSize;
+    }
 }
 
 void ForwardPass::linkSceneData(const AllocatedBuffer& sceneBuffer)
@@ -159,6 +169,7 @@ void ForwardPass::draw()
 
 void ForwardPass::cleanup()
 {
+    mVulkanResources->destroyBuffer(mInstanceObjectBuffer);
     mVulkanResources->destroyBuffer(mDrawCommandsBuffer);
     mDrawCommandsData.clear();
 

@@ -121,8 +121,8 @@ BunnyResult WorldLoader::loadTestWorld(World& outWorld)
 
     //  create scene structure
     //  create grid of cubes to fill the scene
-    constexpr int resolution = 50;
-    constexpr float gap = 2;
+    constexpr int resolution = 64;
+    constexpr float gap = 3;
     std::vector<glm::vec3> positions;
     glm::vec3 startingPos{-gap * resolution / 2, -gap * resolution / 2, -gap * resolution / 2};
     size_t idx = 0;

@@ -9,11 +9,13 @@
 #include "World.h"
 #include "WorldLoader.h"
 #include "WorldDataTranslator.h"
+#include "WorldComponents.h"
 #include "MeshBank.h"
 #include "Material.h"
 #include "MaterialBank.h"
 #include "Vertex.h"
 #include "ForwardPass.h"
+#include "CullingPass.h"
 
 #include <imgui.h>
 #include <fmt/core.h>
@@ -71,6 +73,7 @@ int main(void)
     Bunny::Render::MaterialInstance blinnPhongInstance = blinnPhongMaterial->makeInstance();
 
     Bunny::Render::ForwardPass forwardPass(&renderResources, &renderer, &materialBank, &meshBank);
+    Bunny::Render::CullingPass cullingPass(&renderResources, &renderer, &meshBank);
 
     //  optimize later: detach these layouts from specific material
     forwardPass.initializePass(
@@ -91,9 +94,17 @@ int main(void)
 
     forwardPass.updateDrawInstanceCounts(worldTranslator.getMeshInstanceCounts());
 
+    cullingPass.initializePass();
+
     forwardPass.linkSceneData(worldTranslator.getSceneBuffer());
     forwardPass.linkLightData(worldTranslator.getLightBuffer());
     forwardPass.linkObjectData(worldTranslator.getObjectBuffer(), worldTranslator.getObjectBufferSize());
+
+    cullingPass.linkMeshData(meshBank.getBoundsBuffer(), meshBank.getBoundsBufferSize());
+    cullingPass.linkObjectData(worldTranslator.getObjectBuffer(), worldTranslator.getObjectBufferSize());
+    cullingPass.linkDrawData(forwardPass.getDrawCommandBuffer(), forwardPass.getDrawCommandBufferSize(),
+        forwardPass.getInstanceObjectBuffer(), forwardPass.getInstanceObjectBufferSize());
+    cullingPass.setObjectCount(worldTranslator.getObjectCount());
 
     float accumulatedTime = 0;
     constexpr float interval = 0.5f;
@@ -119,7 +130,16 @@ int main(void)
 
         worldTranslator.updateSceneData(&bunnyWorld);
 
+        const auto camComps = bunnyWorld.mEntityRegistry.view<CameraComponent>();
+        if (!camComps.empty())
+        {
+            const auto& cam = bunnyWorld.mEntityRegistry.get<CameraComponent>(camComps.front());
+            cullingPass.updateCullingData(cam.mCamera);
+        }
+
         renderer.beginRenderFrame();
+
+        cullingPass.dispatch();
 
         renderer.beginRender();
 
@@ -142,6 +162,7 @@ int main(void)
     renderer.waitForRenderFinish();
 
     worldTranslator.cleanup();
+    cullingPass.cleanup();
     forwardPass.cleanup();
 
     meshBank.cleanup();
