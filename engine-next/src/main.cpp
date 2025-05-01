@@ -127,8 +127,6 @@ int main(void)
             break;
         }
 
-        forwardPass.resetDrawCommands();
-
         worldTranslator.updateSceneData(&bunnyWorld);
 
         const auto camComps = bunnyWorld.mEntityRegistry.view<CameraComponent>();
@@ -139,6 +137,8 @@ int main(void)
         }
 
         renderer.beginRenderFrame();
+
+        forwardPass.resetDrawCommands();
 
         cullingPass.dispatch();
 

@@ -92,7 +92,7 @@ bool isObjectInView(ObjectData obj)
         float objDistToOrigin = dot(center, plane.normal);
         float objDistToPlane = objDistToOrigin - plane.distToOrigin;
 
-        isInView = isInView && (objDistToPlane > radius);
+        isInView = isInView && (objDistToPlane > -radius);
     }
     
     return isInView;

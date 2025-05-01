@@ -46,6 +46,7 @@ class ForwardPass
     const MeshBank<NormalVertex>* mMeshBank;
 
     AllocatedBuffer mDrawCommandsBuffer;
+    AllocatedBuffer mInitialDrawCommandBuffer;
     std::vector<VkDrawIndexedIndirectCommand> mDrawCommandsData;
     AllocatedBuffer mInstanceObjectBuffer;
     size_t mInstanceObjectBufferSize;
