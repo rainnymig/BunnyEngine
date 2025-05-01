@@ -5,6 +5,7 @@
 #include "VulkanGraphicsRenderer.h"
 #include "VulkanRenderResources.h"
 #include "ShaderData.h"
+#include "Helper.h"
 
 #include <vulkan/vulkan.h>
 
@@ -56,22 +57,19 @@ void ForwardPass::buildDrawCommands()
         for (const SurfaceLite& surface : mesh.mSurfaces)
         {
             //  add a draw indirect command for each surface in the mesh
-            //  the real instance count and first instance are the result of culling stage
             mDrawCommandsData.emplace_back(surface.mIndexCount, 0, surface.mFirstIndex, mesh.mVertexOffset, 0);
         }
     }
 
     const VkDeviceSize drawCommandsSize = mDrawCommandsData.size() * sizeof(VkDrawIndexedIndirectCommand);
 
-    mDrawCommandsBuffer = mVulkanResources->createBuffer(drawCommandsSize,
-        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,
+    mInitialDrawCommandBuffer = mVulkanResources->createBuffer(drawCommandsSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
         VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
         VMA_MEMORY_USAGE_AUTO);
 
-    {
-        void* mappedData = mDrawCommandsBuffer.mAllocationInfo.pMappedData;
-        memcpy(mappedData, mDrawCommandsData.data(), drawCommandsSize);
-    }
+    mDrawCommandsBuffer = mVulkanResources->createBuffer(drawCommandsSize,
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+        VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, VMA_MEMORY_USAGE_AUTO);
 }
 
 void ForwardPass::updateDrawInstanceCounts(std::unordered_map<IdType, size_t> meshInstanceCounts)
@@ -84,7 +82,6 @@ void ForwardPass::updateDrawInstanceCounts(std::unordered_map<IdType, size_t> me
     {
         for (const SurfaceLite& surface : mesh.mSurfaces)
         {
-            // mDrawCommandsData[idx].instanceCount = meshInstanceCounts.at(mesh.mId);
             mDrawCommandsData[idx].firstInstance = accumulatedInstances;
             idx++;
         }
@@ -92,7 +89,7 @@ void ForwardPass::updateDrawInstanceCounts(std::unordered_map<IdType, size_t> me
     }
 
     const VkDeviceSize drawCommandsSize = mDrawCommandsData.size() * sizeof(VkDrawIndexedIndirectCommand);
-    void* mappedData = mDrawCommandsBuffer.mAllocationInfo.pMappedData;
+    void* mappedData = mInitialDrawCommandBuffer.mAllocationInfo.pMappedData;
     memcpy(mappedData, mDrawCommandsData.data(), drawCommandsSize);
 
     //  create instance to object buffer
@@ -117,10 +114,22 @@ void ForwardPass::updateDrawInstanceCounts(std::unordered_map<IdType, size_t> me
 void ForwardPass::resetDrawCommands()
 {
     const VkDeviceSize drawCommandsSize = mDrawCommandsData.size() * sizeof(VkDrawIndexedIndirectCommand);
-    void* mappedData = mDrawCommandsBuffer.mAllocationInfo.pMappedData;
-    memcpy(mappedData, mDrawCommandsData.data(), drawCommandsSize);
+    VkCommandBuffer cmd = mRenderer->getCurrentCommandBuffer();
 
-    //  add barrier?
+    VkBufferCopy bufCopy{0};
+    bufCopy.dstOffset = 0;
+    bufCopy.srcOffset = 0;
+    bufCopy.size = drawCommandsSize;
+
+    vkCmdCopyBuffer(cmd, mInitialDrawCommandBuffer.mBuffer, mDrawCommandsBuffer.mBuffer, 1, &bufCopy);
+
+    VkBufferMemoryBarrier barrier = makeBufferMemoryBarrier(
+        mDrawCommandsBuffer.mBuffer, mVulkanResources->getGraphicQueue().mQueueFamilyIndex.value());
+    barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    barrier.dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT;
+
+    vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 1,
+        &barrier, 0, nullptr);
 }
 
 void ForwardPass::linkSceneData(const AllocatedBuffer& sceneBuffer)
@@ -151,8 +160,6 @@ void ForwardPass::linkObjectData(const AllocatedBuffer& objectBuffer, size_t buf
     {
         writer.updateSet(mVulkanResources->getDevice(), set);
     }
-
-    // writer.updateSet(mVulkanResources->getDevice(), mObjectDescSets[mRenderer->getCurrentFrameIdx()]);
 }
 
 void ForwardPass::draw()
@@ -196,6 +203,7 @@ void ForwardPass::cleanup()
 {
     mVulkanResources->destroyBuffer(mInstanceObjectBuffer);
     mVulkanResources->destroyBuffer(mDrawCommandsBuffer);
+    mVulkanResources->destroyBuffer(mInitialDrawCommandBuffer);
     mDrawCommandsData.clear();
 
     mDescriptorAllocator.destroyPools(mVulkanResources->getDevice());
