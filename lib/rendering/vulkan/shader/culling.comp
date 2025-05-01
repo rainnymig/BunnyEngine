@@ -2,22 +2,6 @@
 
 layout (local_size_x = 256) in;
 
-//
-//  input buffer holding object transform and bounding box and mesh id, sorted by mesh id
-//  input uniform buffer holding view frustum data
-//
-//  output buffer holding object transform and mesh id, sorted by mesh id
-//  output buffer holding draw indirect parameters
-//      index count
-//      instance count  - that's the main thing to be done here
-//      first index
-//      vertex offset   - can be just 0 if index is precalculated (like now), 
-//                        or set the offset here and not pre calculate index (probably better)
-//      first instance  - do we need to hack this to do something here?
-//  output buffer holding draw count 
-//      draw count      - number of draws, should be the number of elements in the draw indirect parameter buffer
-//      
-
 struct DrawCommand
 {
     uint indexCount;
