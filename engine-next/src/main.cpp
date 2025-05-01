@@ -16,6 +16,7 @@
 #include "Vertex.h"
 #include "ForwardPass.h"
 #include "CullingPass.h"
+#include "DepthReducePass.h"
 
 #include <imgui.h>
 #include <fmt/core.h>
@@ -74,11 +75,13 @@ int main(void)
 
     Bunny::Render::ForwardPass forwardPass(&renderResources, &renderer, &materialBank, &meshBank);
     Bunny::Render::CullingPass cullingPass(&renderResources, &renderer, &meshBank);
+    Bunny::Render::DepthReducePass depthReducePass(&renderResources, &renderer);
 
     //  optimize later: detach these layouts from specific material
     forwardPass.initializePass(blinnPhongMaterial->getSceneDescSetLayout(),
         blinnPhongMaterial->getObjectDescSetLayout(), blinnPhongMaterial->getDrawDescSetLayout());
     cullingPass.initializePass();
+    depthReducePass.initializePass();
 
     materialBank.addMaterial(std::move(blinnPhongMaterial));
     materialBank.addMaterialInstance(blinnPhongInstance);
@@ -148,6 +151,8 @@ int main(void)
 
         renderer.finishRender();
 
+        depthReducePass.dispatch();
+
         renderer.beginImguiFrame();
 
         ImGui::Begin("Game Stats");
@@ -165,6 +170,7 @@ int main(void)
     worldTranslator.cleanup();
     cullingPass.cleanup();
     forwardPass.cleanup();
+    depthReducePass.cleanup();
 
     meshBank.cleanup();
     materialBank.cleanup();

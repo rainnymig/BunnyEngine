@@ -31,6 +31,8 @@ VkRenderingAttachmentInfo makeDepthAttachmentInfo(
 VkRenderingInfo makeRenderingInfo(
     VkExtent2D renderExtent, VkRenderingAttachmentInfo* colorAttachment, VkRenderingAttachmentInfo* depthAttachment);
 VkBufferMemoryBarrier makeBufferMemoryBarrier(VkBuffer buffer, uint32_t queueIndex);
+VkImageMemoryBarrier makeImageMemoryBarrier(VkImage image, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask,
+    VkImageLayout oldLayout, VkImageLayout newLayout, VkImageAspectFlags aspectMask);
 
 void transitionImageLayout(
     VkCommandBuffer commandBuffer, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
@@ -48,5 +50,8 @@ void addQuad(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3, cons
     std::unordered_map<NormalVertex, uint32_t, NormalVertex::Hash>& vertexToIndexMap);
 const IdType createCubeMeshToBank(MeshBank<NormalVertex>* meshBank, IdType materialId, IdType materialInstanceId);
 void loadMeshFromGltf(MeshBank<NormalVertex>* meshBank, MaterialBank* materialBank, fastgltf::Asset& gltfAsset);
+
+//  find the largest power of 2 that's less than val
+uint32_t findPreviousPow2(uint32_t val);
 
 } // namespace Bunny::Render

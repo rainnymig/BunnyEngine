@@ -48,14 +48,14 @@ class VulkanRenderResources
     AllocatedBuffer createBuffer(VkDeviceSize size, VkBufferUsageFlags bufferUsage,
         VmaAllocationCreateFlags vmaCreateFlags, VmaMemoryUsage vmaUsage) const;
     AllocatedImage createImage(VkExtent3D size, VkFormat format, VkImageUsageFlags usage,
-        VkImageAspectFlags aspectFlags, VkImageLayout layout = VK_IMAGE_LAYOUT_UNDEFINED);
+        VkImageAspectFlags aspectFlags, VkImageLayout layout = VK_IMAGE_LAYOUT_UNDEFINED, uint32_t mipCount = 1) const;
     void destroyBuffer(AllocatedBuffer& buffer) const;
     void destroyImage(AllocatedImage& image) const;
 
     void transitionImageLayout(VkCommandBuffer commandBuffer, VkImage image, VkFormat format, VkImageLayout oldLayout,
-        VkImageLayout newLayout);
+        VkImageLayout newLayout, uint32_t mipLevels = 1) const;
     BunnyResult immediateTransitionImageLayout(
-        VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
+        VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels = 1) const;
 
     VkFormat findSupportedFormat(
         std::span<VkFormat> candidates, VkImageTiling tiling, VkFormatFeatureFlags features) const;

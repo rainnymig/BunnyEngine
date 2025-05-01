@@ -5,3 +5,4 @@ glslc.exe ./basicUpdated.frag -o basic_updated_frag.spv
 glslc.exe ./basicInstanced.vert -o basic_instanced_vert.spv
 glslc.exe ./culledInstanced.vert -o culled_instanced_vert.spv
 glslc.exe ./culling.comp -o culling_comp.spv
+glslc.exe ./reduceDepth.comp -o reduce_depth_comp.spv

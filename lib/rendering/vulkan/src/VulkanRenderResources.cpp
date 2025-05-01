@@ -74,6 +74,7 @@ BunnyResult VulkanRenderResources::initialize(Base::Window* window)
     features12.descriptorBindingPartiallyBound = true;
     features12.descriptorBindingVariableDescriptorCount = true;
     features12.runtimeDescriptorArray = true;
+    features12.samplerFilterMinmax = true;
 
     //  enable usage of std430 uniform buffer
     //  https://docs.vulkan.org/guide/latest/shader_memory_layout.html#VK_KHR_uniform_buffer_standard_layout
@@ -208,8 +209,8 @@ AllocatedBuffer VulkanRenderResources::createBuffer(VkDeviceSize size, VkBufferU
     return newBuffer;
 }
 
-AllocatedImage VulkanRenderResources::createImage(
-    VkExtent3D size, VkFormat format, VkImageUsageFlags usage, VkImageAspectFlags aspectFlags, VkImageLayout layout)
+AllocatedImage VulkanRenderResources::createImage(VkExtent3D size, VkFormat format, VkImageUsageFlags usage,
+    VkImageAspectFlags aspectFlags, VkImageLayout layout, uint32_t mipCount) const
 {
     AllocatedImage newImage;
     newImage.mFormat = format;
@@ -218,7 +219,7 @@ AllocatedImage VulkanRenderResources::createImage(
     VkImageCreateInfo imgCreateInfo = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
     imgCreateInfo.imageType = VK_IMAGE_TYPE_2D;
     imgCreateInfo.extent = size;
-    imgCreateInfo.mipLevels = 1;
+    imgCreateInfo.mipLevels = mipCount;
     imgCreateInfo.arrayLayers = 1;
     imgCreateInfo.format = format;
     imgCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
@@ -241,7 +242,7 @@ AllocatedImage VulkanRenderResources::createImage(
     viewCreateInfo.image = newImage.mImage;
     viewCreateInfo.format = format;
     viewCreateInfo.subresourceRange.baseMipLevel = 0;
-    viewCreateInfo.subresourceRange.levelCount = 1;
+    viewCreateInfo.subresourceRange.levelCount = mipCount;
     viewCreateInfo.subresourceRange.baseArrayLayer = 0;
     viewCreateInfo.subresourceRange.layerCount = 1;
     viewCreateInfo.subresourceRange.aspectMask = aspectFlags;
@@ -271,8 +272,8 @@ void VulkanRenderResources::destroyImage(AllocatedImage& image) const
     image.mAllocation = nullptr;
 }
 
-void VulkanRenderResources::transitionImageLayout(
-    VkCommandBuffer commandBuffer, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
+void VulkanRenderResources::transitionImageLayout(VkCommandBuffer commandBuffer, VkImage image, VkFormat format,
+    VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels) const
 {
     VkImageMemoryBarrier2 barrier{};
     barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
@@ -280,7 +281,7 @@ void VulkanRenderResources::transitionImageLayout(
 
     VkImageSubresourceRange range{
         .baseMipLevel = 0,
-        .levelCount = 1,
+        .levelCount = mipLevels,
         .baseArrayLayer = 0,
         .layerCount = 1,
     };
@@ -318,12 +319,12 @@ void VulkanRenderResources::transitionImageLayout(
 }
 
 BunnyResult VulkanRenderResources::immediateTransitionImageLayout(
-    VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
+    VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels) const
 {
     BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(startImmedidateCommand())
 
     this->transitionImageLayout(
-        mImmediateCommands[ImmediateQueueType::Graphics].mBuffer, image, format, oldLayout, newLayout);
+        mImmediateCommands.at(ImmediateQueueType::Graphics).mBuffer, image, format, oldLayout, newLayout, mipLevels);
 
     BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(endAndSubmitImmediateCommand())
 

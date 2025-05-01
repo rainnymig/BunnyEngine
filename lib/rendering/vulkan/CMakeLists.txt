@@ -4,6 +4,7 @@ target_sources(VulkanRenderer
     PUBLIC
         headers/ComputePipelineBuilder.h
         headers/CullingPass.h
+        headers/DepthReducePass.h
         headers/Descriptor.h
         headers/ErrorCheck.h
         headers/Fundamentals.h
@@ -24,6 +25,7 @@ target_sources(VulkanRenderer
     PRIVATE
         src/ComputePipelineBuilder.cpp
         src/CullingPass.cpp
+        src/DepthReducePass.cpp
         src/Descriptor.cpp
         src/Helper.cpp
         src/Material.cpp
