@@ -102,11 +102,13 @@ int main(void)
     forwardPass.linkLightData(worldTranslator.getLightBuffer());
     forwardPass.linkObjectData(worldTranslator.getObjectBuffer(), worldTranslator.getObjectBufferSize());
 
+    cullingPass.linkCullingData(depthReducePass.getDepthHierarchyImage(), depthReducePass.getDepthReduceSampler());
     cullingPass.linkMeshData(meshBank.getBoundsBuffer(), meshBank.getBoundsBufferSize());
     cullingPass.linkObjectData(worldTranslator.getObjectBuffer(), worldTranslator.getObjectBufferSize());
     cullingPass.linkDrawData(forwardPass.getDrawCommandBuffer(), forwardPass.getDrawCommandBufferSize(),
         forwardPass.getInstanceObjectBuffer(), forwardPass.getInstanceObjectBufferSize());
     cullingPass.setObjectCount(worldTranslator.getObjectCount());
+    cullingPass.setDepthImageSizes(depthReducePass.getDepthImageWidth(), depthReducePass.getDepthImageHeight());
 
     float accumulatedTime = 0;
     constexpr float interval = 0.5f;

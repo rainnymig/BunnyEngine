@@ -20,6 +20,13 @@ struct FrustumPlane
 struct ViewFrustum
 {
     FrustumPlane mPlanes[6];
+
+    glm::mat4 mViewMat;
+    float mP00;
+    float mP11;
+    float mZNear;
+    float mDepthImageWidth;
+    float mDepthImageHeight;
 };
 
 class Camera
