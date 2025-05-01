@@ -11,6 +11,7 @@ Transform::Transform(const glm::vec3& position, const glm::quat& rotationQuat, c
     glm::mat4 sm = glm::scale(glm::mat4(1.f), scale);
 
     mMatrix = tm * rm * sm;
+    mScale = scale;
 }
 
 Transform::Transform(const glm::vec3& position, const glm::vec3& pitchYawRoll, const glm::vec3& scale)
@@ -20,6 +21,7 @@ Transform::Transform(const glm::vec3& position, const glm::vec3& pitchYawRoll, c
     glm::mat4 sm = glm::scale(glm::mat4(1.f), scale);
 
     mMatrix = tm * rm * sm;
+    mScale = scale;
 }
 
 } // namespace Bunny::Base
