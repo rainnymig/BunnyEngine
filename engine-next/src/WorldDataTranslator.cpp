@@ -78,11 +78,15 @@ BunnyResult WorldRenderDataTranslator::updateObjectData(const World* world)
     size_t idx = 0;
     for (auto [entity, mesh, transform] : meshTransComp.each())
     {
-        glm::mat4 modelMat = getEntityGlobalTransform(world->mEntityRegistry, entity, transform.mTransform.mMatrix);
+        glm::mat4 modelMat;
+        glm::vec3 scale;
+        getEntityGlobalTransform(
+            world->mEntityRegistry, entity, transform.mTransform.mMatrix, transform.mTransform.mScale, modelMat, scale);
         glm::mat4 invTransModel = glm::transpose(glm::inverse(modelMat));
         Render::ObjectData& obj = mObjectData[idx];
         obj.model = modelMat;
         obj.invTransModel = invTransModel;
+        obj.scale = scale;
         obj.meshId = mesh.mMeshId;
         idx++;
     }
@@ -103,15 +107,15 @@ BunnyResult WorldRenderDataTranslator::initObjectDataBuffer(const World* world)
     auto meshTransComp = world->mEntityRegistry.view<MeshComponent, TransformComponent>();
     for (auto [entity, mesh, transform] : meshTransComp.each())
     {
-        glm::mat4 modelMat = getEntityGlobalTransform(world->mEntityRegistry, entity, transform.mTransform.mMatrix);
+        glm::mat4 modelMat;
+        glm::vec3 scale;
+        getEntityGlobalTransform(
+            world->mEntityRegistry, entity, transform.mTransform.mMatrix, transform.mTransform.mScale, modelMat, scale);
         glm::mat4 invTransModel = glm::transpose(glm::inverse(modelMat));
-        mObjectData.emplace_back(modelMat, invTransModel, mesh.mMeshId);
+        mObjectData.emplace_back(modelMat, invTransModel, scale, mesh.mMeshId);
 
         mMeshInstanceCounts[mesh.mMeshId]++;
     }
-
-    // std::sort(mObjectData.begin(), mObjectData.end(),
-    //     [](const Render::ObjectData& lhs, const Render::ObjectData& rhs) { return lhs.meshId < rhs.meshId; });
 
     //  rebuild object data buffer
     if (mObjectDataBuffer.mBuffer != nullptr)
@@ -139,20 +143,22 @@ void WorldRenderDataTranslator::cleanup()
     mVulkanResources->destroyBuffer(mLightDataBuffer);
 }
 
-glm::mat4x4 WorldRenderDataTranslator::getEntityGlobalTransform(
-    const entt::registry& registry, entt::entity entity, const glm::mat4x4& transformMat)
+void WorldRenderDataTranslator::getEntityGlobalTransform(const entt::registry& registry, entt::entity entity,
+    const glm::mat4x4& transform, const glm::vec3& scale, glm::mat4x4& outTransform, glm::vec3& outScale)
 {
     if (const auto* hierComp = registry.try_get<HierarchyComponent>(entity);
         hierComp && hierComp->mParent != entt::null)
     {
         const auto parentNode = hierComp->mParent;
         const TransformComponent& transComp = registry.get<TransformComponent>(parentNode);
-        glm::mat4x4 combinedTrans = transComp.mTransform.mMatrix * transformMat;
-        return getEntityGlobalTransform(registry, parentNode, combinedTrans);
+        glm::mat4x4 combinedTrans = transComp.mTransform.mMatrix * transform;
+        glm::vec3 combinedScale = transComp.mTransform.mScale * scale;
+        getEntityGlobalTransform(registry, parentNode, combinedTrans, combinedScale, outTransform, outScale);
     }
     else
     {
-        return transformMat;
+        outTransform = transform;
+        outScale = scale;
     }
 }
 

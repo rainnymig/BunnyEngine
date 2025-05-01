@@ -117,10 +117,7 @@ int main(void)
             break;
         }
 
-        // bunnyWorld.update(timer.getDeltaTime());
-
         worldTranslator.updateSceneData(&bunnyWorld);
-        // worldTranslator.updateObjectData(&bunnyWorld);
 
         renderer.beginRenderFrame();
 

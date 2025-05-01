@@ -30,6 +30,11 @@ layout(std430, set = 1, binding = 0) buffer ObjectDataBuffer
     ObjectData objectData[];
 };
 
+layout(std430, set = 3, binding = 1) buffer InstanceToObjectId
+{
+    uint instToObj[];
+};
+
 /*  input layouts   */
 layout (location = 0) in vec3 position;
 layout (location = 1) in vec3 normal;
@@ -46,7 +51,7 @@ void main()
 {
     vec4 pos = vec4(position, 1);
 
-    ObjectData objData = objectData[gl_InstanceIndex];
+    ObjectData objData = objectData[instToObj[gl_InstanceIndex]];
 
     outNormal = normalize((objData.invTransModel*vec4(normal, 0)).xyz);
     outColor = color.xyz;

@@ -116,6 +116,8 @@ void CullingPass::dispatch()
 {
     VkCommandBuffer cmd = mRenderer->getCurrentCommandBuffer();
 
+    //  bind descriptors
+
     //  dispatch culling compute shader
     constexpr static uint32_t computeSizeX = 256;
     //  +1 to make sure enough threads are dispatched

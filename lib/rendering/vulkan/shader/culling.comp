@@ -30,9 +30,9 @@ struct DrawCommand
 
 struct ObjectData
 {
-    mat4 modelNoScale;  //  TransMat*RotMat
+    mat4 model;
     mat4 invTransModel;
-    vec3 modelScale;
+    vec3 scale;
     uint meshId;
 };
 
@@ -46,12 +46,12 @@ struct BoundingSphere
 {
     vec3 center;
     float radius;
-}
+};
 
-layout(std430, set = 0, binding = 0) uniform ViewFrustum
+layout(std140, set = 0, binding = 0) uniform ViewFrustum
 {
     Plane frustumPlanes[6];
-}
+};
 
 layout(std430, set = 1, binding = 0) buffer ObjectDataBuffer
 {
@@ -68,13 +68,18 @@ layout(std430, set = 3, binding = 0) buffer DrawCommandBuffer
     DrawCommand commands[];
 };
 
+layout(std430, set = 3, binding = 1) buffer InstanceToObjectId
+{
+    uint instToObj[];
+};
+
 bool isObjectInView(ObjectData obj)
 {
     bool isInView = true;
 
     BoundingSphere bs = boundingSpheres[obj.meshId];
-    vec3 center = (obj.modelNoScale * vec4(bs.center, 1.0)).xyz;
-    float radius = bs.radius * max(modelScale.x, max(modelScale.y, modelScale.z));
+    vec3 center = (obj.model * vec4(bs.center, 1.0)).xyz;
+    float radius = bs.radius * max(obj.scale.x, max(obj.scale.y, obj.scale.z));
 
     for (int idx = 0; idx < 6; idx++)
     {
@@ -92,5 +97,19 @@ void main()
 {
     //  todo: should check whether gl_GlobalInvocationID.x is less than the number of objects
     //  because we may dispatch more threads than actual number of objects
-    ObjectData obj = objectData[gl_GlobalInvocationID.x]; 
+    uint objId = gl_GlobalInvocationID.x;
+
+    ObjectData obj = objectData[objId];
+
+    bool inView = isObjectInView(obj);
+
+    if (inView)
+    {
+        //  for now for simplicity, we assume only one surface per mesh
+        //  so that we can use mesh id to index into commands array directly
+        uint instCount = atomicAdd(commands[obj.meshId].instanceCount, 1); 
+        uint instanceId = commands[obj.meshId].firstInstance + instCount;
+
+        instToObj[instanceId] = objId;
+    }
 }

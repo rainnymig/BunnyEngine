@@ -37,8 +37,8 @@ class WorldRenderDataTranslator
     const std::unordered_map<Render::IdType, size_t>& getMeshInstanceCounts() const { return mMeshInstanceCounts; }
 
   private:
-    static glm::mat4x4 getEntityGlobalTransform(
-        const entt::registry& registry, entt::entity entity, const glm::mat4x4& transformMat);
+    static void getEntityGlobalTransform(const entt::registry& registry, entt::entity entity,
+        const glm::mat4x4& transform, const glm::vec3& scale, glm::mat4x4& outTransform, glm::vec3& outScale);
 
     const Render::VulkanRenderResources* mVulkanResources;
     const Render::MeshBank<Render::NormalVertex>* mMeshBank;

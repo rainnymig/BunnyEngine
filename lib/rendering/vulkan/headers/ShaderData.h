@@ -28,8 +28,8 @@ struct ObjectData
 {
     glm::mat4 model;
     glm::mat4 invTransModel;
+    glm::vec3 scale;
     IdType meshId;
-    glm::vec3 padding;
 };
 
 //  the following are for all surfaces of one material (pipeline)
