@@ -73,6 +73,11 @@ layout(std430, set = 3, binding = 1) buffer InstanceToObjectId
     uint instToObj[];
 };
 
+layout( push_constant ) uniform PushConsts
+{
+    uint objectCount;
+};
+
 bool isObjectInView(ObjectData obj)
 {
     bool isInView = true;
@@ -98,6 +103,11 @@ void main()
     //  todo: should check whether gl_GlobalInvocationID.x is less than the number of objects
     //  because we may dispatch more threads than actual number of objects
     uint objId = gl_GlobalInvocationID.x;
+
+    if (objId >= objectCount)
+    {
+        return;
+    }
 
     ObjectData obj = objectData[objId];
 

@@ -9,6 +9,8 @@
 #include "Camera.h"
 #include "Helper.h"
 
+#include <array>
+
 namespace Bunny::Render
 {
 CullingPass::CullingPass(const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer,
@@ -56,7 +58,14 @@ void CullingPass::cleanup()
         mUniformBufferLayout = nullptr;
     }
 
+    if (mDrawDataLayout != nullptr)
+    {
+        vkDestroyDescriptorSetLayout(mVulkanResources->getDevice(), mDrawDataLayout, nullptr);
+        mDrawDataLayout = nullptr;
+    }
+
     mDrawCommandBuffer = nullptr;
+    mInstanceObjectBuffer = nullptr;
     mVulkanResources->destroyBuffer(mCullingDataBuffer);
 }
 
@@ -67,15 +76,18 @@ void CullingPass::createBuffers()
         VMA_MEMORY_USAGE_AUTO);
 }
 
-void CullingPass::linkDrawData(const AllocatedBuffer& drawCommandBuffer, size_t bufferSize)
+void CullingPass::linkDrawData(const AllocatedBuffer& drawCommandBuffer, size_t drawbufferSize,
+    const AllocatedBuffer& instObjectBuffer, size_t instBufferSize)
 {
     DescriptorWriter writer;
-    writer.writeBuffer(0, drawCommandBuffer.mBuffer, bufferSize, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    writer.writeBuffer(0, drawCommandBuffer.mBuffer, drawbufferSize, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    writer.writeBuffer(1, instObjectBuffer.mBuffer, instBufferSize, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     for (VkDescriptorSet set : mDrawCommandDescSets)
     {
         writer.updateSet(mVulkanResources->getDevice(), set);
     }
     mDrawCommandBuffer = &drawCommandBuffer;
+    mInstanceObjectBuffer = &instObjectBuffer;
 }
 
 void CullingPass::linkMeshData(const AllocatedBuffer& meshDataBuffer, size_t bufferSize)
@@ -115,8 +127,29 @@ void CullingPass::updateCullingData(const Camera& camera)
 void CullingPass::dispatch()
 {
     VkCommandBuffer cmd = mRenderer->getCurrentCommandBuffer();
+    uint32_t currentFrameIdx = mRenderer->getCurrentFrameIdx();
+
+    //  bind pipeline
+    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, mPipeline);
 
     //  bind descriptors
+    //  cull data
+    vkCmdBindDescriptorSets(
+        cmd, VK_PIPELINE_BIND_POINT_COMPUTE, mPipelineLayout, 0, 1, &mCullDataDescSets[currentFrameIdx], 0, nullptr);
+
+    //  object data
+    vkCmdBindDescriptorSets(
+        cmd, VK_PIPELINE_BIND_POINT_COMPUTE, mPipelineLayout, 1, 1, &mObjectDescSets[currentFrameIdx], 0, nullptr);
+
+    //  mesh data
+    vkCmdBindDescriptorSets(
+        cmd, VK_PIPELINE_BIND_POINT_COMPUTE, mPipelineLayout, 2, 1, &mMeshDataDescSets[currentFrameIdx], 0, nullptr);
+
+    //  indirect draw data
+    vkCmdBindDescriptorSets(
+        cmd, VK_PIPELINE_BIND_POINT_COMPUTE, mPipelineLayout, 3, 1, &mDrawCommandDescSets[currentFrameIdx], 0, nullptr);
+
+    vkCmdPushConstants(cmd, mPipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uint32_t), &mObjectCount);
 
     //  dispatch culling compute shader
     constexpr static uint32_t computeSizeX = 256;
@@ -125,15 +158,22 @@ void CullingPass::dispatch()
     //  Todo: maybe research later submitting this to compute queue?
 
     //  set up barrier to make sure the buffers containing the culling result is ready to use
-    VkBufferMemoryBarrier barrier = makeBufferMemoryBarrier(
+    std::array<VkBufferMemoryBarrier, 2> barriers;
+
+    barriers[0] = makeBufferMemoryBarrier(
         mDrawCommandBuffer->mBuffer, mVulkanResources->getGraphicQueue().mQueueFamilyIndex.value());
-    barrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
-    barrier.dstAccessMask = VK_ACCESS_INDIRECT_COMMAND_READ_BIT;
+    barriers[0].srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+    barriers[0].dstAccessMask = VK_ACCESS_INDIRECT_COMMAND_READ_BIT;
+
+    barriers[1] = makeBufferMemoryBarrier(
+        mInstanceObjectBuffer->mBuffer, mVulkanResources->getGraphicQueue().mQueueFamilyIndex.value());
+    barriers[1].srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+    barriers[1].dstAccessMask = VK_ACCESS_INDIRECT_COMMAND_READ_BIT;
 
     //  Todo: here we directly start the barrier, maybe we should save it somewhere and start it later
     //  in case we want to have multiple culling passes and wait all at the end
     vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT, 0, 0, nullptr,
-        1, &barrier, 0, nullptr);
+        2, barriers.data(), 0, nullptr);
 }
 
 CullingPass::~CullingPass()
@@ -145,32 +185,37 @@ void CullingPass::initDescriptorSets()
 {
     //  build descriptor set layouts
     DescriptorLayoutBuilder layoutBuilder;
-    {
-        VkDescriptorSetLayoutBinding uniformBufferLayout{};
-        uniformBufferLayout.binding = 0;
-        uniformBufferLayout.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        uniformBufferLayout.descriptorCount = 1;
-        uniformBufferLayout.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-        uniformBufferLayout.pImmutableSamplers = nullptr;
-        layoutBuilder.addBinding(uniformBufferLayout);
-    }
+
+    VkDescriptorSetLayoutBinding uniformBufferBinding{};
+    uniformBufferBinding.binding = 0;
+    uniformBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    uniformBufferBinding.descriptorCount = 1;
+    uniformBufferBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+    uniformBufferBinding.pImmutableSamplers = nullptr;
+    VkDescriptorSetLayoutBinding storageBufferBinding{};
+    storageBufferBinding.binding = 0;
+    storageBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    storageBufferBinding.descriptorCount = 1;
+    storageBufferBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+    storageBufferBinding.pImmutableSamplers = nullptr;
+
+    layoutBuilder.addBinding(uniformBufferBinding);
     mUniformBufferLayout = layoutBuilder.build(mVulkanResources->getDevice());
 
     layoutBuilder.clear();
-    {
-        VkDescriptorSetLayoutBinding storageBufferLayout{};
-        storageBufferLayout.binding = 0;
-        storageBufferLayout.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        storageBufferLayout.descriptorCount = 1;
-        storageBufferLayout.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-        storageBufferLayout.pImmutableSamplers = nullptr;
-        layoutBuilder.addBinding(storageBufferLayout);
-    }
+    layoutBuilder.addBinding(storageBufferBinding);
     mStorageBufferLayout = layoutBuilder.build(mVulkanResources->getDevice());
+
+    layoutBuilder.clear();
+    VkDescriptorSetLayoutBinding storageBufferBinding2 = storageBufferBinding;
+    storageBufferBinding2.binding = 1;
+    layoutBuilder.addBinding(storageBufferBinding);
+    layoutBuilder.addBinding(storageBufferBinding2);
+    mDrawDataLayout = layoutBuilder.build(mVulkanResources->getDevice());
 
     //  set up descriptor allocator
     DescriptorAllocator::PoolSize poolSizes[] = {
-        {.mType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, .mRatio = 6},
+        {.mType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, .mRatio = 8},
         {.mType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .mRatio = 2}
     };
     mDescriptorAllocator.init(mVulkanResources->getDevice(), 2, poolSizes);
@@ -183,9 +228,9 @@ void CullingPass::initDescriptorSets()
         mDescriptorAllocator.allocate(
             mVulkanResources->getDevice(), &mStorageBufferLayout, &mObjectDescSets[idx], 1, nullptr);
         mDescriptorAllocator.allocate(
-            mVulkanResources->getDevice(), &mStorageBufferLayout, &mDrawCommandDescSets[idx], 1, nullptr);
-        mDescriptorAllocator.allocate(
             mVulkanResources->getDevice(), &mStorageBufferLayout, &mMeshDataDescSets[idx], 1, nullptr);
+        mDescriptorAllocator.allocate(
+            mVulkanResources->getDevice(), &mDrawDataLayout, &mDrawCommandDescSets[idx], 1, nullptr);
     }
 }
 
@@ -196,14 +241,17 @@ BunnyResult CullingPass::initPipeline()
 
     //  build pipeline layout
     VkDescriptorSetLayout layouts[] = {
-        mUniformBufferLayout, mStorageBufferLayout, mStorageBufferLayout, mStorageBufferLayout};
+        mUniformBufferLayout, mStorageBufferLayout, mStorageBufferLayout, mDrawDataLayout};
+
+    VkPushConstantRange pushConstRange{
+        .stageFlags = VK_SHADER_STAGE_COMPUTE_BIT, .offset = 0, .size = sizeof(uint32_t)};
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.setLayoutCount = 4;
     pipelineLayoutInfo.pSetLayouts = layouts;
-    pipelineLayoutInfo.pushConstantRangeCount = 0;
-    pipelineLayoutInfo.pPushConstantRanges = nullptr;
+    pipelineLayoutInfo.pushConstantRangeCount = 1;
+    pipelineLayoutInfo.pPushConstantRanges = &pushConstRange;
 
     VK_CHECK_OR_RETURN_BUNNY_SAD(
         vkCreatePipelineLayout(mVulkanResources->getDevice(), &pipelineLayoutInfo, nullptr, &mPipelineLayout))

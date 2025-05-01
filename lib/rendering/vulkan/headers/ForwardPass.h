@@ -34,6 +34,8 @@ class ForwardPass
 
     const AllocatedBuffer& getDrawCommandBuffer() const { return mDrawCommandsBuffer; }
     const size_t getDrawCommandBufferSize() const;
+    const AllocatedBuffer& getInstanceObjectBuffer() const { return mInstanceObjectBuffer; }
+    const size_t getInstanceObjectBufferSize() const { return mInstanceObjectBufferSize; }
 
   private:
     const VulkanRenderResources* mVulkanResources;
@@ -43,6 +45,8 @@ class ForwardPass
 
     AllocatedBuffer mDrawCommandsBuffer;
     std::vector<VkDrawIndexedIndirectCommand> mDrawCommandsData;
+    AllocatedBuffer mInstanceObjectBuffer;
+    size_t mInstanceObjectBufferSize;
 
     VkDescriptorSetLayout mSceneDescLayout;
     VkDescriptorSetLayout mObjectDescLayout;

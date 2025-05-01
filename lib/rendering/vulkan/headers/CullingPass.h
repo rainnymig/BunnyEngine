@@ -29,7 +29,8 @@ class CullingPass
 
     BunnyResult initializePass();
     void cleanup();
-    void linkDrawData(const AllocatedBuffer& drawCommandBuffer, size_t bufferSize);
+    void linkDrawData(const AllocatedBuffer& drawCommandBuffer, size_t drawbufferSize,
+        const AllocatedBuffer& instObjectBuffer, size_t instBufferSize);
     void linkMeshData(const AllocatedBuffer& meshDataBuffer, size_t bufferSize);
     void linkObjectData(const AllocatedBuffer& objectBuffer, size_t bufferSize);
     void setObjectCount(uint32_t objectCount);
@@ -53,9 +54,11 @@ class CullingPass
     std::array<VkDescriptorSet, MAX_FRAMES_IN_FLIGHT> mMeshDataDescSets;
     VkDescriptorSetLayout mStorageBufferLayout;
     VkDescriptorSetLayout mUniformBufferLayout;
+    VkDescriptorSetLayout mDrawDataLayout;
 
     AllocatedBuffer mCullingDataBuffer;
     const AllocatedBuffer* mDrawCommandBuffer = nullptr;
+    const AllocatedBuffer* mInstanceObjectBuffer = nullptr;
     uint32_t mObjectCount = 0;
 
     const VulkanRenderResources* mVulkanResources = nullptr;
