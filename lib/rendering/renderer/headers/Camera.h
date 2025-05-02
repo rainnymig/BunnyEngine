@@ -22,8 +22,7 @@ struct ViewFrustum
     FrustumPlane mPlanes[6];
 
     glm::mat4 mViewMat;
-    float mP00;
-    float mP11;
+    glm::mat4 mProjMat;
     float mZNear;
     float mDepthImageWidth;
     float mDepthImageHeight;

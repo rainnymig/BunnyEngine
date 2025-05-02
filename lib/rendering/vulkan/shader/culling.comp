@@ -39,8 +39,7 @@ layout(std140, set = 0, binding = 0) uniform CullingData
 
     //  occlusion culling
     mat4 viewMat;
-    float p00;
-    float p11;
+    mat4 projMat;
     float zNear;
     float depthImageWidth;
     float depthImageHeight;
@@ -68,34 +67,78 @@ layout(std430, set = 3, binding = 1) buffer InstanceToObjectId
     uint instToObj[];
 };
 
+layout(std430, set = 4, binding = 0) buffer DebugBuffer
+{
+    vec4 debugData[];
+};
+
 layout( push_constant ) uniform PushConsts
 {
     uint objectCount;
 };
 
-// 2D Polyhedral Bounds of a Clipped, Perspective-Projected 3D Sphere. Michael Mara, Morgan McGuire. 2013
-bool projectSphere(vec3 C, float r, float znear, float P00, float P11, out vec4 aabb)
+bool getBoundsForAxis(vec3 axis, vec3 center, float radius, float zNear, out vec3 p1, out vec3 p2)
 {
-	if (C.z < r + znear)
-		return false;
+    vec2 c = vec2(dot(axis, center), center.z);
+    vec2 bounds[2];
+    
+    float rSquared = radius * radius;
+    float tSquared = dot(center, center) - rSquared;
+    bool cameraInsideSphere = tSquared <= 0;
 
-	vec2 cx = -C.xz;
-	vec2 vx = vec2(sqrt(dot(cx, cx) - r * r), r);
-	vec2 minx = mat2(vx.x, vx.y, -vx.y, vx.x) * cx;
-	vec2 maxx = mat2(vx.x, -vx.y, vx.y, vx.x) * cx;
+    if (cameraInsideSphere)
+    {
+        return false;
+    }
 
-	vec2 cy = -C.yz;
-	vec2 vy = vec2(sqrt(dot(cy, cy) - r * r), r);
-	vec2 miny = mat2(vy.x, vy.y, -vy.y, vy.x) * cy;
-	vec2 maxy = mat2(vy.x, -vy.y, vy.y, vy.x) * cy;
+    vec2 v = (vec2(sqrt(tSquared), radius) / length(c));
 
-	aabb = vec4(minx.x / minx.y * P00, miny.x / miny.y * P11, maxx.x / maxx.y * P00, maxy.x / maxy.y * P11);
-	aabb = aabb.xwzy * vec4(0.5f, -0.5f, 0.5f, -0.5f) + vec4(0.5f); // clip space -> uv space
+    bool clipSphere = c.y + radius > zNear;
 
-	return true;
+    if (clipSphere)
+    {
+        return false;
+    }
+
+    float k = sqrt(rSquared - (zNear - c.y)*(zNear - c.y));
+
+    for (int i = 0; i < 2; i++)
+    {
+        //  row or column major?
+        bounds[i] = mat2(v.x, -v.y, v.y, v.x) * c * v.x;
+
+        v.y = -v.y; 
+        k=-k;
+    }
+
+    p1 = bounds[1].x * axis;
+    p1.z = bounds[1].y;
+    p2 = bounds[0].x * axis;
+    p2.z = bounds[0].y;
+
+    return true;
 }
 
-bool isObjectInView(ObjectData obj)
+vec3 project(mat4 proj, vec3 p)
+{
+    vec4 projected = proj * vec4(p, 1.0);
+    return projected.xyz / projected.w;
+}
+
+// 2D Polyhedral Bounds of a Clipped, Perspective-Projected 3D Sphere. Michael Mara, Morgan McGuire. 2013
+bool getAABB(vec3 center, float radius, float nearZ, mat4 proj, out vec4 aabb)
+{
+    vec3 right, left, top, bottom;
+    if (getBoundsForAxis(vec3(1, 0, 0), center, radius, nearZ, left, right) 
+        && getBoundsForAxis(vec3(0, 1, 0), center, radius, nearZ, bottom, top))
+    {
+        aabb = vec4(project(proj, left).x, project(proj, bottom).y, project(proj, right).x, project(proj, top).y);
+        return true;
+    }
+    return false;
+}
+
+bool isObjectInView(ObjectData obj, out vec4 db)
 {
     bool isInView = true;
 
@@ -117,22 +160,33 @@ bool isObjectInView(ObjectData obj)
         vec4 aabb;
         vec3 centerViewSpace = (viewMat * vec4(center, 1.0)).xyz;
 
-        //flip Y because we access depth texture that way??
-        centerViewSpace.y *= -1;
+        if (getAABB(centerViewSpace, radius, -zNear, projMat, aabb))
+        {
+            aabb = aabb.zyxw;
+            aabb = aabb * vec4(0.5, 0.5, 0.5, 0.5) + 0.5;
 
-        if (projectSphere(centerViewSpace, radius, zNear, p00, p11, aabb))
-		{
-			float width = (aabb.z - aabb.x) * depthImageWidth;
-			float height = (aabb.w - aabb.y) * depthImageHeight;
+            // db = aabb;
 
-			float level = floor(log2(max(width, height)));
+            float width = (aabb.z - aabb.x) * depthImageWidth;
+            float height = (aabb.y - aabb.w) * depthImageHeight;
+            
+            float level = floor(log2(max(width, height)));
 
-			// Sampler is set up to do min reduction, so this computes the minimum depth of a 2x2 texel quad
-			float depth = textureLod(depthHierarchy, (aabb.xy + aabb.zw) * 0.5, level).x;
-			float depthSphere = zNear / (centerViewSpace.z - radius);
+            float depth = textureLod(depthHierarchy, (aabb.xy + aabb.zw) / 2, level).x;
+            // float depth1 = textureLod(depthHierarchy, aabb.xy, level).x;
+            // float depth2 = textureLod(depthHierarchy, aabb.xw, level).x;
+            // float depth3 = textureLod(depthHierarchy, aabb.zy, level).x;
+            // float depth4 = textureLod(depthHierarchy, aabb.zw, level).x;
+            // float depth = max(max(depth1, depth2), max(depth3, depth4));
 
-			isInView = isInView && depthSphere >= depth;
-		}
+            vec4 sphereTestPoint = vec4(centerViewSpace + vec3(0, 0, radius), 1.0);
+            vec4 projected = projMat * sphereTestPoint;
+			float depthSphere = projected.z/projected.w;
+
+            isInView = isInView && depthSphere <= depth;
+
+            db = vec4(level, depth, depthSphere, 1.0);
+        }
     }
     
     return isInView;
@@ -151,8 +205,9 @@ void main()
 
     ObjectData obj = objectData[objId];
 
-    bool inView = isObjectInView(obj);
-    // bool inView = objId % 2 == 0;
+    vec4 deb = vec4(0, 0, 0, 0);
+
+    bool inView = isObjectInView(obj, deb);
 
     if (inView)
     {
@@ -162,5 +217,7 @@ void main()
         uint instanceId = commands[obj.meshId].firstInstance + instCount;
 
         instToObj[instanceId] = objId;
+        
     }
+    debugData[objId] = deb;
 }

@@ -108,7 +108,8 @@ int main(void)
     cullingPass.linkDrawData(forwardPass.getDrawCommandBuffer(), forwardPass.getDrawCommandBufferSize(),
         forwardPass.getInstanceObjectBuffer(), forwardPass.getInstanceObjectBufferSize());
     cullingPass.setObjectCount(worldTranslator.getObjectCount());
-    cullingPass.setDepthImageSizes(depthReducePass.getDepthImageWidth(), depthReducePass.getDepthImageHeight());
+    cullingPass.setDepthImageSizes(depthReducePass.getDepthImageWidth(), depthReducePass.getDepthImageHeight(),
+        depthReducePass.getDepthHierarchyLevels());
 
     float accumulatedTime = 0;
     constexpr float interval = 0.5f;

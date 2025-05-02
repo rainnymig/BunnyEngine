@@ -75,8 +75,7 @@ void Camera::getViewFrustum(ViewFrustum& outFrustum) const
 
     //  calculate data for occlusion culling
     outFrustum.mViewMat = getViewMatrix();
-    outFrustum.mP00 = mProjMatrix[0][0];
-    outFrustum.mP11 = mProjMatrix[1][1];
+    outFrustum.mProjMat = getProjMatrix();
     outFrustum.mZNear = NearPlaneDistance;
     //  depth image width and height are filled elsewhere
 }
