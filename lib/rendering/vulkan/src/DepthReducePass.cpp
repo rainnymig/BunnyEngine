@@ -175,7 +175,7 @@ void DepthReducePass::createDepthReduceSampler()
     VkSamplerReductionModeCreateInfoEXT createInfoReduction = {
         VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO_EXT};
 
-    VkSamplerReductionMode reductionMode = VK_SAMPLER_REDUCTION_MODE_MIN;
+    VkSamplerReductionMode reductionMode = VK_SAMPLER_REDUCTION_MODE_MAX;
     if (reductionMode != VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE_EXT)
     {
         createInfoReduction.reductionMode = reductionMode;
