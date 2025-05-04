@@ -166,6 +166,9 @@ int main(void)
 
         ImGui::Begin("Game Stats");
         ImGui::Text(fmt::format("FPS: {}", fps).c_str());
+        ImGui::Separator();
+        ImGui::Text("W: forward S: backward A: left D: right");
+        ImGui::Text("E: up C: down");
         ImGui::End();
 
         renderer.finishImguiFrame();
