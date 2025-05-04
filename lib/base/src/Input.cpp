@@ -21,16 +21,17 @@ void InputManager::setupWithWindow(const Window& window)
     GLFWwindow* glfwWindow = window.getRawGlfwWindow();
 
     glfwSetKeyCallback(glfwWindow, &InputManager::onKeyCallback);
+    glfwSetCursorPosCallback(glfwWindow, &InputManager::onMousePositionCallback);
 }
 
-KeyboardCallbackHandle InputManager::registerKeyboardCallback(KeyboardCallback callback)
+CallbackHandle InputManager::registerKeyboardCallback(KeyboardCallback callback)
 {
     assert(!mKeyboardCallbacks.contains(mNextKeyboardCallbackHandle));
     mKeyboardCallbacks[mNextKeyboardCallbackHandle] = callback;
     return mNextKeyboardCallbackHandle++;
 }
 
-void InputManager::unregisterKeyboardCallback(KeyboardCallbackHandle handle)
+void InputManager::unregisterKeyboardCallback(CallbackHandle handle)
 {
     if (!mKeyboardCallbacks.contains(mNextKeyboardCallbackHandle))
     {
@@ -48,11 +49,22 @@ void InputManager::onKeyCallback(GLFWwindow* window, int key, int scancode, int 
 
     if (const char* keyName = glfwGetKeyName(key, scancode))
     {
+        if (*keyName == 'm' && action == GLFW_PRESS)
+        {
+            msKeyReceiverInstance->mIsMouseActive = !msKeyReceiverInstance->mIsMouseActive;
+            glfwSetInputMode(
+                window, GLFW_CURSOR, msKeyReceiverInstance->mIsMouseActive ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
+        }
+
         for (const auto& callback : msKeyReceiverInstance->mKeyboardCallbacks)
         {
             callback.second(keyName, static_cast<KeyState>(action));
         }
     }
+}
+
+void InputManager::onMousePositionCallback(GLFWwindow* window, double xpos, double ypos)
+{
 }
 
 } // namespace Bunny::Base

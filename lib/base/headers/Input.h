@@ -10,7 +10,7 @@ namespace Bunny::Base
 {
 class Window;
 
-using KeyboardCallbackHandle = size_t;
+using CallbackHandle = size_t;
 
 class InputManager
 {
@@ -25,14 +25,17 @@ class InputManager
     using KeyboardCallback = std::function<void(const std::string&, KeyState)>;
 
     void setupWithWindow(const Window& window);
-    KeyboardCallbackHandle registerKeyboardCallback(KeyboardCallback callback);
-    void unregisterKeyboardCallback(KeyboardCallbackHandle handle);
+    CallbackHandle registerKeyboardCallback(KeyboardCallback callback);
+    void unregisterKeyboardCallback(CallbackHandle handle);
 
   private:
     static InputManager* msKeyReceiverInstance;
     static void onKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
+    static void onMousePositionCallback(GLFWwindow* window, double xpos, double ypos);
 
-    std::unordered_map<KeyboardCallbackHandle, KeyboardCallback> mKeyboardCallbacks;
+    std::unordered_map<CallbackHandle, KeyboardCallback> mKeyboardCallbacks;
     size_t mNextKeyboardCallbackHandle = 1;
+
+    bool mIsMouseActive = true;
 };
 } // namespace Bunny::Base
