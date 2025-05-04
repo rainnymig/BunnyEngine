@@ -10,6 +10,7 @@
 #include "WorldLoader.h"
 #include "WorldDataTranslator.h"
 #include "WorldComponents.h"
+#include "WorldSystems.h"
 #include "MeshBank.h"
 #include "Material.h"
 #include "MaterialBank.h"
@@ -111,10 +112,13 @@ int main(void)
     cullingPass.setDepthImageSizes(depthReducePass.getDepthImageWidth(), depthReducePass.getDepthImageHeight(),
         depthReducePass.getDepthHierarchyLevels());
 
+    CameraSystem cameraSystem(&inputManager);
+
     float accumulatedTime = 0;
     constexpr float interval = 0.5f;
     uint32_t accumulatedFrames = 0;
     float fps = 0;
+    timer.start();
     while (true)
     {
         timer.tick();
@@ -132,6 +136,8 @@ int main(void)
         {
             break;
         }
+
+        cameraSystem.update(&bunnyWorld, timer.getDeltaTime());
 
         worldTranslator.updateSceneData(&bunnyWorld);
 

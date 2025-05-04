@@ -37,6 +37,8 @@ class Camera
 
     void setPosition(const glm::vec3& position);
     void setRotation(const glm::vec3& pitchYawRoll);
+    void setDeltaPosition(const glm::vec3& deltaPos);
+    void setDeltaRotation(const glm::vec3& deltaPitchYawRoll);
 
     void setAspectRatio(float ratio);
 
@@ -44,6 +46,7 @@ class Camera
     glm::mat4 getProjMatrix() const { return mProjMatrix; }
     glm::mat4 getViewProjMatrix() const { return mViewProjMatrix; }
     glm::vec3 getPosition() const { return mPosition; }
+    glm::vec3 getRotation() const {return mPitchYawRoll;}
     void getViewFrustum(ViewFrustum& outFrustum) const;
 
   private:
