@@ -26,6 +26,19 @@ void Camera::setRotation(const glm::vec3& pitchYawRoll)
     updateMatrices();
 }
 
+void Camera::setDeltaPosition(const glm::vec3& deltaPos)
+{
+    //  up and down motion always in global space
+    mPosition += deltaPos.x * mRightVec + deltaPos.y * glm::vec3(StaticUp) + deltaPos.z * mForwardVec;
+    updateMatrices();
+}
+
+void Camera::setDeltaRotation(const glm::vec3& deltaPitchYawRoll)
+{
+    mPitchYawRoll += deltaPitchYawRoll;
+    updateMatrices();
+}
+
 void Camera::setAspectRatio(float ratio)
 {
     mAspectRatio = ratio;

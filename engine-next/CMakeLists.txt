@@ -12,6 +12,8 @@ target_sources(EngineNext
         src/WorldDataTranslator.h
         src/WorldLoader.cpp
         src/WorldLoader.h
+        src/WorldSystems.cpp
+        src/WorldSystems.h
 )
 
 target_link_libraries(EngineNext PRIVATE Base fmt::fmt VulkanRenderer inicpp EnTT::EnTT imgui fastgltf::fastgltf glm)
