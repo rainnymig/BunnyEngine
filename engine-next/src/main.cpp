@@ -154,8 +154,6 @@ int main(void)
 
         cullingPass.dispatch();
 
-        renderer.beginRender();
-
         forwardPass.draw();
 
         renderer.finishRender();

@@ -164,6 +164,8 @@ void ForwardPass::linkObjectData(const AllocatedBuffer& objectBuffer, size_t buf
 
 void ForwardPass::draw()
 {
+    mRenderer->beginRender(true);
+
     mMeshBank->bindMeshBuffers(mRenderer->getCurrentCommandBuffer());
 
     const MaterialInstance& matInstance =
@@ -197,6 +199,8 @@ void ForwardPass::draw()
 
     vkCmdDrawIndexedIndirect(
         mRenderer->getCurrentCommandBuffer(), mDrawCommandsBuffer.mBuffer, 0, 1, sizeof(VkDrawIndexedIndirectCommand));
+
+    mRenderer->finishRender();
 }
 
 void ForwardPass::cleanup()

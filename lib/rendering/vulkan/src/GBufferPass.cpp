@@ -131,7 +131,13 @@ void GBufferPass::linkObjectData(const AllocatedBuffer& objectBuffer, size_t buf
 
 void GBufferPass::draw()
 {
+    const uint32_t currentFrameIdx = mRenderer->getCurrentFrameIdx();
+
     //  setup render attachments
+    std::vector<VkImageView> attachmentImageViews{mColorMaps[currentFrameIdx].mImageView,
+        mFragPosMaps[currentFrameIdx].mImageView, mNormalTexCoordMaps[currentFrameIdx].mImageView};
+
+    mRenderer->beginRender(attachmentImageViews, true);
 
     mMeshBank->bindMeshBuffers(mRenderer->getCurrentCommandBuffer());
 
@@ -152,6 +158,8 @@ void GBufferPass::draw()
 
     vkCmdDrawIndexedIndirect(
         mRenderer->getCurrentCommandBuffer(), mDrawCommandsBuffer.mBuffer, 0, 1, sizeof(VkDrawIndexedIndirectCommand));
+
+    mRenderer->finishRender();
 }
 
 void GBufferPass::cleanup()
