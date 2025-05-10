@@ -159,16 +159,35 @@ void VulkanGraphicsRenderer::finishRenderFrame()
     mCurrentFrameId = (mCurrentFrameId + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
-void VulkanGraphicsRenderer::beginRender()
+void VulkanGraphicsRenderer::beginRender(bool updateDepth) const
 {
     VkRenderingAttachmentInfo colorAttachment =
         makeColorAttachmentInfo(mSwapChainImageViews[mSwapchainImageIndex], nullptr);
     VkRenderingAttachmentInfo depthAttachment = makeDepthAttachmentInfo(mDepthImage.mImageView);
-    VkRenderingInfo renderInfo = makeRenderingInfo(mSwapChainExtent, &colorAttachment, &depthAttachment);
+    VkRenderingInfo renderInfo =
+        makeRenderingInfo(mSwapChainExtent, &colorAttachment, updateDepth ? &depthAttachment : nullptr);
     vkCmdBeginRendering(getCurrentCommandBuffer(), &renderInfo);
 }
 
-void VulkanGraphicsRenderer::finishRender()
+void VulkanGraphicsRenderer::beginRender(const std::vector<VkImageView>& colorAttachmentViews, bool updateDepth) const
+{
+    if (colorAttachmentViews.empty())
+    {
+        beginRender(updateDepth);
+        return;
+    }
+
+    std::vector<VkRenderingAttachmentInfo> colorAttachments;
+    colorAttachments.reserve(colorAttachmentViews.size());
+    std::transform(colorAttachmentViews.begin(), colorAttachmentViews.end(), std::back_inserter(colorAttachments),
+        [](VkImageView imageView) { return makeColorAttachmentInfo(imageView, nullptr); });
+    VkRenderingAttachmentInfo depthAttachment = makeDepthAttachmentInfo(mDepthImage.mImageView);
+    VkRenderingInfo renderInfo =
+        makeRenderingInfo(mSwapChainExtent, colorAttachments.data(), updateDepth ? &depthAttachment : nullptr);
+    vkCmdBeginRendering(getCurrentCommandBuffer(), &renderInfo);
+}
+
+void VulkanGraphicsRenderer::finishRender() const
 {
     vkCmdEndRendering(getCurrentCommandBuffer());
 }
