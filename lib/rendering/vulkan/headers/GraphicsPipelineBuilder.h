@@ -26,7 +26,7 @@ class GraphicsPipelineBuilder
     void disableBlending();
     void enableBlendingAdditive();
     void enableBlendingAlphablend();
-    void setColorAttachmentFormat(VkFormat format);
+    void setColorAttachmentFormats(const std::vector<VkFormat>& formats);
     void setDepthFormat(VkFormat format);
     void disableDepthTest();
     void enableDepthTest(bool depthWriteEnable, VkCompareOp op);
@@ -42,6 +42,6 @@ class GraphicsPipelineBuilder
     VkPipelineLayout mPipelineLayout;
     VkPipelineDepthStencilStateCreateInfo mDepthStencil;
     VkPipelineRenderingCreateInfo mRenderInfo;
-    VkFormat mColorAttachmentformat;
+    std::vector<VkFormat> mColorAttachmentFormats;
 };
 } // namespace Bunny::Render

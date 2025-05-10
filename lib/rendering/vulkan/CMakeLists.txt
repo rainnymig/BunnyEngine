@@ -4,10 +4,12 @@ target_sources(VulkanRenderer
     PUBLIC
         headers/ComputePipelineBuilder.h
         headers/CullingPass.h
+        headers/DeferredShadingPass.h
         headers/DepthReducePass.h
         headers/Descriptor.h
         headers/ErrorCheck.h
         headers/Fundamentals.h
+        headers/GBufferPass.h
         headers/GraphicsPipelineBuilder.h
         headers/Helper.h
         headers/Material.h
@@ -25,6 +27,7 @@ target_sources(VulkanRenderer
     PRIVATE
         src/ComputePipelineBuilder.cpp
         src/CullingPass.cpp
+        src/DeferredShadingPass.cpp
         src/DepthReducePass.cpp
         src/Descriptor.cpp
         src/Helper.cpp
@@ -32,6 +35,7 @@ target_sources(VulkanRenderer
         src/MaterialBank.cpp
         src/MeshBank.cpp
         src/ForwardPass.cpp
+        src/GBufferPass.cpp
         src/GraphicsPipelineBuilder.cpp
         src/Shader.cpp
         src/Vertex.cpp

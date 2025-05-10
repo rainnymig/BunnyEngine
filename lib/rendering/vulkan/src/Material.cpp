@@ -156,8 +156,7 @@ BunnyResult BasicBlinnPhongMaterial::Builder::buildPipeline(VkDevice device, VkD
     builder.setMultisamplingNone();
     builder.disableBlending(); //  opaque pipeline
     builder.enableDepthTest(VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL);
-    // builder.enableDepthTest(VK_TRUE, VK_COMPARE_OP_GREATER_OR_EQUAL);
-    builder.setColorAttachmentFormat(mColorFormat);
+    builder.setColorAttachmentFormats(std::vector<VkFormat>{mColorFormat});
     builder.setDepthFormat(mDepthFormat);
     builder.setPipelineLayout(pipelineLayout);
 

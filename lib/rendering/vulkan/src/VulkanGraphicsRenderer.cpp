@@ -32,15 +32,6 @@ BunnyResult VulkanGraphicsRenderer::initialize()
     return BUNNY_HAPPY;
 }
 
-void VulkanGraphicsRenderer::render(float deltaTime)
-{
-    //  begin render
-
-    //  end render
-
-    //  run render ui
-}
-
 void VulkanGraphicsRenderer::beginRenderFrame()
 {
     VkDevice device = mRenderResources->getDevice();

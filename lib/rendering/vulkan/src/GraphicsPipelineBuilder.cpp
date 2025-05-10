@@ -76,7 +76,7 @@ void GraphicsPipelineBuilder::clear()
     mVertexInputInfo = {.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
     mInputAssembly = {.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO};
     mRasterizer = {.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO};
-    mColorAttachmentformat = {};
+    mColorAttachmentFormats.clear();
     mMultisampling = {.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO};
     mPipelineLayout = {};
     mDepthStencil = {.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO};
@@ -169,11 +169,11 @@ void GraphicsPipelineBuilder::enableBlendingAlphablend()
     mColorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
 }
 
-void GraphicsPipelineBuilder::setColorAttachmentFormat(VkFormat format)
+void GraphicsPipelineBuilder::setColorAttachmentFormats(const std::vector<VkFormat>& formats)
 {
-    mColorAttachmentformat = format;
-    mRenderInfo.colorAttachmentCount = 1;
-    mRenderInfo.pColorAttachmentFormats = &mColorAttachmentformat;
+    mColorAttachmentFormats = formats;
+    mRenderInfo.colorAttachmentCount = mColorAttachmentFormats.size();
+    mRenderInfo.pColorAttachmentFormats = mColorAttachmentFormats.data();
 }
 
 void GraphicsPipelineBuilder::setDepthFormat(VkFormat format)
