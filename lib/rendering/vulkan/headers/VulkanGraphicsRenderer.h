@@ -21,7 +21,6 @@ class VulkanGraphicsRenderer
     VulkanGraphicsRenderer(VulkanRenderResources* renderResources);
 
     BunnyResult initialize();
-    void render(float deltaTime);
 
     void beginRenderFrame();
     void finishRenderFrame();
@@ -40,6 +39,7 @@ class VulkanGraphicsRenderer
     VkFormat getSwapChainImageFormat() const { return mSwapChainImageFormat; }
     VkFormat getDepthImageFormat() const { return mDepthImage.mFormat; }
     const AllocatedImage& getDepthImage() const { return mDepthImage; }
+    VkExtent2D getSwapChainExtent() const { return mSwapChainExtent; }
 
   private:
     struct FrameRenderObject

@@ -30,30 +30,24 @@ constexpr VkVertexInputBindingDescription getBindingDescription(uint32_t binding
     return bindingDescription;
 }
 
-struct BasicVertex
+struct ScreenQuadVertex
 {
     glm::vec3 pos;
-    glm::vec3 color;
     glm::vec2 texCoord;
 
-    static std::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions()
+    static std::array<VkVertexInputAttributeDescription, 2> getAttributeDescriptions()
     {
-        std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions{};
+        std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions{};
 
         attributeDescriptions[0].binding = 0;
         attributeDescriptions[0].location = 0;
         attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-        attributeDescriptions[0].offset = offsetof(BasicVertex, pos);
+        attributeDescriptions[0].offset = offsetof(ScreenQuadVertex, pos);
 
         attributeDescriptions[1].binding = 0;
-        attributeDescriptions[1].location = 1;
-        attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-        attributeDescriptions[1].offset = offsetof(BasicVertex, color);
-
-        attributeDescriptions[2].binding = 0;
-        attributeDescriptions[2].location = 2;
-        attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
-        attributeDescriptions[2].offset = offsetof(BasicVertex, texCoord);
+        attributeDescriptions[1].location = 2;
+        attributeDescriptions[1].format = VK_FORMAT_R32G32_SFLOAT;
+        attributeDescriptions[1].offset = offsetof(ScreenQuadVertex, texCoord);
 
         return attributeDescriptions;
     }

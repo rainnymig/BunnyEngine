@@ -265,6 +265,10 @@ void VulkanRenderResources::destroyBuffer(AllocatedBuffer& buffer) const
 
 void VulkanRenderResources::destroyImage(AllocatedImage& image) const
 {
+    if (image.mImage == nullptr)
+    {
+        return;
+    }
     vkDestroyImageView(mDevice, image.mImageView, nullptr);
     vmaDestroyImage(mAllocator, image.mImage, image.mAllocation);
     image.mImageView = nullptr;
