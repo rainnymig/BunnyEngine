@@ -10,7 +10,7 @@ struct Light
 
 #define MAX_LIGHT_COUNT 8
 
-layout(set = 0, binding = 1) uniform LightData 
+layout(set = 0, binding = 0) uniform LightData 
 {
     vec3 cameraPos;
     uint lightCount;
