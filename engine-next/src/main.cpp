@@ -18,6 +18,8 @@
 #include "ForwardPass.h"
 #include "CullingPass.h"
 #include "DepthReducePass.h"
+#include "GBufferPass.h"
+#include "DeferredShadingPass.h"
 
 #include <imgui.h>
 #include <fmt/core.h>
@@ -74,15 +76,19 @@ int main(void)
         builder.buildMaterial(renderResources.getDevice());
     Bunny::Render::MaterialInstance blinnPhongInstance = blinnPhongMaterial->makeInstance();
 
-    Bunny::Render::ForwardPass forwardPass(&renderResources, &renderer, &materialBank, &meshBank);
+    // Bunny::Render::ForwardPass forwardPass(&renderResources, &renderer, &materialBank, &meshBank);
     Bunny::Render::CullingPass cullingPass(&renderResources, &renderer, &meshBank);
     Bunny::Render::DepthReducePass depthReducePass(&renderResources, &renderer);
+    Bunny::Render::GBufferPass gbufferPass(&renderResources, &renderer, &meshBank);
+    Bunny::Render::DeferredShadingPass deferredShadingPass(&renderResources, &renderer);
 
     //  optimize later: detach these layouts from specific material
-    forwardPass.initializePass(blinnPhongMaterial->getSceneDescSetLayout(),
-        blinnPhongMaterial->getObjectDescSetLayout(), blinnPhongMaterial->getDrawDescSetLayout());
+    // forwardPass.initializePass(blinnPhongMaterial->getSceneDescSetLayout(),
+    //     blinnPhongMaterial->getObjectDescSetLayout(), blinnPhongMaterial->getDrawDescSetLayout());
     cullingPass.initializePass();
     depthReducePass.initializePass();
+    gbufferPass.initializePass();
+    deferredShadingPass.initializePass();
 
     materialBank.addMaterial(std::move(blinnPhongMaterial));
     materialBank.addMaterialInstance(blinnPhongInstance);
@@ -91,23 +97,32 @@ int main(void)
     WorldLoader worldLoader(&renderResources, &materialBank, &meshBank);
     worldLoader.loadTestWorld(bunnyWorld);
 
-    forwardPass.buildDrawCommands();
+    // forwardPass.buildDrawCommands();
+    gbufferPass.buildDrawCommands();
 
     WorldRenderDataTranslator worldTranslator(&renderResources, &meshBank, &materialBank);
     worldTranslator.initialize();
     worldTranslator.initObjectDataBuffer(&bunnyWorld);
 
-    forwardPass.updateDrawInstanceCounts(worldTranslator.getMeshInstanceCounts());
+    // forwardPass.updateDrawInstanceCounts(worldTranslator.getMeshInstanceCounts());
+    gbufferPass.updateDrawInstanceCounts(worldTranslator.getMeshInstanceCounts());
 
-    forwardPass.linkSceneData(worldTranslator.getSceneBuffer());
-    forwardPass.linkLightData(worldTranslator.getLightBuffer());
-    forwardPass.linkObjectData(worldTranslator.getObjectBuffer(), worldTranslator.getObjectBufferSize());
+    // forwardPass.linkSceneData(worldTranslator.getSceneBuffer());
+    // forwardPass.linkLightData(worldTranslator.getLightBuffer());
+    // forwardPass.linkObjectData(worldTranslator.getObjectBuffer(), worldTranslator.getObjectBufferSize());
+    gbufferPass.linkSceneData(worldTranslator.getSceneBuffer());
+    gbufferPass.linkObjectData(worldTranslator.getObjectBuffer(), worldTranslator.getObjectBufferSize());
+    deferredShadingPass.linkLightData(worldTranslator.getLightBuffer());
+    deferredShadingPass.linkGBufferMaps(
+        gbufferPass.getColorMaps(), gbufferPass.getFragPosMaps(), gbufferPass.getNormalTexCoordMaps());
 
     cullingPass.linkCullingData(depthReducePass.getDepthHierarchyImage(), depthReducePass.getDepthReduceSampler());
     cullingPass.linkMeshData(meshBank.getBoundsBuffer(), meshBank.getBoundsBufferSize());
     cullingPass.linkObjectData(worldTranslator.getObjectBuffer(), worldTranslator.getObjectBufferSize());
-    cullingPass.linkDrawData(forwardPass.getDrawCommandBuffer(), forwardPass.getDrawCommandBufferSize(),
-        forwardPass.getInstanceObjectBuffer(), forwardPass.getInstanceObjectBufferSize());
+    // cullingPass.linkDrawData(forwardPass.getDrawCommandBuffer(), forwardPass.getDrawCommandBufferSize(),
+    //     forwardPass.getInstanceObjectBuffer(), forwardPass.getInstanceObjectBufferSize());
+    cullingPass.linkDrawData(gbufferPass.getDrawCommandBuffer(), gbufferPass.getDrawCommandBufferSize(),
+        gbufferPass.getInstanceObjectBuffer(), gbufferPass.getInstanceObjectBufferSize());
     cullingPass.setObjectCount(worldTranslator.getObjectCount());
     cullingPass.setDepthImageSizes(depthReducePass.getDepthImageWidth(), depthReducePass.getDepthImageHeight(),
         depthReducePass.getDepthHierarchyLevels());
@@ -150,13 +165,14 @@ int main(void)
 
         renderer.beginRenderFrame();
 
-        forwardPass.resetDrawCommands();
+        // forwardPass.resetDrawCommands();
+        gbufferPass.resetDrawCommands();
 
         cullingPass.dispatch();
 
-        forwardPass.draw();
-
-        renderer.finishRender();
+        // forwardPass.draw();
+        gbufferPass.draw();
+        deferredShadingPass.draw();
 
         depthReducePass.dispatch();
 
@@ -179,8 +195,10 @@ int main(void)
 
     worldTranslator.cleanup();
     cullingPass.cleanup();
-    forwardPass.cleanup();
+    // forwardPass.cleanup();
     depthReducePass.cleanup();
+    deferredShadingPass.cleanup();
+    gbufferPass.cleanup();
 
     meshBank.cleanup();
     materialBank.cleanup();

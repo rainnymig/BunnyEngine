@@ -93,7 +93,7 @@ void VulkanGraphicsRenderer::beginRenderFrame()
     };
     VkRenderingAttachmentInfo colorAttachment =
         makeColorAttachmentInfo(mSwapChainImageViews[mSwapchainImageIndex], &colorClearValue);
-    VkRenderingInfo renderInfo = makeRenderingInfo(mSwapChainExtent, &colorAttachment, nullptr);
+    VkRenderingInfo renderInfo = makeRenderingInfo(mSwapChainExtent, 1, &colorAttachment, nullptr);
 
     vkCmdBeginRendering(cmdBuf, &renderInfo);
     vkCmdEndRendering(cmdBuf);
@@ -165,7 +165,7 @@ void VulkanGraphicsRenderer::beginRender(bool updateDepth) const
         makeColorAttachmentInfo(mSwapChainImageViews[mSwapchainImageIndex], nullptr);
     VkRenderingAttachmentInfo depthAttachment = makeDepthAttachmentInfo(mDepthImage.mImageView);
     VkRenderingInfo renderInfo =
-        makeRenderingInfo(mSwapChainExtent, &colorAttachment, updateDepth ? &depthAttachment : nullptr);
+        makeRenderingInfo(mSwapChainExtent, 1, &colorAttachment, updateDepth ? &depthAttachment : nullptr);
     vkCmdBeginRendering(getCurrentCommandBuffer(), &renderInfo);
 }
 
@@ -182,8 +182,8 @@ void VulkanGraphicsRenderer::beginRender(const std::vector<VkImageView>& colorAt
     std::transform(colorAttachmentViews.begin(), colorAttachmentViews.end(), std::back_inserter(colorAttachments),
         [](VkImageView imageView) { return makeColorAttachmentInfo(imageView, nullptr); });
     VkRenderingAttachmentInfo depthAttachment = makeDepthAttachmentInfo(mDepthImage.mImageView);
-    VkRenderingInfo renderInfo =
-        makeRenderingInfo(mSwapChainExtent, colorAttachments.data(), updateDepth ? &depthAttachment : nullptr);
+    VkRenderingInfo renderInfo = makeRenderingInfo(
+        mSwapChainExtent, colorAttachments.size(), colorAttachments.data(), updateDepth ? &depthAttachment : nullptr);
     vkCmdBeginRendering(getCurrentCommandBuffer(), &renderInfo);
 }
 
@@ -422,7 +422,7 @@ void VulkanGraphicsRenderer::finishImguiFrame(VkCommandBuffer commandBuffer, VkI
 
     VkRenderingAttachmentInfo colorAttachment =
         makeColorAttachmentInfo(targetImageView, nullptr, VK_IMAGE_LAYOUT_GENERAL);
-    VkRenderingInfo renderInfo = makeRenderingInfo(mSwapChainExtent, &colorAttachment, nullptr);
+    VkRenderingInfo renderInfo = makeRenderingInfo(mSwapChainExtent, 1, &colorAttachment, nullptr);
 
     vkCmdBeginRendering(commandBuffer, &renderInfo);
 

@@ -84,6 +84,9 @@ BunnyResult VulkanRenderResources::initialize(Base::Window* window)
     featureBasic.samplerAnisotropy = true;
     featureBasic.vertexPipelineStoresAndAtomics = true;
 
+    //  needed for having different format of color attachments for gbuffer
+    featureBasic.independentBlend = true;
+
     vkb::PhysicalDeviceSelector selector{vkbInstance};
     auto deviceSelectResult = selector.set_minimum_version(1, 3)
                                   .set_required_features_13(features13)

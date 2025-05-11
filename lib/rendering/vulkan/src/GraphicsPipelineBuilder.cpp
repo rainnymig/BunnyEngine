@@ -28,8 +28,10 @@ VkPipeline GraphicsPipelineBuilder::build(VkDevice device)
 
     colorBlending.logicOpEnable = VK_FALSE;
     colorBlending.logicOp = VK_LOGIC_OP_COPY;
-    colorBlending.attachmentCount = 1;
-    colorBlending.pAttachments = &mColorBlendAttachment;
+    colorBlending.attachmentCount = mRenderInfo.colorAttachmentCount;
+    std::vector<VkPipelineColorBlendAttachmentState> blendAttachments(
+        mRenderInfo.colorAttachmentCount, mColorBlendAttachment);
+    colorBlending.pAttachments = blendAttachments.data();
 
     //  build the actual pipeline
     //  we now use all of the info structs we have been writing into into this one

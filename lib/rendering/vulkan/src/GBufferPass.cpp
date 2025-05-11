@@ -145,12 +145,17 @@ void GBufferPass::draw()
         mNormalTexCoordMaps.at(currentFrameIdx).mImage, VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_ASPECT_COLOR_BIT);
 
+    // VkImageMemoryBarrier barriers[] = {colorReadBarrier, fragPosReadBarrier, normalTexCoordReadBarrier};
     VkImageMemoryBarrier barriers[] = {colorReadBarrier, fragPosReadBarrier, normalTexCoordReadBarrier};
 
-    vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-        VK_DEPENDENCY_BY_REGION_BIT, 0, 0, 0, 0, 3, barriers);
+    // vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+    //     VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 3, barriers);
+    vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+        VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 3, barriers);
 
     //  setup render attachments
+    // std::vector<VkImageView> attachmentImageViews{mColorMaps[currentFrameIdx].mImageView,
+    //     mFragPosMaps[currentFrameIdx].mImageView, mNormalTexCoordMaps[currentFrameIdx].mImageView};
     std::vector<VkImageView> attachmentImageViews{mColorMaps[currentFrameIdx].mImageView,
         mFragPosMaps[currentFrameIdx].mImageView, mNormalTexCoordMaps[currentFrameIdx].mImageView};
 
@@ -194,8 +199,16 @@ void GBufferPass::cleanup()
 
     mDescriptorAllocator.destroyPools(mVulkanResources->getDevice());
 
+    vkDestroyDescriptorSetLayout(mVulkanResources->getDevice(), mUniformDescLayout, nullptr);
+    vkDestroyDescriptorSetLayout(mVulkanResources->getDevice(), mStorageDescLayout, nullptr);
+
     vkDestroyPipeline(mVulkanResources->getDevice(), mPipeline, nullptr);
     vkDestroyPipelineLayout(mVulkanResources->getDevice(), mPipelineLayout, nullptr);
+}
+
+const size_t GBufferPass::getDrawCommandBufferSize() const
+{
+    return sizeof(VkDrawIndexedIndirectCommand) * mDrawCommandsData.size();
 }
 
 void GBufferPass::initDescriptorSets()
@@ -279,6 +292,8 @@ BunnyResult GBufferPass::initPipeline()
     builder.setMultisamplingNone();
     builder.disableBlending(); //  opaque pipeline
     builder.enableDepthTest(VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL);
+    // std::vector<VkFormat> colorFormats{VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_R16G16B16A16_SFLOAT,
+    //     VK_FORMAT_R16G16B16A16_SFLOAT}; //  color, frag pos, normal texcoord
     std::vector<VkFormat> colorFormats{VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_R16G16B16A16_SFLOAT,
         VK_FORMAT_R16G16B16A16_SFLOAT}; //  color, frag pos, normal texcoord
     builder.setColorAttachmentFormats(colorFormats);

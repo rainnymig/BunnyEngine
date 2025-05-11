@@ -33,6 +33,18 @@ class GBufferPass
     void draw();
     void cleanup();
 
+    const AllocatedBuffer& getDrawCommandBuffer() const { return mDrawCommandsBuffer; }
+    const size_t getDrawCommandBufferSize() const;
+    const AllocatedBuffer& getInstanceObjectBuffer() const { return mInstanceObjectBuffer; }
+    const size_t getInstanceObjectBufferSize() const { return mInstanceObjectBufferSize; }
+
+    const std::array<AllocatedImage, MAX_FRAMES_IN_FLIGHT>& getColorMaps() const { return mColorMaps; }
+    const std::array<AllocatedImage, MAX_FRAMES_IN_FLIGHT>& getFragPosMaps() const { return mFragPosMaps; }
+    const std::array<AllocatedImage, MAX_FRAMES_IN_FLIGHT>& getNormalTexCoordMaps() const
+    {
+        return mNormalTexCoordMaps;
+    }
+
   private:
     void initDescriptorSets();
     BunnyResult initPipeline();
