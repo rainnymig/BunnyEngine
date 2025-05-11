@@ -27,6 +27,8 @@ layout (location = 0) out vec4 outColor;
 
 void main()
 {
+    // outColor = vec4(uv.x, uv.y, 1, 1);
+
     vec3 color = texture(colorMap, uv).rgb;
     vec3 fragPos = texture(fragPosMap, uv).xyz;
     vec4 normalTexCoord = texture(normalTexCoordMap, uv);

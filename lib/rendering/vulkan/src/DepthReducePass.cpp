@@ -71,7 +71,7 @@ void DepthReducePass::dispatch()
             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_ASPECT_DEPTH_BIT);
 
     vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-        VK_DEPENDENCY_BY_REGION_BIT, 0, 0, 0, 0, 1, &depthWriteFinishBarrier);
+        VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 1, &depthWriteFinishBarrier);
 
     //  bind pipeline
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, mPipeline);
@@ -103,7 +103,7 @@ void DepthReducePass::dispatch()
                 VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_ASPECT_COLOR_BIT);
 
         vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-            VK_DEPENDENCY_BY_REGION_BIT, 0, 0, 0, 0, 1, &reduceBarrier);
+            VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 1, &reduceBarrier);
     }
 
     //  transition the depth image back to the optimal format as depth attachment
@@ -113,7 +113,7 @@ void DepthReducePass::dispatch()
         VK_IMAGE_ASPECT_DEPTH_BIT);
 
     vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
-        VK_DEPENDENCY_BY_REGION_BIT, 0, 0, 0, 0, 1, &depthReadFinishBarrier);
+        VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 1, &depthReadFinishBarrier);
 }
 
 void DepthReducePass::createDepthHierarchy()

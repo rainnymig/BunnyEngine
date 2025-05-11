@@ -60,8 +60,6 @@ void DeferredShadingPass::draw()
     VkCommandBuffer cmd = mRenderer->getCurrentCommandBuffer();
     uint32_t currentFrameIdx = mRenderer->getCurrentFrameIdx();
 
-    mRenderer->beginRender(false);
-
     //  barrier to make sure rendering to gbuffers is finished
     VkImageMemoryBarrier colorWriteBarrier = makeImageMemoryBarrier(mColorMaps->at(currentFrameIdx).mImage,
         VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
@@ -77,7 +75,9 @@ void DeferredShadingPass::draw()
     VkImageMemoryBarrier barriers[] = {colorWriteBarrier, fragPosWriteBarrier, normalTexCoordWriteBarrier};
 
     vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-        VK_DEPENDENCY_BY_REGION_BIT, 0, 0, 0, 0, 3, barriers);
+        VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 3, barriers);
+
+    mRenderer->beginRender(false);
 
     //  bind pipeline and resources
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipeline);
@@ -232,23 +232,23 @@ void DeferredShadingPass::buildScreenQuad()
 {
     //  fill vertex and index data for screen quad
     mVertexData[0] = ScreenQuadVertex{
-        {-1, 1, 0},
-        {0, 0}
+        {-1, 1, 0.5},
+        {0, 1}
     }; //  top left
     mVertexData[1] = ScreenQuadVertex{
-        {-1, -1, 0},
-        {0, 1}
+        {-1, -1, 0.5},
+        {0, 0}
     }; //  bottom left
     mVertexData[2] = ScreenQuadVertex{
-        {1, -1, 0},
-        {1, 1}
+        {1, -1, 0.5},
+        {1, 0}
     }; //  bottom right
     mVertexData[3] = ScreenQuadVertex{
-        {1, 1, 0},
-        {1, 0}
+        {1, 1, 0.5},
+        {1, 1}
     }; //  top right
 
-    mIndexData = std::array<uint32_t, 6>{0, 1, 3, 3, 1, 2};
+    mIndexData = std::array<uint32_t, 6>{0, 3, 1, 1, 3, 2};
 
     const VkDeviceSize vertexSize = mVertexData.size() * sizeof(ScreenQuadVertex);
     const VkDeviceSize indexSize = mIndexData.size() * sizeof(uint32_t);
