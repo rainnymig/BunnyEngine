@@ -132,6 +132,23 @@ void GBufferPass::linkObjectData(const AllocatedBuffer& objectBuffer, size_t buf
 void GBufferPass::draw()
 {
     const uint32_t currentFrameIdx = mRenderer->getCurrentFrameIdx();
+    VkCommandBuffer cmd = mRenderer->getCurrentCommandBuffer();
+
+    //  barrier to make sure the deferred lighting shader has finished reading the gbuffer
+    VkImageMemoryBarrier colorReadBarrier = makeImageMemoryBarrier(mColorMaps.at(currentFrameIdx).mImage,
+        VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_ASPECT_COLOR_BIT);
+    VkImageMemoryBarrier fragPosReadBarrier = makeImageMemoryBarrier(mFragPosMaps.at(currentFrameIdx).mImage,
+        VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_ASPECT_COLOR_BIT);
+    VkImageMemoryBarrier normalTexCoordReadBarrier = makeImageMemoryBarrier(
+        mNormalTexCoordMaps.at(currentFrameIdx).mImage, VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+        VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_ASPECT_COLOR_BIT);
+
+    VkImageMemoryBarrier barriers[] = {colorReadBarrier, fragPosReadBarrier, normalTexCoordReadBarrier};
+
+    vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+        VK_DEPENDENCY_BY_REGION_BIT, 0, 0, 0, 0, 3, barriers);
 
     //  setup render attachments
     std::vector<VkImageView> attachmentImageViews{mColorMaps[currentFrameIdx].mImageView,
@@ -139,25 +156,24 @@ void GBufferPass::draw()
 
     mRenderer->beginRender(attachmentImageViews, true);
 
-    mMeshBank->bindMeshBuffers(mRenderer->getCurrentCommandBuffer());
+    mMeshBank->bindMeshBuffers(cmd);
 
-    vkCmdBindPipeline(mRenderer->getCurrentCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, mPipeline);
+    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipeline);
 
     //  bind scene and object data
     //  best to bind this before for all batches
     //  but now we need the pipeline layout so have to do it here
     //  optimize later
-    vkCmdBindDescriptorSets(mRenderer->getCurrentCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout, 0,
-        1, &mSceneDescSets[mRenderer->getCurrentFrameIdx()], 0, nullptr);
+    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout, 0, 1,
+        &mSceneDescSets[mRenderer->getCurrentFrameIdx()], 0, nullptr);
 
-    vkCmdBindDescriptorSets(mRenderer->getCurrentCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout, 1,
-        1, &mObjectDescSets[mRenderer->getCurrentFrameIdx()], 0, nullptr);
+    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout, 1, 1,
+        &mObjectDescSets[mRenderer->getCurrentFrameIdx()], 0, nullptr);
 
-    vkCmdBindDescriptorSets(mRenderer->getCurrentCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout, 2,
-        1, &mDrawDataDescSets[mRenderer->getCurrentFrameIdx()], 0, nullptr);
+    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout, 2, 1,
+        &mDrawDataDescSets[mRenderer->getCurrentFrameIdx()], 0, nullptr);
 
-    vkCmdDrawIndexedIndirect(
-        mRenderer->getCurrentCommandBuffer(), mDrawCommandsBuffer.mBuffer, 0, 1, sizeof(VkDrawIndexedIndirectCommand));
+    vkCmdDrawIndexedIndirect(cmd, mDrawCommandsBuffer.mBuffer, 0, 1, sizeof(VkDrawIndexedIndirectCommand));
 
     mRenderer->finishRender();
 }

@@ -10,6 +10,7 @@
 #include <vulkan/vulkan.h>
 
 #include <vector>
+#include "DeferredShadingPass.h"
 
 namespace Bunny::Render
 {
