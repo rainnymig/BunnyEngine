@@ -18,8 +18,8 @@ layout(set = 0, binding = 0) uniform LightData
 } lightData;
 
 layout(set = 1, binding = 0) uniform sampler2D colorMap;
-layout(set = 1, binding = 1) uniform sampler2D fragPosMap;
-layout(set = 1, binding = 2) uniform sampler2D normalTexCoordMap;
+layout(set = 1, binding = 1) uniform sampler2D fragPosTexUMap;
+layout(set = 1, binding = 2) uniform sampler2D normalTexVMap;
 
 layout (location = 0) in vec2 uv;
 
@@ -30,10 +30,11 @@ void main()
     // outColor = vec4(uv.x, uv.y, 1, 1);
 
     vec3 color = texture(colorMap, uv).rgb;
-    vec3 fragPos = texture(fragPosMap, uv).xyz;
-    vec4 normalTexCoord = texture(normalTexCoordMap, uv);
-    vec3 normal = vec3(normalTexCoord.xy, sqrt(1 - normalTexCoord.x*normalTexCoord.x - normalTexCoord.y*normalTexCoord.y));
-    vec2 texCoord = normalTexCoord.zw;
+    vec4 fragPosTexU = texture(fragPosTexUMap, uv);
+    vec3 fragPos = fragPosTexU.xyz;
+    vec4 normalTexV = texture(normalTexVMap, uv);
+    vec3 normal = vec3(normalTexV.xyz);
+    vec2 texCoord = vec2(fragPosTexU.w, normalTexV.w);
 
     Light light = lightData.lights[0];
 

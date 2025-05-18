@@ -1,6 +1,3 @@
-glslc.exe ./basic.vert -o basic_vert.spv
-glslc.exe ./basic.frag -o basic_frag.spv
-glslc.exe ./basicUpdated.vert -o basic_updated_vert.spv
 glslc.exe ./basicUpdated.frag -o basic_updated_frag.spv
 glslc.exe ./basicInstanced.vert -o basic_instanced_vert.spv
 glslc.exe ./culledInstanced.vert -o culled_instanced_vert.spv
@@ -9,3 +6,5 @@ glslc.exe ./reduceDepth.comp -o reduce_depth_comp.spv
 glslc.exe ./screenQuad.vert -o screen_quad_vert.spv
 glslc.exe ./gbuffer.frag -o gbuffer_frag.spv
 glslc.exe ./basicDeferred.frag -o basic_deferred_frag.spv
+glslc.exe ./pbrForward.frag -o pbr_forward_frag.spv
+glslc.exe ./pbrDeferred.frag -o pbr_deferred_frag.spv

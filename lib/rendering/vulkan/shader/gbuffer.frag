@@ -6,13 +6,13 @@ layout (location = 2) in vec3 fragPos;
 layout (location = 3) in vec2 uv;
 
 layout (location = 0) out vec4 outColor;
-layout (location = 1) out vec4 outFragPos;
-layout (location = 2) out vec4 outNormalTexCoord;
+layout (location = 1) out vec4 outFragPosTexU;
+layout (location = 2) out vec4 outNormalTexV;
 //  layout out material intance id?
 
 void main()
 {
     outColor = vec4(color, 1.0);
-    outFragPos = vec4(fragPos, 1.0);
-    outNormalTexCoord = vec4(normal.x, normal.y, uv.x, uv.y);
+    outFragPosTexU = vec4(fragPos, uv.x);
+    outNormalTexV = vec4(normal, uv.y);
 }
