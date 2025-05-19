@@ -2,6 +2,7 @@
 
 #include "Fundamentals.h"
 #include "Material.h"
+#include "BunnyResult.h"
 
 #include <memory>
 #include <unordered_map>
@@ -27,5 +28,24 @@ class MaterialBank
   private:
     std::vector<std::unique_ptr<Material>> mMaterials;
     std::vector<MaterialInstance> mMaterialInstances;
+};
+
+class PbrMaterialBank
+{
+  public:
+    BunnyResult initialize();
+    void cleanup();
+
+  private:
+    std::vector<PbrMaterialParameters> mMaterialInstances;
+
+    VkPipelineLayout mPbrForwardPipelineLayout;
+    VkPipelineLayout mPbrGBufferPipelineLayout;
+    VkPipelineLayout mPbrDeferredPipelineLayout;
+
+    VkPipeline mPbrGBufferPipeline;
+
+    std::vector<VkPipeline> mPbrForwardPipelines;
+    std::vector<VkPipeline> mPbrDeferredPipelines;
 };
 } // namespace Bunny::Render
