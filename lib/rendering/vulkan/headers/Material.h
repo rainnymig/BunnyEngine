@@ -7,6 +7,9 @@
 #include "BunnyGuard.h"
 
 #include <vulkan/vulkan.h>
+#include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
+
 #include <string_view>
 #include <memory>
 #include <array>
@@ -87,4 +90,19 @@ class BasicBlinnPhongMaterial : public Material
     // DescriptorAllocator mDescriptorAllocator;
     // VkDescriptorSetLayout mDescriptorSetLayout;
 };
+
+struct PbrMaterialParameters
+{
+    glm::vec4 mBaseColor;
+    glm::vec3 mEmissiveColor;
+    float mMetallic;
+    float roughness;
+    float mReflectance;
+    float mAmbientOcclusion;
+    IdType mColorTexId;
+    IdType mNormalTexId;
+    IdType mEmissiveTexId;
+    IdType mMetRouRflAmbTexId;
+};
+
 } // namespace Bunny::Render

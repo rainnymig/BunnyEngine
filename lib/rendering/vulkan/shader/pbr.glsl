@@ -24,12 +24,16 @@ layout(set = 0, binding = 1) uniform CameraData
 
 struct PbrMaterial
 {
-    vec3 baseColor;
+    vec4 baseColor;
+    vec3 emissiveColor;
     float metallic;
     float roughness;
     float reflectance;
-    float emissive;
     float ambientOcclusion;
+    uint mColorTexId;
+    uint mNormalTexId;
+    uint mEmissiveTexId;
+    uint mMetRouRflAmbTexId;
 };
 
 //  update irregularly, maybe only once at start if materials don't change
