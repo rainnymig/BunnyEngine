@@ -38,6 +38,7 @@ target_sources(VulkanRenderer
         src/GBufferPass.cpp
         src/GraphicsPipelineBuilder.cpp
         src/Shader.cpp
+        src/TextureBank.cpp
         src/Vertex.cpp
         src/VulkanGraphicsRenderer.cpp
         src/VulkanRenderResources.cpp
