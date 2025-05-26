@@ -9,6 +9,8 @@
 
 namespace Bunny::Render
 {
+class VulkanRenderResources;
+class VulkanGraphicsRenderer;
 
 class MaterialBank
 {
@@ -33,10 +35,15 @@ class MaterialBank
 class PbrMaterialBank
 {
   public:
+    PbrMaterialBank(const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer);
+
     BunnyResult initialize();
     void cleanup();
 
   private:
+    const VulkanRenderResources* mVulkanResources;
+    const VulkanGraphicsRenderer* mRenderer;
+
     std::vector<PbrMaterialParameters> mMaterialInstances;
 
     VkPipelineLayout mPbrForwardPipelineLayout;

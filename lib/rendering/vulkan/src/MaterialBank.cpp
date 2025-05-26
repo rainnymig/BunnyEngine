@@ -37,4 +37,10 @@ const MaterialInstance& MaterialBank::getMaterialInstance(IdType instanceId) con
 {
     return mMaterialInstances.at(instanceId);
 }
+
+PbrMaterialBank::PbrMaterialBank(const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer)
+    : mVulkanResources(vulkanResources),
+      mRenderer(renderer)
+{
+}
 } // namespace Bunny::Render
