@@ -42,8 +42,10 @@ class VulkanRenderResources
     const Queue& getComputeQueue() const { return mComputeQueue; }
     const Queue& getTransferQueue() const { return mTransferQueue; }
 
-    BunnyResult createAndMapBuffer(void* data, VkDeviceSize size, VkBufferUsageFlags bufferUsage,
+    BunnyResult createBufferWithData(void* data, VkDeviceSize size, VkBufferUsageFlags bufferUsage,
         VmaAllocationCreateFlags vmaCreateFlags, VmaMemoryUsage vmaUsage, AllocatedBuffer& outBuffer) const;
+    BunnyResult createImageWithData(void* data, VkDeviceSize dataSize, VkExtent3D imageExtent, VkFormat format,
+        VkImageUsageFlags usage, VkImageAspectFlags aspectFlags, VkImageLayout layout, AllocatedImage& outImage) const;
 
     AllocatedBuffer createBuffer(VkDeviceSize size, VkBufferUsageFlags bufferUsage,
         VmaAllocationCreateFlags vmaCreateFlags, VmaMemoryUsage vmaUsage) const;

@@ -10,3 +10,4 @@
 - Update Material bank to support multiple material and material instances better
 - Optimize render passes to reduce repeated code
 - Optimize render passes to better organize frame resources (descriptor sets etc.)
+- Optimize the function for transitioning image layout in VulkanRenderResources to make it more usable
