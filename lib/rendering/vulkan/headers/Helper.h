@@ -34,9 +34,6 @@ VkBufferMemoryBarrier makeBufferMemoryBarrier(VkBuffer buffer, uint32_t queueInd
 VkImageMemoryBarrier makeImageMemoryBarrier(VkImage image, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask,
     VkImageLayout oldLayout, VkImageLayout newLayout, VkImageAspectFlags aspectMask);
 
-void transitionImageLayout(
-    VkCommandBuffer commandBuffer, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
-
 void addVertex(const glm::vec3& position, const glm::vec3& normal, const glm::vec4& color, const glm::vec2& texCoord,
     std::vector<uint32_t>& indices, std::vector<NormalVertex>& vertices,
     std::unordered_map<NormalVertex, uint32_t, NormalVertex::Hash>& vertexToIndexMap);

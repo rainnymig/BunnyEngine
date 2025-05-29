@@ -122,11 +122,11 @@ void MeshBank<VertexType, IndexType>::buildMeshBuffers()
     const VkDeviceSize indexSize = mIndexBufferData.size() * sizeof(IndexType);
     const VkDeviceSize boundsSize = mBoundsData.size() * sizeof(Base::BoundingSphere);
 
-    mVulkanResources->createAndMapBuffer(mVertexBufferData.data(), vertexSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+    mVulkanResources->createBufferWithData(mVertexBufferData.data(), vertexSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
         VMA_ALLOCATION_CREATE_MAPPED_BIT, VMA_MEMORY_USAGE_GPU_ONLY, mVertexBuffer);
-    mVulkanResources->createAndMapBuffer(mIndexBufferData.data(), indexSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+    mVulkanResources->createBufferWithData(mIndexBufferData.data(), indexSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
         VMA_ALLOCATION_CREATE_MAPPED_BIT, VMA_MEMORY_USAGE_GPU_ONLY, mIndexBuffer);
-    mVulkanResources->createAndMapBuffer(mBoundsData.data(), boundsSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+    mVulkanResources->createBufferWithData(mBoundsData.data(), boundsSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
         VMA_ALLOCATION_CREATE_MAPPED_BIT, VMA_MEMORY_USAGE_GPU_ONLY, mBoundsBuffer); //  bounds of meshes for culling
 }
 

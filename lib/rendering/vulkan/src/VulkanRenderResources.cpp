@@ -157,7 +157,7 @@ void VulkanRenderResources::cleanup()
     mDeletionStack.Flush();
 }
 
-BunnyResult VulkanRenderResources::createAndMapBuffer(void* data, VkDeviceSize size, VkBufferUsageFlags bufferUsage,
+BunnyResult VulkanRenderResources::createBufferWithData(void* data, VkDeviceSize size, VkBufferUsageFlags bufferUsage,
     VmaAllocationCreateFlags vmaCreateFlags, VmaMemoryUsage vmaUsage, AllocatedBuffer& outBuffer) const
 {
     //  create the buffer
@@ -182,6 +182,53 @@ BunnyResult VulkanRenderResources::createAndMapBuffer(void* data, VkDeviceSize s
         outBuffer.mBuffer, 1, &bufCopy);
 
     BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(endAndSubmitImmediateCommand(ImmediateQueueType::Transfer))
+
+    destroyBuffer(stagingBuffer);
+
+    return BUNNY_HAPPY;
+}
+
+BunnyResult VulkanRenderResources::createImageWithData(void* data, VkDeviceSize dataSize, VkExtent3D imageExtent,
+    VkFormat format, VkImageUsageFlags usage, VkImageAspectFlags aspectFlags, VkImageLayout layout,
+    AllocatedImage& outImage) const
+{
+    //  create image
+    outImage = createImage(imageExtent, format, usage, aspectFlags);
+
+    //  create staging buffer
+    AllocatedBuffer stagingBuffer = createBuffer(dataSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+        VMA_MEMORY_USAGE_AUTO);
+
+    memcpy(stagingBuffer.mAllocationInfo.pMappedData, data, dataSize);
+
+    BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(startImmedidateCommand(ImmediateQueueType::Graphics))
+
+    VkImageSubresourceLayers imageSubresource{
+        .aspectMask = aspectFlags, .mipLevel = 0, .baseArrayLayer = 0, .layerCount = 1};
+
+    VkBufferImageCopy bufImgCopy{
+        .bufferOffset = 0,
+        .bufferRowLength = 0, //  image data is tightly packed
+        .bufferImageHeight = 0, //  image data is tightly packed
+        .imageSubresource = imageSubresource,
+        .imageOffset = {0, 0, 0},
+        .imageExtent = imageExtent
+    };
+
+    //  transition image layout to be transfer destination
+    transitionImageLayout(mImmediateCommands.at(ImmediateQueueType::Graphics).mBuffer, outImage.mImage,
+        outImage.mFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+    //  copy the image data into the image
+    vkCmdCopyBufferToImage(mImmediateCommands.at(ImmediateQueueType::Graphics).mBuffer, stagingBuffer.mBuffer,
+        outImage.mImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &bufImgCopy);
+
+    //  transition the image layout to the desired layout
+    transitionImageLayout(mImmediateCommands.at(ImmediateQueueType::Graphics).mBuffer, outImage.mImage,
+        outImage.mFormat, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, layout);
+
+    BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(endAndSubmitImmediateCommand(ImmediateQueueType::Graphics))
 
     destroyBuffer(stagingBuffer);
 

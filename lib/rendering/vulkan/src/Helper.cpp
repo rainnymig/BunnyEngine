@@ -160,52 +160,6 @@ bool hasStencilComponent(VkFormat format)
     return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
 
-void transitionImageLayout(
-    VkCommandBuffer commandBuffer, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
-{
-    VkImageMemoryBarrier2 barrier{};
-    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
-    barrier.pNext = nullptr;
-
-    VkImageSubresourceRange range{
-        .baseMipLevel = 0,
-        .levelCount = 1,
-        .baseArrayLayer = 0,
-        .layerCount = 1,
-    };
-    if (newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
-    {
-        range.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-
-        if (hasStencilComponent(format))
-        {
-            range.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
-        }
-    }
-    else
-    {
-        range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    }
-
-    barrier.subresourceRange = range;
-    barrier.image = image;
-    barrier.oldLayout = oldLayout;
-    barrier.newLayout = newLayout;
-    barrier.srcStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
-    barrier.srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT;
-    barrier.dstStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
-    barrier.dstAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT | VK_ACCESS_2_MEMORY_READ_BIT;
-
-    VkDependencyInfo depInfo{};
-    depInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
-    depInfo.pNext = nullptr;
-
-    depInfo.imageMemoryBarrierCount = 1;
-    depInfo.pImageMemoryBarriers = &barrier;
-
-    vkCmdPipelineBarrier2(commandBuffer, &depInfo);
-}
-
 void addVertex(const glm::vec3& position, const glm::vec3& normal, const glm::vec4& color, const glm::vec2& texCoord,
     std::vector<uint32_t>& indices, std::vector<NormalVertex>& vertices,
     std::unordered_map<NormalVertex, uint32_t, NormalVertex::Hash>& vertexToIndexMap)
