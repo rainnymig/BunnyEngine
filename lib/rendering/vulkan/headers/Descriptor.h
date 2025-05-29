@@ -54,16 +54,20 @@ class DescriptorAllocator
 class DescriptorWriter
 {
   public:
+    ~DescriptorWriter();
+
     void clear();
     void writeImage(
         uint32_t binding, VkImageView imageView, VkSampler sampler, VkImageLayout layout, VkDescriptorType type);
     void writeBuffer(uint32_t binding, VkBuffer buffer, size_t size, size_t offset, VkDescriptorType type);
+    void writeImages(uint32_t binding, std::vector<VkDescriptorImageInfo> imageInfos, VkDescriptorType type);
+    void writeBuffers(uint32_t binding, std::vector<VkDescriptorBufferInfo> bufferInfos, VkDescriptorType type);
 
     void updateSet(VkDevice device, VkDescriptorSet descriptorSet);
 
   private:
-    std::deque<VkDescriptorImageInfo> mImageInfos;
-    std::deque<VkDescriptorBufferInfo> mBufferInfos;
+    std::deque<std::vector<VkDescriptorImageInfo>> mImageInfos;
+    std::deque<std::vector<VkDescriptorBufferInfo>> mBufferInfos;
 
     std::vector<VkWriteDescriptorSet> mWrites;
 };

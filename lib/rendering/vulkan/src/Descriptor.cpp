@@ -151,6 +151,11 @@ VkDescriptorPool DescriptorAllocator::createPool(VkDevice device)
     return newPool;
 }
 
+DescriptorWriter::~DescriptorWriter()
+{
+    clear();
+}
+
 void DescriptorWriter::clear()
 {
     mImageInfos.clear();
@@ -161,36 +166,50 @@ void DescriptorWriter::clear()
 void DescriptorWriter::writeImage(
     uint32_t binding, VkImageView imageView, VkSampler sampler, VkImageLayout layout, VkDescriptorType type)
 {
-    VkDescriptorImageInfo& info = mImageInfos.emplace_back(
-        VkDescriptorImageInfo{.sampler = sampler, .imageView = imageView, .imageLayout = layout});
-
-    VkWriteDescriptorSet write = {.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-        .pNext = nullptr,
-        .dstSet = VK_NULL_HANDLE,
-        .dstBinding = binding,
-        .dstArrayElement = 0,
-        .descriptorCount = 1,
-        .descriptorType = type,
-        .pImageInfo = &info};
-
-    mWrites.push_back(write);
+    writeImages(binding,
+        std::vector<VkDescriptorImageInfo>{
+            {sampler, imageView, layout}
+    },
+        type);
 }
 
 void DescriptorWriter::writeBuffer(uint32_t binding, VkBuffer buffer, size_t size, size_t offset, VkDescriptorType type)
 {
-    VkDescriptorBufferInfo& info =
-        mBufferInfos.emplace_back(VkDescriptorBufferInfo{.buffer = buffer, .offset = offset, .range = size});
+    writeBuffers(binding,
+        std::vector<VkDescriptorBufferInfo>{
+            {buffer, offset, size}
+    },
+        type);
+}
+
+void DescriptorWriter::writeImages(
+    uint32_t binding, std::vector<VkDescriptorImageInfo> imageInfos, VkDescriptorType type)
+{
+    const std::vector<VkDescriptorImageInfo>& infos = mImageInfos.emplace_back(std::move(imageInfos));
 
     VkWriteDescriptorSet write = {.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
         .pNext = nullptr,
         .dstSet = VK_NULL_HANDLE,
         .dstBinding = binding,
         .dstArrayElement = 0,
-        .descriptorCount = 1,
+        .descriptorCount = static_cast<uint32_t>(infos.size()),
         .descriptorType = type,
-        .pBufferInfo = &info};
+        .pImageInfo = infos.data()};
+}
 
-    mWrites.push_back(write);
+void DescriptorWriter::writeBuffers(
+    uint32_t binding, std::vector<VkDescriptorBufferInfo> bufferInfos, VkDescriptorType type)
+{
+    const std::vector<VkDescriptorBufferInfo>& infos = mBufferInfos.emplace_back(std::move(bufferInfos));
+
+    VkWriteDescriptorSet write = {.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+        .pNext = nullptr,
+        .dstSet = VK_NULL_HANDLE,
+        .dstBinding = binding,
+        .dstArrayElement = 0,
+        .descriptorCount = static_cast<uint32_t>(infos.size()),
+        .descriptorType = type,
+        .pBufferInfo = infos.data()};
 }
 
 void DescriptorWriter::updateSet(VkDevice device, VkDescriptorSet descriptorSet)
