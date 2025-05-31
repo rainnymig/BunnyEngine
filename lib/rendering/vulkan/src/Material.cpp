@@ -55,41 +55,6 @@ MaterialInstance BasicBlinnPhongMaterial::makeInstance()
     return newInstance;
 }
 
-// void BasicBlinnPhongMaterial::buildDescriptorSetLayout(VkDevice device)
-// {
-//     DescriptorLayoutBuilder builder;
-
-//     //  Note: currently both bindings are in the same set
-//     //  might consider spliting them into two sets
-//     //  so one can be bound at scene level (mvp matrix)
-//     //  and here only deal with material stuff (lighting, texture)
-
-//     //  NOTE AGAIN !!IMPORTANT!!: here includes descriptors for both scene and material related stuff
-//     //  this is needed because the whole graphics pipeline is created here
-//     //  but when actually allocating desc sets material should only allocate material desc sets
-//     //  scene desc sets should be allocated outside (maybe in scene)
-//     {
-//         VkDescriptorSetLayoutBinding uniformBufferLayout{};
-//         uniformBufferLayout.binding = 0;
-//         uniformBufferLayout.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-//         uniformBufferLayout.descriptorCount = 1;
-//         uniformBufferLayout.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-//         uniformBufferLayout.pImmutableSamplers = nullptr;
-//         builder.addBinding(uniformBufferLayout);
-//     }
-//     {
-//         VkDescriptorSetLayoutBinding uniformBufferLayout{};
-//         uniformBufferLayout.binding = 1;
-//         uniformBufferLayout.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-//         uniformBufferLayout.descriptorCount = 1;
-//         uniformBufferLayout.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-//         uniformBufferLayout.pImmutableSamplers = nullptr;
-//         builder.addBinding(uniformBufferLayout);
-//     }
-
-//     mDescriptorSetLayout = builder.Build(mDevice);
-// }
-
 std::unique_ptr<BasicBlinnPhongMaterial> BasicBlinnPhongMaterial::Builder::buildMaterial(VkDevice device) const
 {
     assert(device != nullptr);
@@ -179,31 +144,21 @@ BunnyResult BasicBlinnPhongMaterial::Builder::buildDescriptorSetLayouts(VkDevice
 {
     //  object data desc sets
     DescriptorLayoutBuilder layoutBuilder;
-    {
-        VkDescriptorSetLayoutBinding uniformBufferLayout{};
-        uniformBufferLayout.binding = 0;
-        uniformBufferLayout.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        uniformBufferLayout.descriptorCount = 1;
-        uniformBufferLayout.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-        uniformBufferLayout.pImmutableSamplers = nullptr;
-        layoutBuilder.addBinding(uniformBufferLayout);
-    }
+    VkDescriptorSetLayoutBinding storageBufferBinding{
+        0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr};
+    layoutBuilder.addBinding(storageBufferBinding);
     outObjectLayout = layoutBuilder.build(device);
     outDrawLayout = layoutBuilder.build(device);
 
     //  scene data desc sets
     layoutBuilder.clear();
     {
-        VkDescriptorSetLayoutBinding uniformBufferLayout{};
-        uniformBufferLayout.binding = 0;
-        uniformBufferLayout.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        uniformBufferLayout.descriptorCount = 1;
-        uniformBufferLayout.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-        uniformBufferLayout.pImmutableSamplers = nullptr;
-        layoutBuilder.addBinding(uniformBufferLayout);
-        uniformBufferLayout.binding = 1;
-        uniformBufferLayout.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-        layoutBuilder.addBinding(uniformBufferLayout);
+        VkDescriptorSetLayoutBinding uniformBufferBinding{
+            0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr};
+        layoutBuilder.addBinding(uniformBufferBinding);
+        uniformBufferBinding.binding = 1;
+        uniformBufferBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        layoutBuilder.addBinding(uniformBufferBinding);
     }
     outSceneLayout = layoutBuilder.build(device);
 

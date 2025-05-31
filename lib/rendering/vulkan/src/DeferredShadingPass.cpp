@@ -123,31 +123,19 @@ void DeferredShadingPass::initDescriptorSets()
 
     //  build descriptor set layouts
     DescriptorLayoutBuilder layoutBuilder;
-    {
-        VkDescriptorSetLayoutBinding uniformBufferLayout{};
-        uniformBufferLayout.binding = 0;
-        uniformBufferLayout.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        uniformBufferLayout.descriptorCount = 1;
-        uniformBufferLayout.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-        uniformBufferLayout.pImmutableSamplers = nullptr;
-        layoutBuilder.addBinding(uniformBufferLayout);
-    }
+    VkDescriptorSetLayoutBinding uniformBufferBinding{
+        0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr};
+    layoutBuilder.addBinding(uniformBufferBinding);
     mUniformDescLayout = layoutBuilder.build(device);
 
     layoutBuilder.clear();
-    {
-        VkDescriptorSetLayoutBinding imageLayout{};
-        imageLayout.binding = 0;
-        imageLayout.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        imageLayout.descriptorCount = 1;
-        imageLayout.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-        imageLayout.pImmutableSamplers = nullptr;
-        layoutBuilder.addBinding(imageLayout);
-        imageLayout.binding = 1;
-        layoutBuilder.addBinding(imageLayout);
-        imageLayout.binding = 2;
-        layoutBuilder.addBinding(imageLayout);
-    }
+    VkDescriptorSetLayoutBinding imageBinding{
+        0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr};
+    layoutBuilder.addBinding(imageBinding);
+    imageBinding.binding = 1;
+    layoutBuilder.addBinding(imageBinding);
+    imageBinding.binding = 2;
+    layoutBuilder.addBinding(imageBinding);
     mGBufferDescLayout = layoutBuilder.build(device);
 
     //  init descriptor allocator

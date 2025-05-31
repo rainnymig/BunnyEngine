@@ -189,18 +189,10 @@ void DepthReducePass::initDescriptorSets()
 {
     //  build descriptor set layouts
     DescriptorLayoutBuilder builder;
-    VkDescriptorSetLayoutBinding outImageBinding{};
-    outImageBinding.binding = 0;
-    outImageBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-    outImageBinding.descriptorCount = 1;
-    outImageBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-    outImageBinding.pImmutableSamplers = nullptr;
-    VkDescriptorSetLayoutBinding inImageBinding{};
-    inImageBinding.binding = 1;
-    inImageBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    inImageBinding.descriptorCount = 1;
-    inImageBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-    inImageBinding.pImmutableSamplers = nullptr;
+    VkDescriptorSetLayoutBinding outImageBinding{
+        0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_COMPUTE_BIT, nullptr};
+    VkDescriptorSetLayoutBinding inImageBinding{
+        1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_COMPUTE_BIT, nullptr};
     builder.addBinding(outImageBinding);
     builder.addBinding(inImageBinding);
     mDepthDescLayout = builder.build(mVulkanResources->getDevice());

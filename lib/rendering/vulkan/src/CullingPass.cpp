@@ -224,24 +224,12 @@ void CullingPass::initDescriptorSets()
     //  build descriptor set layouts
     DescriptorLayoutBuilder layoutBuilder;
 
-    VkDescriptorSetLayoutBinding uniformBufferBinding{};
-    uniformBufferBinding.binding = 0;
-    uniformBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    uniformBufferBinding.descriptorCount = 1;
-    uniformBufferBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-    uniformBufferBinding.pImmutableSamplers = nullptr;
-    VkDescriptorSetLayoutBinding imageBinding{};
-    imageBinding.binding = 1;
-    imageBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    imageBinding.descriptorCount = 1;
-    imageBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-    imageBinding.pImmutableSamplers = nullptr;
-    VkDescriptorSetLayoutBinding storageBufferBinding{};
-    storageBufferBinding.binding = 0;
-    storageBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    storageBufferBinding.descriptorCount = 1;
-    storageBufferBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-    storageBufferBinding.pImmutableSamplers = nullptr;
+    VkDescriptorSetLayoutBinding uniformBufferBinding{
+        0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_COMPUTE_BIT, nullptr};
+    VkDescriptorSetLayoutBinding imageBinding{
+        1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_COMPUTE_BIT, nullptr};
+    VkDescriptorSetLayoutBinding storageBufferBinding{
+        0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_COMPUTE_BIT, nullptr};
 
     layoutBuilder.addBinding(uniformBufferBinding);
     layoutBuilder.addBinding(imageBinding);

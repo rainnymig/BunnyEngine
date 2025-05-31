@@ -217,27 +217,15 @@ void GBufferPass::initDescriptorSets()
 
     //  build descriptor set layouts
     DescriptorLayoutBuilder layoutBuilder;
-    {
-        VkDescriptorSetLayoutBinding uniformBufferLayout{};
-        uniformBufferLayout.binding = 0;
-        uniformBufferLayout.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        uniformBufferLayout.descriptorCount = 1;
-        uniformBufferLayout.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-        uniformBufferLayout.pImmutableSamplers = nullptr;
-        layoutBuilder.addBinding(uniformBufferLayout);
-    }
+    VkDescriptorSetLayoutBinding storageBufferBinding{
+        0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr};
+    layoutBuilder.addBinding(storageBufferBinding);
     mStorageDescLayout = layoutBuilder.build(device);
 
     layoutBuilder.clear();
-    {
-        VkDescriptorSetLayoutBinding uniformBufferLayout{};
-        uniformBufferLayout.binding = 0;
-        uniformBufferLayout.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        uniformBufferLayout.descriptorCount = 1;
-        uniformBufferLayout.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-        uniformBufferLayout.pImmutableSamplers = nullptr;
-        layoutBuilder.addBinding(uniformBufferLayout);
-    }
+    VkDescriptorSetLayoutBinding uniformBufferBinding{
+        0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr};
+    layoutBuilder.addBinding(uniformBufferBinding);
     mUniformDescLayout = layoutBuilder.build(device);
 
     //  init descriptor allocator
