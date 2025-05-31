@@ -42,6 +42,12 @@ class PbrMaterialBank
     void cleanup();
 
   private:
+    //  Size of the array containing all textures in the shader
+    //  This value is needed when creating the descriptor set
+    //  For now this is fixed, try to make it growable when necessary
+    //  In this case need to rebuild the whole rendering pipeline
+    static constexpr uint32_t TEXTURE_ARRAY_SIZE = 32;
+
     BunnyResult buildDescriptorSetLayouts();
     BunnyResult buildPipelineLayouts();
 
@@ -49,6 +55,11 @@ class PbrMaterialBank
     const VulkanGraphicsRenderer* mRenderer;
 
     std::vector<PbrMaterialParameters> mMaterialInstances;
+
+    VkDescriptorSetLayout mSceneDescSetLayout;
+    VkDescriptorSetLayout mObjectDescSetLayout;
+    VkDescriptorSetLayout mGBufferDescSetLayout;
+    VkDescriptorSetLayout mMaterialDescSetLayout;
 
     VkPipelineLayout mPbrForwardPipelineLayout;
     VkPipelineLayout mPbrGBufferPipelineLayout;

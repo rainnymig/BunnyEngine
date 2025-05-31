@@ -6,5 +6,8 @@ glslc.exe ./lib/rendering/vulkan/shader/reduceDepth.comp        -o ./build/engin
 glslc.exe ./lib/rendering/vulkan/shader/screenQuad.vert         -o ./build/engine-next/Debug/screen_quad_vert.spv
 glslc.exe ./lib/rendering/vulkan/shader/gbuffer.frag            -o ./build/engine-next/Debug/gbuffer_frag.spv
 glslc.exe ./lib/rendering/vulkan/shader/basicDeferred.frag      -o ./build/engine-next/Debug/basic_deferred_frag.spv
+glslc.exe ./lib/rendering/vulkan/shader/pbrCulledInstanced.vert -o ./build/engine-next/Debug/pbr_culled_instanced_vert.spv
+glslc.exe ./lib/rendering/vulkan/shader/pbrScreenQuad.vert      -o ./build/engine-next/Debug/pbr_screen_quad_vert.spv
+glslc.exe ./lib/rendering/vulkan/shader/pbrGBuffer.frag         -o ./build/engine-next/Debug/pbr_gbuffer_frag.spv
 glslc.exe ./lib/rendering/vulkan/shader/pbrForward.frag         -o ./build/engine-next/Debug/pbr_forward_frag.spv
 glslc.exe ./lib/rendering/vulkan/shader/pbrDeferred.frag        -o ./build/engine-next/Debug/pbr_deferred_frag.spv
