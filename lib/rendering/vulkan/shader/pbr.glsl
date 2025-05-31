@@ -42,11 +42,11 @@ layout(std430, set = 2, binding = 0) buffer MaterialData
     PbrMaterial materialInstances[];
 };
 
-layout(std430, set = 2, binding = 1) uniform Sampler2D textures[];
+layout(set = 2, binding = 1) uniform sampler2D textures[];
 
 vec3 calculateLighting(PbrMaterial material, Light light, vec3 fragPos, vec3 viewDir, vec3 normal)
 {
-    vec3 result = material.baseColor;
+    vec3 result = material.baseColor.xyz;
 
     return result;
 }

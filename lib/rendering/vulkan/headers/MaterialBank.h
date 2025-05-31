@@ -3,6 +3,7 @@
 #include "Fundamentals.h"
 #include "Material.h"
 #include "BunnyResult.h"
+#include "FunctionStack.h"
 
 #include <memory>
 #include <unordered_map>
@@ -41,6 +42,9 @@ class PbrMaterialBank
     void cleanup();
 
   private:
+    BunnyResult buildDescriptorSetLayouts();
+    BunnyResult buildPipelineLayouts();
+
     const VulkanRenderResources* mVulkanResources;
     const VulkanGraphicsRenderer* mRenderer;
 
@@ -54,5 +58,7 @@ class PbrMaterialBank
 
     std::vector<VkPipeline> mPbrForwardPipelines;
     std::vector<VkPipeline> mPbrDeferredPipelines;
+
+    Base::FunctionStack<> mDeletionStack;
 };
 } // namespace Bunny::Render

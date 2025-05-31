@@ -1,5 +1,7 @@
 #include "MaterialBank.h"
 
+#include "Error.h"
+
 namespace Bunny::Render
 {
 void MaterialBank::cleanup()
@@ -43,4 +45,27 @@ PbrMaterialBank::PbrMaterialBank(const VulkanRenderResources* vulkanResources, c
       mRenderer(renderer)
 {
 }
+
+BunnyResult PbrMaterialBank::initialize()
+{
+    BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(buildPipelineLayouts())
+
+    return BUNNY_HAPPY;
+}
+
+void PbrMaterialBank::cleanup()
+{
+    mDeletionStack.Flush();
+}
+
+BunnyResult PbrMaterialBank::buildDescriptorSetLayouts()
+{
+    return BUNNY_HAPPY;
+}
+
+BunnyResult PbrMaterialBank::buildPipelineLayouts()
+{
+    return BUNNY_HAPPY;
+}
+
 } // namespace Bunny::Render
