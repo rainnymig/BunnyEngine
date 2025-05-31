@@ -22,13 +22,16 @@ class TextureBank
 
     BunnyResult initialize();
     BunnyResult addTexture(const char* filePath, VkFormat format, IdType& outId);
-    BunnyResult bindTextures(VkDescriptorSet descriptorSet, uint32_t binding);
+    BunnyResult updateDescriptorSet(VkDescriptorSet descriptorSet, uint32_t binding) const;
     void cleanup();
 
   private:
+    BunnyResult createSampler();
+
     const VulkanRenderResources* mVulkanResources;
     const VulkanGraphicsRenderer* mRenderer;
 
     std::vector<AllocatedImage> mTextures;
+    VkSampler mImageSampler;
 };
 } // namespace Bunny::Render
