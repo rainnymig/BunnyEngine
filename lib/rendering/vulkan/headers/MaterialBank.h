@@ -65,11 +65,6 @@ class PbrMaterialBank
     VkPipelineLayout mPbrGBufferPipelineLayout;
     VkPipelineLayout mPbrDeferredPipelineLayout;
 
-    VkPipeline mPbrGBufferPipeline;
-
-    std::vector<VkPipeline> mPbrForwardPipelines;
-    std::vector<VkPipeline> mPbrDeferredPipelines;
-
     Base::FunctionStack<> mDeletionStack;
 };
 } // namespace Bunny::Render

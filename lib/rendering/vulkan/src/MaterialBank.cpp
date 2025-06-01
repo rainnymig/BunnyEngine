@@ -153,6 +153,13 @@ BunnyResult PbrMaterialBank::buildPipelineLayouts()
             mVulkanResources->getDevice(), &pipelineLayoutInfo, nullptr, &mPbrDeferredPipelineLayout);
     }
 
+    mDeletionStack.AddFunction([this]() {
+        VkDevice device = mVulkanResources->getDevice();
+        vkDestroyPipelineLayout(device, mPbrForwardPipelineLayout, nullptr);
+        vkDestroyPipelineLayout(device, mPbrGBufferPipelineLayout, nullptr);
+        vkDestroyPipelineLayout(device, mPbrDeferredPipelineLayout, nullptr);
+    });
+
     return BUNNY_HAPPY;
 }
 
