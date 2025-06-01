@@ -41,6 +41,18 @@ class PbrMaterialBank
     BunnyResult initialize();
     void cleanup();
 
+    void addMaterialInstance(const PbrMaterialParameters& materialParams);
+    void updateMaterialDescriptorSet(VkDescriptorSet descriptorSet) const;
+
+    VkDescriptorSetLayout getSceneDescSetLayout() const { return mSceneDescSetLayout; }
+    VkDescriptorSetLayout getObjectDescSetLayout() const { return mObjectDescSetLayout; }
+    VkDescriptorSetLayout getGBufferDescSetLayout() const { return mGBufferDescSetLayout; }
+    VkDescriptorSetLayout getMaterialDescSetLayout() const { return mMaterialDescSetLayout; }
+
+    VkPipelineLayout getPbrForwardPipelineLayout() const { return mPbrForwardPipelineLayout; }
+    VkPipelineLayout getPbrGBufferPipelineLayout() const { return mPbrGBufferPipelineLayout; }
+    VkPipelineLayout getPbrDeferredPipelineLayout() const { return mPbrDeferredPipelineLayout; }
+
   private:
     //  Size of the array containing all textures in the shader
     //  This value is needed when creating the descriptor set

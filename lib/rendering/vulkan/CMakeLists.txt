@@ -15,6 +15,8 @@ target_sources(VulkanRenderer
         headers/Material.h
         headers/MaterialBank.h
         headers/MeshBank.h
+        headers/PbrForwardPass.h
+        headers/PbrGraphicsPass.h
         headers/QueueFamilyIndices.h
         headers/ForwardPass.h
         headers/Shader.h
@@ -34,6 +36,8 @@ target_sources(VulkanRenderer
         src/Material.cpp
         src/MaterialBank.cpp
         src/MeshBank.cpp
+        src/PbrForwardPass.cpp
+        src/PbrGraphicsPass.cpp
         src/ForwardPass.cpp
         src/GBufferPass.cpp
         src/GraphicsPipelineBuilder.cpp

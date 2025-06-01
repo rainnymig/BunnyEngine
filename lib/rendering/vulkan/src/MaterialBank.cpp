@@ -62,6 +62,14 @@ void PbrMaterialBank::cleanup()
     mDeletionStack.Flush();
 }
 
+void PbrMaterialBank::addMaterialInstance(const PbrMaterialParameters& materialParams)
+{
+}
+
+void PbrMaterialBank::updateMaterialDescriptorSet(VkDescriptorSet descriptorSet) const
+{
+}
+
 BunnyResult PbrMaterialBank::buildDescriptorSetLayouts()
 {
     VkDescriptorSetLayoutBinding uniformBufferBinding{
