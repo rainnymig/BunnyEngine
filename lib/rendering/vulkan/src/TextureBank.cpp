@@ -31,6 +31,14 @@ BunnyResult TextureBank::addTexture(const char* filePath, VkFormat format, IdTyp
 {
     outId = BUNNY_INVALID_ID;
 
+    //  if the texture is already loaded, return directly
+    auto iter = mTexturePathToIds.find(filePath);
+    if (iter != mTexturePathToIds.end())
+    {
+        outId = iter->second;
+        return BUNNY_HAPPY;
+    }
+
     int texWidth;
     int texHeight;
     int texChannels;
@@ -51,11 +59,13 @@ BunnyResult TextureBank::addTexture(const char* filePath, VkFormat format, IdTyp
 
     outId = mTextures.size();
     mTextures.push_back(texture);
+    mTexturePathToIds[filePath] = outId;
 
+    stbi_image_free(texData);
     return BUNNY_HAPPY;
 }
 
-BunnyResult TextureBank::updateDescriptorSet(VkDescriptorSet descriptorSet, uint32_t binding) const
+BunnyResult TextureBank::addDescriptorSetWrite(uint32_t binding, DescriptorWriter& outWriter) const
 {
     assert(mTextures.size() > 0);
     std::vector<VkDescriptorImageInfo> imageInfos;
@@ -67,10 +77,7 @@ BunnyResult TextureBank::updateDescriptorSet(VkDescriptorSet descriptorSet, uint
                 .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
         });
 
-    DescriptorWriter writer;
-    writer.writeImages(binding, std::move(imageInfos), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-
-    writer.updateSet(mVulkanResources->getDevice(), descriptorSet);
+    outWriter.writeImages(binding, std::move(imageInfos), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 }
 
 void TextureBank::cleanup()

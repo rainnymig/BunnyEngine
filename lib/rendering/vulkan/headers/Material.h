@@ -94,9 +94,9 @@ class BasicBlinnPhongMaterial : public Material
 struct PbrMaterialParameters
 {
     glm::vec4 mBaseColor;
-    glm::vec3 mEmissiveColor;
+    glm::vec4 mEmissiveColor;
     float mMetallic;
-    float roughness;
+    float mRoughness;
     float mReflectance;
     float mAmbientOcclusion;
     IdType mColorTexId;

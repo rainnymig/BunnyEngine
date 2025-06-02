@@ -8,12 +8,14 @@
 #include <span>
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 namespace Bunny::Render
 {
 
 class VulkanRenderResources;
 class VulkanGraphicsRenderer;
+class DescriptorWriter;
 
 class TextureBank
 {
@@ -22,7 +24,7 @@ class TextureBank
 
     BunnyResult initialize();
     BunnyResult addTexture(const char* filePath, VkFormat format, IdType& outId);
-    BunnyResult updateDescriptorSet(VkDescriptorSet descriptorSet, uint32_t binding) const;
+    BunnyResult addDescriptorSetWrite(uint32_t binding, DescriptorWriter& outWriter) const;
     void cleanup();
 
   private:
@@ -32,6 +34,7 @@ class TextureBank
     const VulkanGraphicsRenderer* mRenderer;
 
     std::vector<AllocatedImage> mTextures;
+    std::unordered_map<std::string_view, IdType> mTexturePathToIds;
     VkSampler mImageSampler;
 };
 } // namespace Bunny::Render

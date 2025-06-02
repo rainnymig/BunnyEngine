@@ -7,11 +7,13 @@
 
 #include <memory>
 #include <unordered_map>
+#include <string>
 
 namespace Bunny::Render
 {
 class VulkanRenderResources;
 class VulkanGraphicsRenderer;
+class TextureBank;
 
 class MaterialBank
 {
@@ -36,13 +38,28 @@ class MaterialBank
 class PbrMaterialBank
 {
   public:
-    PbrMaterialBank(const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer);
+    struct PbrMaterialLoadParams
+    {
+        glm::vec4 mBaseColor;
+        glm::vec4 mEmissiveColor;
+        float mMetallic;
+        float mRoughness;
+        float mReflectance;
+        float mAmbientOcclusion;
+        std::string mColorTexPath;
+        std::string mNormalTexPath;
+        std::string mEmissiveTexPath;
+        std::string mMetRouRflAmbTexPath;
+    };
+
+    PbrMaterialBank(
+        const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer, TextureBank* textureBank);
 
     BunnyResult initialize();
     void cleanup();
 
-    void addMaterialInstance(const PbrMaterialParameters& materialParams);
-    void updateMaterialDescriptorSet(VkDescriptorSet descriptorSet) const;
+    BunnyResult addMaterialInstance(const PbrMaterialLoadParams& materialParams, IdType& outId);
+    void updateMaterialDescriptorSet(VkDescriptorSet descriptorSet);
 
     VkDescriptorSetLayout getSceneDescSetLayout() const { return mSceneDescSetLayout; }
     VkDescriptorSetLayout getObjectDescSetLayout() const { return mObjectDescSetLayout; }
@@ -58,15 +75,15 @@ class PbrMaterialBank
     //  This value is needed when creating the descriptor set
     //  For now this is fixed, try to make it growable when necessary
     //  In this case need to rebuild the whole rendering pipeline
-    static constexpr uint32_t TEXTURE_ARRAY_SIZE = 32;
+    static constexpr uint32_t TEXTURE_ARRAY_SIZE = 64;
 
     BunnyResult buildDescriptorSetLayouts();
     BunnyResult buildPipelineLayouts();
+    BunnyResult recreateMaterialBuffer();
 
     const VulkanRenderResources* mVulkanResources;
     const VulkanGraphicsRenderer* mRenderer;
-
-    std::vector<PbrMaterialParameters> mMaterialInstances;
+    TextureBank* mTextureBank;
 
     VkDescriptorSetLayout mSceneDescSetLayout;
     VkDescriptorSetLayout mObjectDescSetLayout;
@@ -76,6 +93,10 @@ class PbrMaterialBank
     VkPipelineLayout mPbrForwardPipelineLayout;
     VkPipelineLayout mPbrGBufferPipelineLayout;
     VkPipelineLayout mPbrDeferredPipelineLayout;
+
+    std::vector<PbrMaterialParameters> mMaterialInstances;
+    AllocatedBuffer mMaterialBuffer;
+    bool mMaterialBufferNeedUpdate = false;
 
     Base::FunctionStack<> mDeletionStack;
 };
