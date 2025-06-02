@@ -25,7 +25,7 @@ layout(set = 0, binding = 1) uniform CameraData
 struct PbrMaterial
 {
     vec4 baseColor;
-    vec3 emissiveColor;
+    vec4 emissiveColor;
     float metallic;
     float roughness;
     float reflectance;

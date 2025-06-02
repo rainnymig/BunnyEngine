@@ -5,6 +5,7 @@
 #include "Descriptor.h"
 #include "GraphicsPipelineBuilder.h"
 #include "Error.h"
+#include "TextureBank.h"
 
 namespace Bunny::Render
 {
@@ -44,9 +45,11 @@ const MaterialInstance& MaterialBank::getMaterialInstance(IdType instanceId) con
     return mMaterialInstances.at(instanceId);
 }
 
-PbrMaterialBank::PbrMaterialBank(const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer)
+PbrMaterialBank::PbrMaterialBank(
+    const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer, TextureBank* textureBank)
     : mVulkanResources(vulkanResources),
-      mRenderer(renderer)
+      mRenderer(renderer),
+      mTextureBank(textureBank)
 {
 }
 
@@ -62,12 +65,56 @@ void PbrMaterialBank::cleanup()
     mDeletionStack.Flush();
 }
 
-void PbrMaterialBank::addMaterialInstance(const PbrMaterialParameters& materialParams)
+BunnyResult PbrMaterialBank::addMaterialInstance(const PbrMaterialLoadParams& materialParams, IdType& outId)
 {
+    outId = BUNNY_INVALID_ID;
+
+    PbrMaterialParameters materialInstance{materialParams.mBaseColor, materialParams.mEmissiveColor,
+        materialParams.mMetallic, materialParams.mRoughness, materialParams.mReflectance,
+        materialParams.mAmbientOcclusion, BUNNY_INVALID_ID, BUNNY_INVALID_ID, BUNNY_INVALID_ID, BUNNY_INVALID_ID};
+
+    //  may need to review the image format later
+    if (!materialParams.mColorTexPath.empty())
+    {
+        BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(mTextureBank->addTexture(
+            materialParams.mColorTexPath.c_str(), VK_FORMAT_R8G8B8A8_SRGB, materialInstance.mColorTexId))
+    }
+    if (!materialParams.mNormalTexPath.empty())
+    {
+        BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(mTextureBank->addTexture(
+            materialParams.mNormalTexPath.c_str(), VK_FORMAT_R32G32B32A32_SFLOAT, materialInstance.mNormalTexId))
+    }
+    if (!materialParams.mEmissiveTexPath.empty())
+    {
+        BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(mTextureBank->addTexture(
+            materialParams.mEmissiveTexPath.c_str(), VK_FORMAT_R8G8B8A8_SRGB, materialInstance.mEmissiveTexId))
+    }
+    if (!materialParams.mMetRouRflAmbTexPath.empty())
+    {
+        BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(mTextureBank->addTexture(
+            materialParams.mMetRouRflAmbTexPath.c_str(), VK_FORMAT_R8G8B8A8_UNORM, materialInstance.mMetRouRflAmbTexId))
+    }
+
+    outId = mMaterialInstances.size();
+    mMaterialInstances.push_back(materialInstance);
+
+    mMaterialBufferNeedUpdate = true;
+
+    return BUNNY_HAPPY;
 }
 
-void PbrMaterialBank::updateMaterialDescriptorSet(VkDescriptorSet descriptorSet) const
+void PbrMaterialBank::updateMaterialDescriptorSet(VkDescriptorSet descriptorSet)
 {
+    if (mMaterialBufferNeedUpdate)
+    {
+        recreateMaterialBuffer();
+    }
+
+    DescriptorWriter writer;
+    writer.writeBuffer(0, mMaterialBuffer.mBuffer, mMaterialInstances.size() * sizeof(PbrMaterialParameters), 0,
+        VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    mTextureBank->addDescriptorSetWrite(1, writer);
+    writer.updateSet(mVulkanResources->getDevice(), descriptorSet);
 }
 
 BunnyResult PbrMaterialBank::buildDescriptorSetLayouts()
@@ -167,6 +214,23 @@ BunnyResult PbrMaterialBank::buildPipelineLayouts()
         vkDestroyPipelineLayout(device, mPbrGBufferPipelineLayout, nullptr);
         vkDestroyPipelineLayout(device, mPbrDeferredPipelineLayout, nullptr);
     });
+
+    return BUNNY_HAPPY;
+}
+
+BunnyResult PbrMaterialBank::recreateMaterialBuffer()
+{
+    //  maybe need to wait for current rendering to finish?
+
+    //  clean existing material buffer
+    mVulkanResources->destroyBuffer(mMaterialBuffer);
+
+    //  and then recreate using new data
+    BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(mVulkanResources->createBufferWithData(mMaterialInstances.data(),
+        mMaterialInstances.size() * sizeof(PbrMaterialParameters), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+        VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, VMA_MEMORY_USAGE_AUTO, mMaterialBuffer))
+
+    mMaterialBufferNeedUpdate = false;
 
     return BUNNY_HAPPY;
 }
