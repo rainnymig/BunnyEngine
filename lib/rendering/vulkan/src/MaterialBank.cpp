@@ -82,7 +82,7 @@ BunnyResult PbrMaterialBank::addMaterialInstance(const PbrMaterialLoadParams& ma
     if (!materialParams.mNormalTexPath.empty())
     {
         BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(mTextureBank->addTexture(
-            materialParams.mNormalTexPath.c_str(), VK_FORMAT_R32G32B32A32_SFLOAT, materialInstance.mNormalTexId))
+            materialParams.mNormalTexPath.c_str(), VK_FORMAT_R32G32B32_SFLOAT, materialInstance.mNormalTexId))
     }
     if (!materialParams.mEmissiveTexPath.empty())
     {
