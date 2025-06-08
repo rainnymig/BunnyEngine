@@ -34,8 +34,8 @@ VkBufferMemoryBarrier makeBufferMemoryBarrier(VkBuffer buffer, uint32_t queueInd
 VkImageMemoryBarrier makeImageMemoryBarrier(VkImage image, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask,
     VkImageLayout oldLayout, VkImageLayout newLayout, VkImageAspectFlags aspectMask);
 
-void addVertex(const glm::vec3& position, const glm::vec3& normal, const glm::vec4& color, const glm::vec2& texCoord,
-    std::vector<uint32_t>& indices, std::vector<NormalVertex>& vertices,
+void addVertex(const glm::vec3& position, const glm::vec3& normal, const glm::vec3& tangent, const glm::vec4& color,
+    const glm::vec2& texCoord, std::vector<uint32_t>& indices, std::vector<NormalVertex>& vertices,
     std::unordered_map<NormalVertex, uint32_t, NormalVertex::Hash>& vertexToIndexMap);
 void addTriangle(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3, const glm::vec4& color,
     const glm::vec2& texCoordBase, const float scale, std::vector<uint32_t>& indices,

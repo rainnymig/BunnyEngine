@@ -160,11 +160,12 @@ bool hasStencilComponent(VkFormat format)
     return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
 
-void addVertex(const glm::vec3& position, const glm::vec3& normal, const glm::vec4& color, const glm::vec2& texCoord,
-    std::vector<uint32_t>& indices, std::vector<NormalVertex>& vertices,
+void addVertex(const glm::vec3& position, const glm::vec3& normal, const glm::vec3& tangent, const glm::vec4& color,
+    const glm::vec2& texCoord, std::vector<uint32_t>& indices, std::vector<NormalVertex>& vertices,
     std::unordered_map<NormalVertex, uint32_t, NormalVertex::Hash>& vertexToIndexMap)
 {
-    NormalVertex newVertex{.mPosition = position, .mNormal = normal, .mColor = color, .mTexCoord = texCoord};
+    NormalVertex newVertex{
+        .mPosition = position, .mNormal = normal, .mTangent = tangent, .mColor = color, .mTexCoord = texCoord};
 
     const auto verIdxPair = vertexToIndexMap.find(newVertex);
     if (verIdxPair != vertexToIndexMap.end())
@@ -196,15 +197,16 @@ void addTriangle(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3, 
     glm::vec3 v12 = p2 - p1;
     glm::vec3 v13 = p3 - p1;
     glm::vec3 normal = glm::normalize(glm::cross(v12, v13));
+    glm::vec3 tangent = glm::normalize(v12);
     // glm::vec3 normal = glm::normalize(glm::cross(v13, v12)); //  revisit this direction later
 
     glm::vec2 tex1 = texCoordBase;
     glm::vec2 tex2 = texCoordBase + glm::vec2{0, scale};
     glm::vec2 tex3 = texCoordBase + glm::vec2{scale, 0};
 
-    addVertex(p1, normal, color, tex1, indices, vertices, vertexToIndexMap);
-    addVertex(p2, normal, color, tex2, indices, vertices, vertexToIndexMap);
-    addVertex(p3, normal, color, tex3, indices, vertices, vertexToIndexMap);
+    addVertex(p1, normal, tangent, color, tex1, indices, vertices, vertexToIndexMap);
+    addVertex(p2, normal, tangent, color, tex2, indices, vertices, vertexToIndexMap);
+    addVertex(p3, normal, tangent, color, tex3, indices, vertices, vertexToIndexMap);
 }
 
 void addQuad(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3, const glm::vec3& p4, const glm::vec4& color,
@@ -223,6 +225,7 @@ void addQuad(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3, cons
     glm::vec3 v12 = p2 - p1;
     glm::vec3 v14 = p4 - p1;
     glm::vec3 normal = glm::normalize(glm::cross(v12, v14));
+    glm::vec3 tangent = glm::normalize(v12);
     // glm::vec3 normal = glm::normalize(glm::cross(v14, v12)); //  revisit this direction later
 
     glm::vec2 tex1 = texCoordBase;
@@ -230,13 +233,13 @@ void addQuad(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3, cons
     glm::vec2 tex3 = texCoordBase + glm::vec2{scale, scale};
     glm::vec2 tex4 = texCoordBase + glm::vec2{scale, 0};
 
-    addVertex(p1, normal, color, tex1, indices, vertices, vertexToIndexMap);
-    addVertex(p2, normal, color, tex2, indices, vertices, vertexToIndexMap);
-    addVertex(p4, normal, color, tex4, indices, vertices, vertexToIndexMap);
+    addVertex(p1, normal, tangent, color, tex1, indices, vertices, vertexToIndexMap);
+    addVertex(p2, normal, tangent, color, tex2, indices, vertices, vertexToIndexMap);
+    addVertex(p4, normal, tangent, color, tex4, indices, vertices, vertexToIndexMap);
 
-    addVertex(p4, normal, color, tex4, indices, vertices, vertexToIndexMap);
-    addVertex(p2, normal, color, tex2, indices, vertices, vertexToIndexMap);
-    addVertex(p3, normal, color, tex3, indices, vertices, vertexToIndexMap);
+    addVertex(p4, normal, tangent, color, tex4, indices, vertices, vertexToIndexMap);
+    addVertex(p2, normal, tangent, color, tex2, indices, vertices, vertexToIndexMap);
+    addVertex(p3, normal, tangent, color, tex3, indices, vertices, vertexToIndexMap);
 }
 
 const IdType createCubeMeshToBank(MeshBank<NormalVertex>* meshBank, IdType materialId, IdType materialInstanceId)
@@ -329,7 +332,8 @@ void loadMeshFromGltf(MeshBank<NormalVertex>* meshBank, MaterialBank* materialBa
                     gltfAsset, posAccessor, [&vertices, &minCorner, &maxCorner, initialVtx](glm::vec3 vec, size_t idx) {
                         Render::NormalVertex newVertex;
                         newVertex.mPosition = vec;
-                        newVertex.mNormal = {1, 0, 0};
+                        newVertex.mNormal = {0, 0, 1};
+                        newVertex.mTangent = {1, 0, 0};
                         newVertex.mColor = {0.8f, 0.8f, 0.8f, 1.0f};
                         newVertex.mTexCoord = {0, 0};
                         vertices[initialVtx + idx] = newVertex;
@@ -350,6 +354,17 @@ void loadMeshFromGltf(MeshBank<NormalVertex>* meshBank, MaterialBank* materialBa
                 fastgltf::Accessor& normalAccessor = gltfAsset.accessors[normalAttr->accessorIndex];
                 fastgltf::iterateAccessorWithIndex<glm::vec3>(gltfAsset, normalAccessor,
                     [&vertices, initialVtx](glm::vec3 norm, size_t idx) { vertices[initialVtx + idx].mNormal = norm; });
+            }
+
+            //  load vertex tangent
+            auto tangentAttr = primitive.findAttribute("TANGENT");
+            if (tangentAttr != primitive.attributes.end())
+            {
+                fastgltf::Accessor& tangentAccessor = gltfAsset.accessors[tangentAttr->accessorIndex];
+                fastgltf::iterateAccessorWithIndex<glm::vec3>(
+                    gltfAsset, tangentAccessor, [&vertices, initialVtx](glm::vec3 tangent, size_t idx) {
+                        vertices[initialVtx + idx].mTangent = tangent;
+                    });
             }
 
             //  load vertex color
