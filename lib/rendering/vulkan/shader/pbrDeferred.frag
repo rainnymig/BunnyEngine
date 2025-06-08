@@ -21,9 +21,9 @@ void main()
 
     uint lightCountCapped = min(lightCount, MAX_LIGHT_COUNT);
     vec3 lightResult = vec3(0, 0, 0);
-    for (uint i = 0; i < lightCountCapped; i++)
-    {
-        lightResult += calculateLighting(materialInstances[0], lights[0], fragPos, normalize(cameraData.position - fragPos), normal, uv);
-    }
+    // for (uint i = 0; i < lightCountCapped; i++)
+    // {
+    //     lightResult += calculateLighting(materialInstances[0], lights[0], fragPos, normalize(cameraData.position - fragPos), normal, uv);
+    // }
     outColor = vec4(lightResult, 1);
 }

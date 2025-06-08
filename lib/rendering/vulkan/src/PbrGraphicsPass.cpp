@@ -37,5 +37,6 @@ void PbrGraphicsPass::cleanup()
 
 BunnyResult PbrGraphicsPass::initPipeline()
 {
+    return BUNNY_HAPPY;
 }
 } // namespace Bunny::Render

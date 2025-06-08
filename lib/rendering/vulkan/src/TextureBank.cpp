@@ -78,6 +78,8 @@ BunnyResult TextureBank::addDescriptorSetWrite(uint32_t binding, DescriptorWrite
         });
 
     outWriter.writeImages(binding, std::move(imageInfos), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+
+    return BUNNY_HAPPY;
 }
 
 void TextureBank::cleanup()

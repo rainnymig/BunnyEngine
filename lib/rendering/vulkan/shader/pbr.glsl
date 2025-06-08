@@ -133,7 +133,7 @@ float getSquareFalloffAttenuation(vec3 posToLight, float invRadius)
 }
 
 //  mostly based on the implementation in Filament: https://google.github.io/filament/Filament.html
-vec3 calculateLighting(PbrMaterial material, Light light, vec3 fragPos, vec3 viewDir, vec3 normalFromVtx, vec2 texCoord)
+vec3 calculateLighting(PbrMaterial material, Light light, vec3 fragPos, vec3 viewDir, vec3 normalFromVtx, mat3 tbnMatrix, vec2 texCoord)
 {
     vec4 baseColor;
     vec4 emissiveColor;
@@ -149,7 +149,7 @@ vec3 calculateLighting(PbrMaterial material, Light light, vec3 fragPos, vec3 vie
     {
         baseColor = texture(textures[material.colorTexId], texCoord);
         emissiveColor = texture(textures[material.emissiveTexId], texCoord);
-        normal = texture(textures[material.normalTexId], texCoord).xyz;     //  actually need to tranform from local to world coordinate
+        normal = normalize(tbnMatrix * texture(textures[material.normalTexId], texCoord).xyz);
         vec4 mrra = texture(textures[material.metRouRflAmbTexId], texCoord);
         metallic = mrra.x;
         roughness = mrra.y;
