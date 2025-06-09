@@ -4,9 +4,9 @@
 
 namespace Bunny::Render
 {
-Camera::Camera(const glm::vec3& lookFrom, const glm::vec3& pitchYawRoll, float fov, float aspectRatio)
+Camera::Camera(const glm::vec3& position, const glm::vec3& pitchYawRoll, float fov, float aspectRatio)
 {
-    mPosition = lookFrom;
+    mPosition = position;
     mPitchYawRoll = pitchYawRoll;
     mFov = fov;
     mAspectRatio = aspectRatio;
@@ -114,5 +114,11 @@ FrustumPlane::FrustumPlane(const glm::vec3& normal, const glm::vec3 pointOnPlane
     : mNormal(normal),
       mDistToOrigin(glm::dot(pointOnPlane, normal))
 {
+}
+
+float PhysicalCamera::getExposure() const
+{
+    float ev100 = glm::log2(mAperture * mAperture / mShutterTime);
+    return ev100 + glm::log2(mIso / 100);
 }
 } // namespace Bunny::Render

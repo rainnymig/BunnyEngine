@@ -132,9 +132,7 @@ BunnyResult PbrMaterialBank::buildDescriptorSetLayouts()
 
     builder.addBinding(uniformBufferBinding);
     uniformBufferBinding.binding = 1;
-    builder.addBinding(uniformBufferBinding);
-    uniformBufferBinding.binding = 1;
-    uniformBufferBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    uniformBufferBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
     builder.addBinding(uniformBufferBinding);
     mSceneDescSetLayout = builder.build(mVulkanResources->getDevice());
 

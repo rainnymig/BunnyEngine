@@ -16,9 +16,10 @@ struct SceneData
     glm::mat4x4 mViewProjMatrix;
 };
 
+static constexpr size_t MAX_LIGHT_COUNT = 8;
+
 struct LightData
 {
-    static constexpr size_t MAX_LIGHT_COUNT = 8;
     glm::vec3 mCameraPos;
     uint32_t mLightCount;
     DirectionalLight mLights[MAX_LIGHT_COUNT];
@@ -30,6 +31,19 @@ struct ObjectData
     glm::mat4 invTransModel;
     glm::vec3 scale;
     IdType meshId;
+};
+
+struct PbrLightData
+{
+    PbrLight mLights[MAX_LIGHT_COUNT];
+    uint32_t mLightCount;
+};
+
+struct CameraData
+{
+    glm::mat4 mViewProjMat;
+    glm::vec3 mPosition;
+    float mExposure;
 };
 
 } // namespace Bunny::Render

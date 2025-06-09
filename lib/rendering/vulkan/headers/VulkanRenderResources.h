@@ -53,6 +53,9 @@ class VulkanRenderResources
         VkImageAspectFlags aspectFlags, VkImageLayout layout = VK_IMAGE_LAYOUT_UNDEFINED, uint32_t mipCount = 1) const;
     void destroyBuffer(AllocatedBuffer& buffer) const;
     void destroyImage(AllocatedImage& image) const;
+    void copyBuffer(VkCommandBuffer cmd, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) const;
+    void transitionBufferAccess(VkCommandBuffer cmd, VkBuffer buffer, VkAccessFlags srcAccessMask,
+        VkAccessFlags dstAccessMask, VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage) const;
 
     void transitionImageLayout(VkCommandBuffer commandBuffer, VkImage image, VkFormat format, VkImageLayout oldLayout,
         VkImageLayout newLayout, uint32_t mipLevels = 1) const;
@@ -65,7 +68,7 @@ class VulkanRenderResources
     ~VulkanRenderResources();
 
   private:
-    enum class ImmediateQueueType
+    enum class CommandQueueType
     {
         Graphics,
         Transfer
@@ -79,8 +82,8 @@ class VulkanRenderResources
 
     BunnyResult getQueueFromDevice(Queue& queue, const vkb::Device& device, vkb::QueueType queueType) const;
     BunnyResult createImmediateCommand();
-    BunnyResult startImmedidateCommand(ImmediateQueueType cmdType = ImmediateQueueType::Graphics) const;
-    BunnyResult endAndSubmitImmediateCommand(ImmediateQueueType cmdType = ImmediateQueueType::Graphics) const;
+    BunnyResult startImmedidateCommand(CommandQueueType cmdType = CommandQueueType::Graphics) const;
+    BunnyResult endAndSubmitImmediateCommand(CommandQueueType cmdType = CommandQueueType::Graphics) const;
 
     Base::Window* mWindow = nullptr;
     VkInstance mInstance = VK_NULL_HANDLE;
@@ -97,7 +100,7 @@ class VulkanRenderResources
     Queue mTransferQueue;
 
     //  command pool for submitting immediate commands like image format transition or copy buffer
-    std::map<ImmediateQueueType, ImmediateCommand> mImmediateCommands;
+    std::map<CommandQueueType, ImmediateCommand> mImmediateCommands;
     VkFence mImmediateFence;
 
     VmaAllocator mAllocator = nullptr;

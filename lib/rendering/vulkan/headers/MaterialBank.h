@@ -52,6 +52,12 @@ class PbrMaterialBank
         std::string mMetRouRflAmbTexPath;
     };
 
+    //  Size of the array containing all textures in the shader
+    //  This value is needed when creating the descriptor set
+    //  For now this is fixed, try to make it growable when necessary
+    //  In this case need to rebuild the whole rendering pipeline
+    static constexpr uint32_t TEXTURE_ARRAY_SIZE = 64;
+
     PbrMaterialBank(
         const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer, TextureBank* textureBank);
 
@@ -71,12 +77,6 @@ class PbrMaterialBank
     VkPipelineLayout getPbrDeferredPipelineLayout() const { return mPbrDeferredPipelineLayout; }
 
   private:
-    //  Size of the array containing all textures in the shader
-    //  This value is needed when creating the descriptor set
-    //  For now this is fixed, try to make it growable when necessary
-    //  In this case need to rebuild the whole rendering pipeline
-    static constexpr uint32_t TEXTURE_ARRAY_SIZE = 64;
-
     BunnyResult buildDescriptorSetLayouts();
     BunnyResult buildPipelineLayouts();
     BunnyResult recreateMaterialBuffer();

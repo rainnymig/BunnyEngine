@@ -48,7 +48,7 @@ class ForwardPass
     AllocatedBuffer mDrawCommandsBuffer;
     AllocatedBuffer mInitialDrawCommandBuffer;
     std::vector<VkDrawIndexedIndirectCommand> mDrawCommandsData;
-    AllocatedBuffer mInstanceObjectBuffer;
+    AllocatedBuffer mInstanceObjectBuffer; //  map from instance id to object id, this is filled in culling pass
     size_t mInstanceObjectBufferSize;
 
     VkDescriptorSetLayout mSceneDescLayout;

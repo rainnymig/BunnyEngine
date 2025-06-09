@@ -26,6 +26,7 @@ PbrGraphicsPass::~PbrGraphicsPass()
 BunnyResult PbrGraphicsPass::initializePass()
 {
     BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(initPipeline())
+    BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(initDescriptors())
 
     return BUNNY_HAPPY;
 }
@@ -36,6 +37,10 @@ void PbrGraphicsPass::cleanup()
 }
 
 BunnyResult PbrGraphicsPass::initPipeline()
+{
+    return BUNNY_HAPPY;
+}
+BunnyResult PbrGraphicsPass::initDescriptors()
 {
     return BUNNY_HAPPY;
 }
