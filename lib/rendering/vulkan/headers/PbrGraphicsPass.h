@@ -30,6 +30,7 @@ class PbrGraphicsPass
 
   protected:
     virtual BunnyResult initPipeline();
+    virtual BunnyResult initDescriptors();
 
     const VulkanRenderResources* mVulkanResources;
     const VulkanGraphicsRenderer* mRenderer;

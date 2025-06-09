@@ -1,7 +1,7 @@
 #extension GL_EXT_nonuniform_qualifier : require
 
-#define DIRECTIONAL 1
-#define POINT 2
+#define DIRECTIONAL 0
+#define POINT 1
 #define MAX_LIGHT_COUNT 8
 
 #define PI 3.14159265359
@@ -11,7 +11,7 @@ struct Light
     vec3 dirOrPos;
     float intensity;    //  dir light - illuminance (lux or lumen/m2); point/spot light - luminous power (lumen)
     vec3 color;
-    float inverseInfluenceRadius;
+    float influenceRadius;
     float innerAngle;
     float outerAngle;   
     uint type;
@@ -26,6 +26,7 @@ layout(set = 0, binding = 0) uniform LightData
 
 layout(set = 0, binding = 1) uniform CameraData
 {
+    mat4 viewProj;
     vec3 position;
     float exposure;
 } cameraData;
@@ -182,7 +183,7 @@ vec3 calculateLighting(PbrMaterial material, Light light, vec3 fragPos, vec3 vie
     else if (light.type == POINT)
     {
         vec3 posToLight =  light.dirOrPos - fragPos;
-        float attenuation = getSquareFalloffAttenuation(posToLight, light.inverseInfluenceRadius);
+        float attenuation = getSquareFalloffAttenuation(posToLight, 1.0 / light.influenceRadius);
         outLuminance = f * light.intensity * attenuation * ndotl * light.color;
     }
 

@@ -32,8 +32,9 @@ class Camera
 {
   public:
     //  fov angle is in vertical direction, is radians
-    Camera(const glm::vec3& lookFrom = {0, 0, 10}, const glm::vec3& pitchYawRoll = {0, 0, 0},
+    Camera(const glm::vec3& position = {0, 0, 10}, const glm::vec3& pitchYawRoll = {0, 0, 0},
         float fov = glm::radians(45.0f), float aspectRatio = 16.0f / 9.0f);
+    virtual ~Camera() = default;
 
     void setPosition(const glm::vec3& position);
     void setRotation(const glm::vec3& pitchYawRoll);
@@ -46,10 +47,10 @@ class Camera
     glm::mat4 getProjMatrix() const { return mProjMatrix; }
     glm::mat4 getViewProjMatrix() const { return mViewProjMatrix; }
     glm::vec3 getPosition() const { return mPosition; }
-    glm::vec3 getRotation() const {return mPitchYawRoll;}
+    glm::vec3 getRotation() const { return mPitchYawRoll; }
     void getViewFrustum(ViewFrustum& outFrustum) const;
 
-  private:
+  protected:
     void updateMatrices();
 
     static constexpr float NearPlaneDistance = 0.1f;
@@ -68,6 +69,23 @@ class Camera
     glm::vec3 mRightVec = StaticRight;
     float mFov;
     float mAspectRatio; //  width/height
+};
+
+class PhysicalCamera : public Camera
+{
+  public:
+    virtual ~PhysicalCamera() override = default;
+
+    float getExposure() const;
+
+    void setAperture(float apurture) { mAperture = mAperture; }
+    void setShutterTime(float shutterTime) { mShutterTime = shutterTime; }
+    void setIso(float iso) { mIso = iso; }
+
+  protected:
+    float mAperture = 2.8f;
+    float mShutterTime = 0.01f;
+    float mIso = 100;
 };
 
 } // namespace Bunny::Render

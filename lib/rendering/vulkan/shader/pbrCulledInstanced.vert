@@ -1,5 +1,7 @@
 #version 450
 
+#include "pbr.glsl"
+
 /*//////
 
 Descriptor Sets:
@@ -18,12 +20,12 @@ struct ObjectData
 };
 
 /*  buffer layouts  */
-layout(set = 0, binding = 2) uniform SceneData 
-{
-    mat4 view;
-    mat4 proj;
-    mat4 viewProj;
-} sceneData;
+// layout(set = 0, binding = 2) uniform SceneData 
+// {
+//     mat4 view;
+//     mat4 proj;
+//     mat4 viewProj;
+// } sceneData;
 
 layout(std430, set = 1, binding = 0) buffer ObjectDataBuffer
 {
@@ -66,5 +68,5 @@ void main()
 
     outTbnMat = mat3(tangentTransformed, bitangentTransformed, outNormal);
 
-    gl_Position = sceneData.viewProj * worldPos;
+    gl_Position = cameraData.viewProj * worldPos;
 }
