@@ -7,6 +7,8 @@
 #include "Error.h"
 #include "TextureBank.h"
 
+#include <random>
+
 namespace Bunny::Render
 {
 void MaterialBank::cleanup()
@@ -45,6 +47,16 @@ const MaterialInstance& MaterialBank::getMaterialInstance(IdType instanceId) con
     return mMaterialInstances.at(instanceId);
 }
 
+IdType MaterialBank::giveMeAMaterial() const
+{
+    return getDefaultMaterialId();
+}
+
+IdType MaterialBank::giveMeAMaterialInstance() const
+{
+    return getDefaultMaterialInstanceId();
+}
+
 PbrMaterialBank::PbrMaterialBank(
     const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer, TextureBank* textureBank)
     : mVulkanResources(vulkanResources),
@@ -63,6 +75,30 @@ BunnyResult PbrMaterialBank::initialize()
 void PbrMaterialBank::cleanup()
 {
     mDeletionStack.Flush();
+}
+
+IdType PbrMaterialBank::giveMeAMaterial() const
+{
+    return getRandomMaterialInstanceId();
+}
+
+IdType PbrMaterialBank::giveMeAMaterialInstance() const
+{
+    return getRandomMaterialInstanceId();
+}
+
+PbrMaterialParameters PbrMaterialBank::getMaterialInstance(IdType id) const
+{
+    return mMaterialInstances.at(id);
+}
+
+IdType PbrMaterialBank::getRandomMaterialInstanceId() const
+{
+    static std::random_device rd;
+    static std::mt19937 re(rd());
+
+    std::uniform_int_distribution<int> uniDist(0, mMaterialInstances.size() - 1);
+    return uniDist(re);
 }
 
 BunnyResult PbrMaterialBank::addMaterialInstance(const PbrMaterialLoadParams& materialParams, IdType& outId)

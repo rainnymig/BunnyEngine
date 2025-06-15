@@ -187,6 +187,6 @@ vec3 calculateLighting(PbrMaterial material, Light light, vec3 fragPos, vec3 vie
         outLuminance = f * light.intensity * attenuation * ndotl * light.color;
     }
 
-    vec3 result = outLuminance * cameraData.exposure;
-    return result;
+    //  camera exposure will be applied with all light results combined
+    return outLuminance;
 }

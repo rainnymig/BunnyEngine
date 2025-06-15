@@ -18,6 +18,7 @@ struct ObjectData
     mat4 invTransModel;
     vec3 scale;
     uint meshId;
+    uint materialId;
 };
 
 struct Plane

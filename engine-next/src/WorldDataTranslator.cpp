@@ -112,7 +112,7 @@ BunnyResult WorldRenderDataTranslator::initObjectDataBuffer(const World* world)
         getEntityGlobalTransform(
             world->mEntityRegistry, entity, transform.mTransform.mMatrix, transform.mTransform.mScale, modelMat, scale);
         glm::mat4 invTransModel = glm::transpose(glm::inverse(modelMat));
-        mObjectData.emplace_back(modelMat, invTransModel, scale, mesh.mMeshId);
+        mObjectData.emplace_back(modelMat, invTransModel, scale, mesh.mMeshId, mesh.mMaterialId);
 
         mMeshInstanceCounts[mesh.mMeshId]++;
     }

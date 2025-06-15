@@ -17,6 +17,7 @@ struct TransformComponent
 struct MeshComponent
 {
     Render::IdType mMeshId;
+    Render::IdType mMaterialId;
 };
 
 struct HierarchyComponent
