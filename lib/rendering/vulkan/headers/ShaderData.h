@@ -31,6 +31,7 @@ struct ObjectData
     glm::mat4 invTransModel;
     glm::vec3 scale;
     IdType meshId;
+    IdType materialId;
 };
 
 struct PbrLightData

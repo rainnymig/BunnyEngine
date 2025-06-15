@@ -17,6 +17,7 @@ struct ObjectData
     mat4 invTransModel;
     vec3 scale;
     uint meshId;
+    uint materialId;
 };
 
 /*  buffer layouts  */
@@ -48,7 +49,7 @@ layout (location = 4) in vec2 uv;
 layout (location = 0) out vec3 outNormal;
 layout (location = 1) out vec3 outColor;
 layout (location = 2) out vec3 outFragPos;
-layout (location = 3) out vec2 outUV;
+layout (location = 3) out vec3 outUVMatId;
 layout (location = 4) out mat3 outTbnMat;   //  tangent-bitangent-normal matrix
 
 void main()
@@ -61,7 +62,7 @@ void main()
     outColor = color.xyz;
     vec4 worldPos = objData.model * pos;
     outFragPos = worldPos.xyz;
-    outUV = uv;
+    outUVMatId = vec3(uv.x, uv.y, objData.materialId);
 
     vec3 tangentTransformed = normalize((objData.invTransModel * vec4(tangent, 0)).xyz);
     vec3 bitangentTransformed = normalize(cross(outNormal, tangentTransformed));

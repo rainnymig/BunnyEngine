@@ -15,12 +15,15 @@
 #include <fastgltf/tools.hpp>
 #include <fastgltf/util.hpp>
 
+#include <random>
+
 namespace Bunny::Engine
 {
 WorldLoader::WorldLoader(const Render::VulkanRenderResources* vulkanResources, Render::MaterialBank* materialBank,
-    Render::MeshBank<Render::NormalVertex>* meshBank)
+    Render::PbrMaterialBank* pbrMaterialBank, Render::MeshBank<Render::NormalVertex>* meshBank)
     : mVulkanResources(vulkanResources),
       mMaterialBank(materialBank),
+      mPbrMaterialBank(pbrMaterialBank),
       mMeshBank(meshBank)
 {
 }
@@ -29,7 +32,8 @@ BunnyResult WorldLoader::loadGltfToWorld(std::string_view filePath, World& outWo
 {
     std::filesystem::path path(filePath);
     constexpr auto gltfOptions = fastgltf::Options::DontRequireValidAssetMember | fastgltf::Options::AllowDouble |
-                                 fastgltf::Options::LoadGLBBuffers | fastgltf::Options::LoadExternalBuffers;
+                                 fastgltf::Options::LoadGLBBuffers | fastgltf::Options::LoadExternalBuffers |
+                                 fastgltf::Options::DecomposeNodeMatrices;
     // fastgltf::Options::LoadExternalImages;
     auto loadedFile = fastgltf::GltfDataBuffer::FromPath(path);
     if (loadedFile.error() != fastgltf::Error::None)
@@ -72,16 +76,20 @@ BunnyResult WorldLoader::loadGltfToWorld(std::string_view filePath, World& outWo
                                              trs.rotation[3], trs.rotation[0], trs.rotation[1], trs.rotation[2]);
                                          glm::vec3 sc(trs.scale[0], trs.scale[1], trs.scale[2]);
 
-                                         glm::mat4 tm = glm::translate(glm::mat4(1.f), tl);
-                                         glm::mat4 rm = glm::toMat4(rot);
-                                         glm::mat4 sm = glm::scale(glm::mat4(1.f), sc);
+                                         //  glm::mat4 tm = glm::translate(glm::mat4(1.f), tl);
+                                         //  glm::mat4 rm = glm::toMat4(rot);
+                                         //  glm::mat4 sm = glm::scale(glm::mat4(1.f), sc);
 
-                                         nodeTransform.mMatrix = tm * rm * sm;
+                                         //  nodeTransform.mMatrix = tm * rm * sm;
+
+                                         nodeTransform = Base::Transform(tl, rot, sc);
                                      },
                        [&nodeTransform](fastgltf::math::fmat4x4 transformMat) {
-                           memcpy(&nodeTransform.mMatrix, transformMat.data(), sizeof(transformMat));
+                           //  should not happen with fastgltf::Options::DecomposeNodeMatrices
+                           //    memcpy(&nodeTransform.mMatrix, transformMat.data(), sizeof(transformMat));
                        }},
             node.transform);
+
         outWorld.mEntityRegistry.emplace<TransformComponent>(nodeEntity, nodeTransform);
 
         //  load node mesh if present
@@ -105,6 +113,68 @@ BunnyResult WorldLoader::loadGltfToWorld(std::string_view filePath, World& outWo
                 outWorld.mEntityRegistry.emplace_or_replace<HierarchyComponent>(nodeIdxToEntity.at(c));
             childHierarchyComp.mParent = nodeEntity;
         }
+    }
+
+    postLoad(outWorld);
+
+    return BUNNY_HAPPY;
+}
+
+BunnyResult WorldLoader::loadPbrTestWorldWithGltfMeshes(std::string_view filePath, World& outWorld)
+{
+    std::filesystem::path path(filePath);
+    constexpr auto gltfOptions = fastgltf::Options::DontRequireValidAssetMember | fastgltf::Options::AllowDouble |
+                                 fastgltf::Options::LoadGLBBuffers | fastgltf::Options::LoadExternalBuffers |
+                                 fastgltf::Options::DecomposeNodeMatrices;
+    // fastgltf::Options::LoadExternalImages;
+    auto loadedFile = fastgltf::GltfDataBuffer::FromPath(path);
+    if (loadedFile.error() != fastgltf::Error::None)
+    {
+        return BUNNY_SAD;
+    }
+    fastgltf::Parser parser;
+    auto parseResult = parser.loadGltf(loadedFile.get(), path.parent_path(), gltfOptions);
+    if (parseResult.error() != fastgltf::Error::None)
+    {
+        return BUNNY_SAD;
+    }
+    fastgltf::Asset& gltf = parseResult.get();
+
+    //  load meshes
+    Render::loadMeshFromGltf(mMeshBank, mPbrMaterialBank, gltf);
+
+    static constexpr float spawnAreaXMax = 10;
+    static constexpr float spawnAreaYMax = 10;
+    static constexpr float spawnAreaZMax = 5;
+    static constexpr uint32_t objectCount = 30;
+    static constexpr float scaleMax = 1.2f;
+    static constexpr float scaleMin = 0.8f;
+
+    static std::random_device rd;
+    static std::mt19937 re(rd());
+    static std::uniform_real_distribution<float> xDist(-spawnAreaXMax, spawnAreaXMax);
+    static std::uniform_real_distribution<float> yDist(-spawnAreaYMax, spawnAreaYMax);
+    static std::uniform_real_distribution<float> zDist(-spawnAreaZMax, spawnAreaZMax);
+    static std::uniform_real_distribution<float> scaleDist(scaleMin, scaleMax);
+    static std::uniform_real_distribution<float> rotDist(-glm::pi<float>(), glm::pi<float>());
+
+    for (uint32_t i = 0; i < objectCount; i++)
+    {
+        float nodeScale = scaleDist(re);
+        Base::Transform nodeTransform({xDist(re), yDist(re), zDist(re)}, {rotDist(re), rotDist(re), rotDist(re)},
+            {nodeScale, nodeScale, nodeScale});
+        const auto nodeEntity = outWorld.mEntityRegistry.create();
+        outWorld.mEntityRegistry.emplace<TransformComponent>(nodeEntity, nodeTransform);
+        //  assign a random material instance from the pbr material bank instead of using the one from the mesh
+        outWorld.mEntityRegistry.emplace<MeshComponent>(
+            nodeEntity, mMeshBank->getRandomMeshId(), mPbrMaterialBank->giveMeAMaterialInstance());
+    }
+
+    //  camera
+    {
+        const auto cameraEntity = outWorld.mEntityRegistry.create();
+        Render::Camera camera(glm::vec3{0, 5, 15}, glm::vec3{-glm::pi<float>() / 8, 0, 0});
+        outWorld.mEntityRegistry.emplace<CameraComponent>(cameraEntity, camera);
     }
 
     postLoad(outWorld);
@@ -156,7 +226,8 @@ BunnyResult WorldLoader::loadTestWorld(World& outWorld)
         Base::Transform nodeTransform(positions[idx], {0, 0, 0}, {1, 1, 1});
         const auto nodeEntity = outWorld.mEntityRegistry.create();
         outWorld.mEntityRegistry.emplace<TransformComponent>(nodeEntity, nodeTransform);
-        outWorld.mEntityRegistry.emplace<MeshComponent>(nodeEntity, meshId);
+        outWorld.mEntityRegistry.emplace<MeshComponent>(
+            nodeEntity, meshId, mMaterialBank->getDefaultMaterialInstanceId());
     }
 
     //  camera

@@ -13,6 +13,7 @@
 #include <unordered_map>
 #include <algorithm>
 #include <iterator>
+#include <random>
 
 namespace Bunny::Render
 {
@@ -52,6 +53,7 @@ class MeshBank
     const MeshLite& getMesh(std::string_view name) const { return mMeshes.at(getMeshIdFromName(name)); }
     const std::vector<MeshLite>& getMeshes() const { return mMeshes; }
     const IdType getMeshIdFromName(std::string_view name) const { return mMeshNameToIdMap.at(name); }
+    const IdType getRandomMeshId() const;
     void cleanup();
 
     const AllocatedBuffer& getBoundsBuffer() const { return mBoundsBuffer; }
@@ -138,6 +140,16 @@ void MeshBank<VertexType, IndexType>::bindMeshBuffers(VkCommandBuffer cmdBuf) co
     vkCmdBindVertexBuffers(cmdBuf, 0, 1, vertexBuffers, offsets);
     vkCmdBindIndexBuffer(cmdBuf, mIndexBuffer.mBuffer, 0, VK_INDEX_TYPE_UINT32);
     //  bounds buffer shall be bound in cull (compute) pass
+}
+
+template <typename VertexType, typename IndexType>
+inline const IdType MeshBank<VertexType, IndexType>::getRandomMeshId() const
+{
+    static std::random_device rd;
+    static std::mt19937 re(rd());
+
+    std::uniform_int_distribution<int> uniDist(0, mMeshes.size() - 1);
+    return uniDist(re);
 }
 
 template <typename VertexType, typename IndexType>

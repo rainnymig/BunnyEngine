@@ -15,7 +15,15 @@ class VulkanRenderResources;
 class VulkanGraphicsRenderer;
 class TextureBank;
 
-class MaterialBank
+//  for debug
+class MaterialProvider
+{
+  public:
+    virtual IdType giveMeAMaterial() const = 0;
+    virtual IdType giveMeAMaterialInstance() const = 0;
+};
+
+class MaterialBank : public MaterialProvider
 {
   public:
     void cleanup();
@@ -30,12 +38,15 @@ class MaterialBank
     constexpr IdType getDefaultMaterialId() const { return 0; }
     constexpr IdType getDefaultMaterialInstanceId() const { return 0; }
 
+    virtual IdType giveMeAMaterial() const override;
+    virtual IdType giveMeAMaterialInstance() const override;
+
   private:
     std::vector<std::unique_ptr<Material>> mMaterials;
     std::vector<MaterialInstance> mMaterialInstances;
 };
 
-class PbrMaterialBank
+class PbrMaterialBank : public MaterialProvider
 {
   public:
     struct PbrMaterialLoadParams
@@ -64,6 +75,11 @@ class PbrMaterialBank
     BunnyResult initialize();
     void cleanup();
 
+    virtual IdType giveMeAMaterial() const override;
+    virtual IdType giveMeAMaterialInstance() const override;
+
+    PbrMaterialParameters getMaterialInstance(IdType id) const;
+    IdType getRandomMaterialInstanceId() const;
     BunnyResult addMaterialInstance(const PbrMaterialLoadParams& materialParams, IdType& outId);
     void updateMaterialDescriptorSet(VkDescriptorSet descriptorSet);
 

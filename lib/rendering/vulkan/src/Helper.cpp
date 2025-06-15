@@ -290,7 +290,7 @@ const IdType createCubeMeshToBank(MeshBank<NormalVertex>* meshBank, IdType mater
     return meshBank->addMesh(vertices, indices, newMesh);
 }
 
-void loadMeshFromGltf(MeshBank<NormalVertex>* meshBank, MaterialBank* materialBank, fastgltf::Asset& gltfAsset)
+void loadMeshFromGltf(MeshBank<NormalVertex>* meshBank, MaterialProvider* materialBank, fastgltf::Asset& gltfAsset)
 {
     std::vector<uint32_t> indices;
     std::vector<Render::NormalVertex> vertices;
@@ -389,8 +389,8 @@ void loadMeshFromGltf(MeshBank<NormalVertex>* meshBank, MaterialBank* materialBa
 
             //  load material
             //  for now all use default material
-            newSurface.mMaterialId = materialBank->getDefaultMaterialId();
-            newSurface.mMaterialInstanceId = materialBank->getDefaultMaterialInstanceId();
+            newSurface.mMaterialId = materialBank->giveMeAMaterial();
+            newSurface.mMaterialInstanceId = materialBank->giveMeAMaterialInstance();
 
             newMesh.mSurfaces.push_back(newSurface);
         }

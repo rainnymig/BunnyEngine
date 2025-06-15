@@ -9,15 +9,4 @@
 namespace Bunny::Engine
 {
 
-void World::update(float deltaTime)
-{
-    const glm::mat4 rotMat = glm::eulerAngleY<float>(glm::pi<float>() * deltaTime / 4);
-
-    auto transComps = mEntityRegistry.view<TransformComponent>();
-
-    transComps.each([deltaTime, &rotMat](TransformComponent& transComp) {
-        transComp.mTransform.mMatrix = rotMat * transComp.mTransform.mMatrix;
-    });
-}
-
 } // namespace Bunny::Engine
