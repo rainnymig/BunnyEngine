@@ -25,6 +25,7 @@ class WorldRenderDataTranslator
 
     BunnyResult initialize();
     BunnyResult updateSceneData(const World* world);
+    BunnyResult updatePbrSceneData(const World* world);
     BunnyResult updateObjectData(const World* world);
     BunnyResult initObjectDataBuffer(const World* world);
     void cleanup();
@@ -54,5 +55,11 @@ class WorldRenderDataTranslator
     Render::AllocatedBuffer mLightDataBuffer;
     Render::SceneData mSceneData;
     Render::LightData mLightData;
+
+    //  PBR
+    Render::AllocatedBuffer mPbrCameraBuffer;
+    Render::AllocatedBuffer mPbrLightBuffer;
+    Render::PbrCameraData mPbrCameraData;
+    Render::PbrLightData mPbrLightData;
 };
 } // namespace Bunny::Engine

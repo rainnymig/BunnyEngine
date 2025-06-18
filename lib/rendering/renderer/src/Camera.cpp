@@ -116,6 +116,11 @@ FrustumPlane::FrustumPlane(const glm::vec3& normal, const glm::vec3 pointOnPlane
 {
 }
 
+PhysicalCamera::PhysicalCamera(const glm::vec3& position, const glm::vec3& pitchYawRoll, float fov, float aspectRatio)
+    : Camera(position, pitchYawRoll, fov, aspectRatio)
+{
+}
+
 float PhysicalCamera::getExposure() const
 {
     float ev100 = glm::log2(mAperture * mAperture / mShutterTime);

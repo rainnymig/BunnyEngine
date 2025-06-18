@@ -20,6 +20,7 @@
 #include "DepthReducePass.h"
 #include "GBufferPass.h"
 #include "DeferredShadingPass.h"
+#include "TextureBank.h"
 
 #include <imgui.h>
 #include <fmt/core.h>
@@ -66,8 +67,10 @@ int main(void)
 
     Bunny::Base::BasicTimer timer;
 
+    Bunny::Render::TextureBank textureBank(&renderResources, &renderer);
     Bunny::Render::MeshBank<Bunny::Render::NormalVertex> meshBank(&renderResources);
     Bunny::Render::MaterialBank materialBank;
+    Bunny::Render::PbrMaterialBank pbrMaterialBank(&renderResources, &renderer, &textureBank);
 
     Bunny::Render::BasicBlinnPhongMaterial::Builder builder;
     builder.setColorAttachmentFormat(renderer.getSwapChainImageFormat());
@@ -94,7 +97,7 @@ int main(void)
     materialBank.addMaterialInstance(blinnPhongInstance);
 
     World bunnyWorld;
-    WorldLoader worldLoader(&renderResources, &materialBank, &meshBank);
+    WorldLoader worldLoader(&renderResources, &materialBank, &pbrMaterialBank, &meshBank);
     worldLoader.loadTestWorld(bunnyWorld);
 
     // forwardPass.buildDrawCommands();
@@ -156,10 +159,11 @@ int main(void)
 
         worldTranslator.updateSceneData(&bunnyWorld);
 
-        const auto camComps = bunnyWorld.mEntityRegistry.view<CameraComponent>();
+        // const auto camComps = bunnyWorld.mEntityRegistry.view<CameraComponent>();
+        const auto camComps = bunnyWorld.mEntityRegistry.view<PbrCameraComponent>();
         if (!camComps.empty())
         {
-            const auto& cam = bunnyWorld.mEntityRegistry.get<CameraComponent>(camComps.front());
+            const auto& cam = bunnyWorld.mEntityRegistry.get<PbrCameraComponent>(camComps.front());
             cullingPass.updateCullingData(cam.mCamera);
         }
 

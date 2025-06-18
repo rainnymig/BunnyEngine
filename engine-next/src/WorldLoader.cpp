@@ -173,8 +173,21 @@ BunnyResult WorldLoader::loadPbrTestWorldWithGltfMeshes(std::string_view filePat
     //  camera
     {
         const auto cameraEntity = outWorld.mEntityRegistry.create();
-        Render::Camera camera(glm::vec3{0, 5, 15}, glm::vec3{-glm::pi<float>() / 8, 0, 0});
-        outWorld.mEntityRegistry.emplace<CameraComponent>(cameraEntity, camera);
+        Render::PhysicalCamera camera(glm::vec3{0, 5, 15}, glm::vec3{-glm::pi<float>() / 8, 0, 0});
+        outWorld.mEntityRegistry.emplace<PbrCameraComponent>(cameraEntity, camera);
+    }
+
+    //  light
+    {
+        const auto lightEntity = outWorld.mEntityRegistry.create();
+        Render::PbrLight light{
+            .mDirOrPos = glm::normalize(glm::vec3{-1,   -3,   -2  }
+              ),
+            .mIntensity = 100000, //  10AM sun light
+            .mColor = {1.0f, 1.0f, 1.0f},
+            .mType = Render::LightType::Directional,
+        };
+        outWorld.mEntityRegistry.emplace<PbrLightComponent>(lightEntity, light);
     }
 
     postLoad(outWorld);

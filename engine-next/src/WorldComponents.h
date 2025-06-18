@@ -30,8 +30,18 @@ struct DirectionLightComponent
     Render::DirectionalLight mLight;
 };
 
+struct PbrLightComponent
+{
+    Render::PbrLight mLight;
+};
+
 struct CameraComponent
 {
     Render::Camera mCamera;
+};
+
+struct PbrCameraComponent
+{
+    Render::PhysicalCamera mCamera;
 };
 } // namespace Bunny::Engine

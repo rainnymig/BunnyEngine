@@ -40,7 +40,7 @@ struct PbrLightData
     uint32_t mLightCount;
 };
 
-struct CameraData
+struct PbrCameraData
 {
     glm::mat4 mViewProjMat;
     glm::vec3 mPosition;
