@@ -124,7 +124,7 @@ void PbrForwardPass::linkSceneData(const AllocatedBuffer& lightData, const Alloc
 {
     DescriptorWriter writer;
     writer.writeBuffer(0, lightData.mBuffer, sizeof(PbrLightData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-    writer.writeBuffer(1, cameraData.mBuffer, sizeof(CameraData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+    writer.writeBuffer(1, cameraData.mBuffer, sizeof(PbrCameraData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
     for (const FrameData& frame : mFrameData)
     {
         writer.updateSet(mVulkanResources->getDevice(), frame.mSceneDescSet);

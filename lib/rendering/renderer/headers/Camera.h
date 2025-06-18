@@ -74,6 +74,8 @@ class Camera
 class PhysicalCamera : public Camera
 {
   public:
+    PhysicalCamera(const glm::vec3& position = {0, 0, 10}, const glm::vec3& pitchYawRoll = {0, 0, 0},
+        float fov = glm::radians(45.0f), float aspectRatio = 16.0f / 9.0f);
     virtual ~PhysicalCamera() override = default;
 
     float getExposure() const;

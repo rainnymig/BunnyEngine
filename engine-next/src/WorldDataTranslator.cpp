@@ -23,6 +23,15 @@ BunnyResult WorldRenderDataTranslator::initialize()
         VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
         VMA_MEMORY_USAGE_AUTO);
 
+    //  PBR
+    mPbrCameraBuffer = mVulkanResources->createBuffer(sizeof(Render::PbrCameraData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+        VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+        VMA_MEMORY_USAGE_AUTO);
+
+    mPbrLightBuffer = mVulkanResources->createBuffer(sizeof(Render::PbrLightData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+        VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+        VMA_MEMORY_USAGE_AUTO);
+
     return BUNNY_HAPPY;
 }
 
@@ -72,6 +81,51 @@ BunnyResult WorldRenderDataTranslator::updateSceneData(const World* world)
     return BUNNY_HAPPY;
 }
 
+BunnyResult WorldRenderDataTranslator::updatePbrSceneData(const World* world)
+{
+    const auto camComps = world->mEntityRegistry.view<PbrCameraComponent>();
+
+    if (camComps.empty())
+    {
+        return BUNNY_SAD;
+    }
+
+    for (auto [entity, cam] : camComps.each())
+    {
+        mPbrCameraData.mPosition = cam.mCamera.getPosition();
+        mPbrCameraData.mViewProjMat = cam.mCamera.getViewProjMatrix();
+        mPbrCameraData.mExposure = cam.mCamera.getExposure();
+        break;
+    }
+
+    {
+        void* mappedSceneData = mSceneDataBuffer.mAllocationInfo.pMappedData;
+        memcpy(mappedSceneData, &mSceneData, sizeof(Render::SceneData));
+    }
+
+    const auto lightComps = world->mEntityRegistry.view<DirectionLightComponent>();
+    if (lightComps.empty())
+    {
+        return BUNNY_SAD;
+    }
+
+    size_t idx = 0;
+    for (auto [entity, light] : lightComps.each())
+    {
+        mLightData.mLights[idx].mColor = light.mLight.mColor;
+        mLightData.mLights[idx].mDirection = light.mLight.mDirection;
+        idx++;
+    }
+    mLightData.mLightCount = idx;
+
+    {
+        void* mappedLightData = mLightDataBuffer.mAllocationInfo.pMappedData;
+        memcpy(mappedLightData, &mLightData, sizeof(Render::LightData));
+    }
+
+    return BUNNY_HAPPY;
+}
+
 BunnyResult WorldRenderDataTranslator::updateObjectData(const World* world)
 {
     auto meshTransComp = world->mEntityRegistry.view<MeshComponent, TransformComponent>();
@@ -88,6 +142,7 @@ BunnyResult WorldRenderDataTranslator::updateObjectData(const World* world)
         obj.invTransModel = invTransModel;
         obj.scale = scale;
         obj.meshId = mesh.mMeshId;
+        obj.materialId = mesh.mMaterialId;
         idx++;
     }
 
@@ -141,6 +196,8 @@ void WorldRenderDataTranslator::cleanup()
     mVulkanResources->destroyBuffer(mObjectDataBuffer);
     mVulkanResources->destroyBuffer(mSceneDataBuffer);
     mVulkanResources->destroyBuffer(mLightDataBuffer);
+    mVulkanResources->destroyBuffer(mPbrCameraBuffer);
+    mVulkanResources->destroyBuffer(mPbrLightBuffer);
 }
 
 void WorldRenderDataTranslator::getEntityGlobalTransform(const entt::registry& registry, entt::entity entity,
