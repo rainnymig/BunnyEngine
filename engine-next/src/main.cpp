@@ -21,6 +21,7 @@
 #include "GBufferPass.h"
 #include "DeferredShadingPass.h"
 #include "TextureBank.h"
+#include "PbrForwardPass.h"
 
 #include <imgui.h>
 #include <fmt/core.h>
@@ -29,6 +30,8 @@
 #include <memory>
 
 using namespace Bunny::Engine;
+
+using PbrMaterialLoadParams = Bunny::Render::PbrMaterialBank::PbrMaterialLoadParams;
 
 int main(void)
 {
@@ -63,69 +66,65 @@ int main(void)
         PRINT_AND_ABORT("Fail to initialize graphics renderer.")
     }
 
-    bool shouldRun = true;
-
     Bunny::Base::BasicTimer timer;
 
     Bunny::Render::TextureBank textureBank(&renderResources, &renderer);
     Bunny::Render::MeshBank<Bunny::Render::NormalVertex> meshBank(&renderResources);
-    Bunny::Render::MaterialBank materialBank;
     Bunny::Render::PbrMaterialBank pbrMaterialBank(&renderResources, &renderer, &textureBank);
 
-    Bunny::Render::BasicBlinnPhongMaterial::Builder builder;
-    builder.setColorAttachmentFormat(renderer.getSwapChainImageFormat());
-    builder.setDepthFormat(renderer.getDepthImageFormat());
-    std::unique_ptr<Bunny::Render::BasicBlinnPhongMaterial> blinnPhongMaterial =
-        builder.buildMaterial(renderResources.getDevice());
-    Bunny::Render::MaterialInstance blinnPhongInstance = blinnPhongMaterial->makeInstance();
+    pbrMaterialBank.initialize();
 
-    // Bunny::Render::ForwardPass forwardPass(&renderResources, &renderer, &materialBank, &meshBank);
+    {
+        Bunny::Render::IdType matInstId;
+        pbrMaterialBank.addMaterialInstance(
+            PbrMaterialLoadParams{
+                .mBaseColor = glm::vec4(0.8f, 0.8f, 0.5f, 1.0f),
+                .mEmissiveColor = glm::vec4(0, 0, 0, 0),
+                .mMetallic = 0.5f,
+                .mRoughness = 0.5f,
+                .mReflectance = 0.5f,
+            },
+            matInstId);
+        pbrMaterialBank.addMaterialInstance(
+            PbrMaterialLoadParams{
+                .mBaseColor = glm::vec4(0.5f, 0.8f, 0.9f, 1.0f),
+                .mEmissiveColor = glm::vec4(0, 0, 0, 0),
+                .mMetallic = 0.5f,
+                .mRoughness = 0.5f,
+                .mReflectance = 0.5f,
+            },
+            matInstId);
+    }
+
+    Bunny::Render::PbrForwardPass pbrForwardPass(&renderResources, &renderer, &pbrMaterialBank, &meshBank,
+        "pbr_culled_instanced_vert.spv", "pbr_forward_frag.spv");
     Bunny::Render::CullingPass cullingPass(&renderResources, &renderer, &meshBank);
     Bunny::Render::DepthReducePass depthReducePass(&renderResources, &renderer);
-    Bunny::Render::GBufferPass gbufferPass(&renderResources, &renderer, &meshBank);
-    Bunny::Render::DeferredShadingPass deferredShadingPass(&renderResources, &renderer);
 
-    //  optimize later: detach these layouts from specific material
-    // forwardPass.initializePass(blinnPhongMaterial->getSceneDescSetLayout(),
-    //     blinnPhongMaterial->getObjectDescSetLayout(), blinnPhongMaterial->getDrawDescSetLayout());
+    pbrForwardPass.initializePass();
     cullingPass.initializePass();
     depthReducePass.initializePass();
-    gbufferPass.initializePass();
-    deferredShadingPass.initializePass();
-
-    materialBank.addMaterial(std::move(blinnPhongMaterial));
-    materialBank.addMaterialInstance(blinnPhongInstance);
 
     World bunnyWorld;
-    WorldLoader worldLoader(&renderResources, &materialBank, &pbrMaterialBank, &meshBank);
+    WorldLoader worldLoader(&renderResources, &pbrMaterialBank, &meshBank);
     worldLoader.loadTestWorld(bunnyWorld);
 
-    // forwardPass.buildDrawCommands();
-    gbufferPass.buildDrawCommands();
+    pbrForwardPass.buildDrawCommands();
 
-    WorldRenderDataTranslator worldTranslator(&renderResources, &meshBank, &materialBank);
+    WorldRenderDataTranslator worldTranslator(&renderResources, &meshBank);
     worldTranslator.initialize();
     worldTranslator.initObjectDataBuffer(&bunnyWorld);
 
-    // forwardPass.updateDrawInstanceCounts(worldTranslator.getMeshInstanceCounts());
-    gbufferPass.updateDrawInstanceCounts(worldTranslator.getMeshInstanceCounts());
+    pbrForwardPass.updateDrawInstanceCounts(worldTranslator.getMeshInstanceCounts());
 
-    // forwardPass.linkSceneData(worldTranslator.getSceneBuffer());
-    // forwardPass.linkLightData(worldTranslator.getLightBuffer());
-    // forwardPass.linkObjectData(worldTranslator.getObjectBuffer(), worldTranslator.getObjectBufferSize());
-    gbufferPass.linkSceneData(worldTranslator.getSceneBuffer());
-    gbufferPass.linkObjectData(worldTranslator.getObjectBuffer(), worldTranslator.getObjectBufferSize());
-    deferredShadingPass.linkLightData(worldTranslator.getLightBuffer());
-    deferredShadingPass.linkGBufferMaps(
-        gbufferPass.getColorMaps(), gbufferPass.getFragPosMaps(), gbufferPass.getNormalTexCoordMaps());
+    pbrForwardPass.linkWorldData(worldTranslator.getPbrLightBuffer(), worldTranslator.getPbrCameraBuffer());
+    pbrForwardPass.linkObjectData(worldTranslator.getObjectBuffer(), worldTranslator.getObjectBufferSize());
 
     cullingPass.linkCullingData(depthReducePass.getDepthHierarchyImage(), depthReducePass.getDepthReduceSampler());
     cullingPass.linkMeshData(meshBank.getBoundsBuffer(), meshBank.getBoundsBufferSize());
     cullingPass.linkObjectData(worldTranslator.getObjectBuffer(), worldTranslator.getObjectBufferSize());
-    // cullingPass.linkDrawData(forwardPass.getDrawCommandBuffer(), forwardPass.getDrawCommandBufferSize(),
-    //     forwardPass.getInstanceObjectBuffer(), forwardPass.getInstanceObjectBufferSize());
-    cullingPass.linkDrawData(gbufferPass.getDrawCommandBuffer(), gbufferPass.getDrawCommandBufferSize(),
-        gbufferPass.getInstanceObjectBuffer(), gbufferPass.getInstanceObjectBufferSize());
+    cullingPass.linkDrawData(pbrForwardPass.getDrawCommandBuffer(), pbrForwardPass.getDrawCommandBufferSize(),
+        pbrForwardPass.getInstanceObjectBuffer(), pbrForwardPass.getInstanceObjectBufferSize());
     cullingPass.setObjectCount(worldTranslator.getObjectCount());
     cullingPass.setDepthImageSizes(depthReducePass.getDepthImageWidth(), depthReducePass.getDepthImageHeight(),
         depthReducePass.getDepthHierarchyLevels());
@@ -159,7 +158,6 @@ int main(void)
 
         worldTranslator.updateSceneData(&bunnyWorld);
 
-        // const auto camComps = bunnyWorld.mEntityRegistry.view<CameraComponent>();
         const auto camComps = bunnyWorld.mEntityRegistry.view<PbrCameraComponent>();
         if (!camComps.empty())
         {
@@ -169,14 +167,11 @@ int main(void)
 
         renderer.beginRenderFrame();
 
-        // forwardPass.resetDrawCommands();
-        gbufferPass.resetDrawCommands();
+        pbrForwardPass.prepareDrawCommandsForFrame();
 
         cullingPass.dispatch();
 
-        // forwardPass.draw();
-        gbufferPass.draw();
-        deferredShadingPass.draw();
+        pbrForwardPass.draw();
 
         depthReducePass.dispatch();
 
@@ -199,13 +194,12 @@ int main(void)
 
     worldTranslator.cleanup();
     cullingPass.cleanup();
-    // forwardPass.cleanup();
     depthReducePass.cleanup();
-    deferredShadingPass.cleanup();
-    gbufferPass.cleanup();
+    pbrForwardPass.cleanup();
 
     meshBank.cleanup();
-    materialBank.cleanup();
+    pbrMaterialBank.cleanup();
+    textureBank.cleanup();
 
     renderer.cleanup();
     renderResources.cleanup();

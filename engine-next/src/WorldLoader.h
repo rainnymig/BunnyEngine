@@ -18,7 +18,9 @@ class WorldLoader
 {
   public:
     WorldLoader(const Render::VulkanRenderResources* vulkanResources, Render::MaterialBank* materialBank,
-        Render::PbrMaterialBank* pbrMaterialBank, Render::MeshBank<Render::NormalVertex>* meshBank);
+        Render::MeshBank<Render::NormalVertex>* meshBank);
+    WorldLoader(const Render::VulkanRenderResources* vulkanResources, Render::PbrMaterialBank* pbrMaterialBank,
+        Render::MeshBank<Render::NormalVertex>* meshBank);
 
     BunnyResult loadGltfToWorld(std::string_view filePath, World& outWorld);
     BunnyResult loadPbrTestWorldWithGltfMeshes(std::string_view filePath, World& outWorld);

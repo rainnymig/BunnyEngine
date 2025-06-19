@@ -17,10 +17,10 @@ Engine::CameraSystem::CameraSystem(Base::InputManager* inputManager)
 
 void Engine::CameraSystem::update(World* world, float deltaTime)
 {
-    const auto camComps = world->mEntityRegistry.view<CameraComponent>();
+    const auto camComps = world->mEntityRegistry.view<PbrCameraComponent>();
     if (!camComps.empty())
     {
-        auto& cam = world->mEntityRegistry.get<CameraComponent>(camComps.front());
+        auto& cam = world->mEntityRegistry.get<PbrCameraComponent>(camComps.front());
         Render::Camera& camera = cam.mCamera;
         // camera.setDeltaRotation(glm::vec3(0, deltaTime * glm::pi<double>() / 16, 0));
         camera.setDeltaPosition(mMoveVector * mMoveVelocity * deltaTime);

@@ -7,18 +7,34 @@
 
 namespace Bunny::Render
 {
+
+class VulkanRenderResources;
+class VulkanGraphicsRenderer;
+class PbrMaterialBank;
+
 class PbrForwardPass : public PbrGraphicsPass
 {
   public:
+    PbrForwardPass(const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer,
+        const PbrMaterialBank* materialBank, const MeshBank<NormalVertex>* meshBank, std::string_view vertShader,
+        std::string_view fragShader);
+
     virtual void draw() const override;
 
     void buildDrawCommands();
     void updateDrawInstanceCounts(std::unordered_map<IdType, size_t> meshInstanceCounts);
     void prepareDrawCommandsForFrame();
-    void linkSceneData(const AllocatedBuffer& lightData, const AllocatedBuffer& cameraData);
+    void linkWorldData(const AllocatedBuffer& lightData, const AllocatedBuffer& cameraData);
     void linkObjectData(const AllocatedBuffer& objectBuffer, size_t bufferSize);
 
+    const AllocatedBuffer& getDrawCommandBuffer() const { return mDrawCommandsBuffer; }
+    const size_t getDrawCommandBufferSize() const;
+    const AllocatedBuffer& getInstanceObjectBuffer() const { return mInstanceObjectBuffer; }
+    const size_t getInstanceObjectBufferSize() const { return mInstanceObjectBufferSize; }
+
   protected:
+    using super = PbrGraphicsPass;
+
     struct FrameData
     {
         VkDescriptorSet mSceneDescSet;
