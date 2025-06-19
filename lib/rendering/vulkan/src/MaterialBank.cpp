@@ -67,6 +67,7 @@ PbrMaterialBank::PbrMaterialBank(
 
 BunnyResult PbrMaterialBank::initialize()
 {
+    BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(buildDescriptorSetLayouts())
     BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(buildPipelineLayouts())
 
     return BUNNY_HAPPY;

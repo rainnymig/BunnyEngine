@@ -12,7 +12,6 @@
 namespace Bunny::Render
 {
 class VulkanRenderResources;
-class MaterialBank;
 } // namespace Bunny::Render
 
 namespace Bunny::Engine
@@ -20,12 +19,12 @@ namespace Bunny::Engine
 class WorldRenderDataTranslator
 {
   public:
-    WorldRenderDataTranslator(const Render::VulkanRenderResources* vulkanResources,
-        const Render::MeshBank<Render::NormalVertex>* meshBank, const Render::MaterialBank* materialBank);
+    WorldRenderDataTranslator(
+        const Render::VulkanRenderResources* vulkanResources, const Render::MeshBank<Render::NormalVertex>* meshBank);
 
     BunnyResult initialize();
     BunnyResult updateSceneData(const World* world);
-    BunnyResult updatePbrSceneData(const World* world);
+    BunnyResult updatePbrWorldData(const World* world); //  update camera and light data
     BunnyResult updateObjectData(const World* world);
     BunnyResult initObjectDataBuffer(const World* world);
     void cleanup();
@@ -33,6 +32,8 @@ class WorldRenderDataTranslator
     const Render::AllocatedBuffer& getSceneBuffer() const { return mSceneDataBuffer; }
     const Render::AllocatedBuffer& getLightBuffer() const { return mLightDataBuffer; }
     const Render::AllocatedBuffer& getObjectBuffer() const { return mObjectDataBuffer; }
+    const Render::AllocatedBuffer& getPbrCameraBuffer() const { return mPbrCameraBuffer; }
+    const Render::AllocatedBuffer& getPbrLightBuffer() const { return mPbrLightBuffer; }
     const size_t getObjectBufferSize() const { return mObjectData.size() * sizeof(Render::ObjectData); }
     const uint32_t getObjectCount() const { return mObjectData.size(); }
 
@@ -44,7 +45,6 @@ class WorldRenderDataTranslator
 
     const Render::VulkanRenderResources* mVulkanResources;
     const Render::MeshBank<Render::NormalVertex>* mMeshBank;
-    const Render::MaterialBank* mMaterialBank;
 
     Render::AllocatedBuffer mObjectDataBuffer;
     std::vector<Render::ObjectData> mObjectData;

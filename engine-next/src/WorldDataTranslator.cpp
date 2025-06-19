@@ -5,11 +5,10 @@
 namespace Bunny::Engine
 {
 
-WorldRenderDataTranslator::WorldRenderDataTranslator(const Render::VulkanRenderResources* vulkanResources,
-    const Render::MeshBank<Render::NormalVertex>* meshBank, const Render::MaterialBank* materialBank)
+WorldRenderDataTranslator::WorldRenderDataTranslator(
+    const Render::VulkanRenderResources* vulkanResources, const Render::MeshBank<Render::NormalVertex>* meshBank)
     : mVulkanResources(vulkanResources),
-      mMeshBank(meshBank),
-      mMaterialBank(materialBank)
+      mMeshBank(meshBank)
 {
 }
 
@@ -81,7 +80,7 @@ BunnyResult WorldRenderDataTranslator::updateSceneData(const World* world)
     return BUNNY_HAPPY;
 }
 
-BunnyResult WorldRenderDataTranslator::updatePbrSceneData(const World* world)
+BunnyResult WorldRenderDataTranslator::updatePbrWorldData(const World* world)
 {
     const auto camComps = world->mEntityRegistry.view<PbrCameraComponent>();
 
@@ -99,11 +98,11 @@ BunnyResult WorldRenderDataTranslator::updatePbrSceneData(const World* world)
     }
 
     {
-        void* mappedSceneData = mSceneDataBuffer.mAllocationInfo.pMappedData;
-        memcpy(mappedSceneData, &mSceneData, sizeof(Render::SceneData));
+        void* mappedCameraData = mPbrCameraBuffer.mAllocationInfo.pMappedData;
+        memcpy(mappedCameraData, &mPbrCameraData, sizeof(Render::PbrCameraData));
     }
 
-    const auto lightComps = world->mEntityRegistry.view<DirectionLightComponent>();
+    const auto lightComps = world->mEntityRegistry.view<PbrLightComponent>();
     if (lightComps.empty())
     {
         return BUNNY_SAD;
@@ -112,15 +111,14 @@ BunnyResult WorldRenderDataTranslator::updatePbrSceneData(const World* world)
     size_t idx = 0;
     for (auto [entity, light] : lightComps.each())
     {
-        mLightData.mLights[idx].mColor = light.mLight.mColor;
-        mLightData.mLights[idx].mDirection = light.mLight.mDirection;
+        mPbrLightData.mLights[idx] = light.mLight;
         idx++;
     }
-    mLightData.mLightCount = idx;
+    mPbrLightData.mLightCount = idx;
 
     {
-        void* mappedLightData = mLightDataBuffer.mAllocationInfo.pMappedData;
-        memcpy(mappedLightData, &mLightData, sizeof(Render::LightData));
+        void* mappedLightData = mPbrLightBuffer.mAllocationInfo.pMappedData;
+        memcpy(mappedLightData, &mPbrLightData, sizeof(Render::LightData));
     }
 
     return BUNNY_HAPPY;

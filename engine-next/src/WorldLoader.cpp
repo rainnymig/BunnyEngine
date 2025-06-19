@@ -16,13 +16,23 @@
 #include <fastgltf/util.hpp>
 
 #include <random>
+#include <cassert>
 
 namespace Bunny::Engine
 {
 WorldLoader::WorldLoader(const Render::VulkanRenderResources* vulkanResources, Render::MaterialBank* materialBank,
-    Render::PbrMaterialBank* pbrMaterialBank, Render::MeshBank<Render::NormalVertex>* meshBank)
+    Render::MeshBank<Render::NormalVertex>* meshBank)
     : mVulkanResources(vulkanResources),
       mMaterialBank(materialBank),
+      mPbrMaterialBank(nullptr),
+      mMeshBank(meshBank)
+{
+}
+
+WorldLoader::WorldLoader(const Render::VulkanRenderResources* vulkanResources, Render::PbrMaterialBank* pbrMaterialBank,
+    Render::MeshBank<Render::NormalVertex>* meshBank)
+    : mVulkanResources(vulkanResources),
+      mMaterialBank(nullptr),
       mPbrMaterialBank(pbrMaterialBank),
       mMeshBank(meshBank)
 {
@@ -30,6 +40,8 @@ WorldLoader::WorldLoader(const Render::VulkanRenderResources* vulkanResources, R
 
 BunnyResult WorldLoader::loadGltfToWorld(std::string_view filePath, World& outWorld)
 {
+    assert(mMaterialBank != nullptr);
+
     std::filesystem::path path(filePath);
     constexpr auto gltfOptions = fastgltf::Options::DontRequireValidAssetMember | fastgltf::Options::AllowDouble |
                                  fastgltf::Options::LoadGLBBuffers | fastgltf::Options::LoadExternalBuffers |
@@ -122,6 +134,8 @@ BunnyResult WorldLoader::loadGltfToWorld(std::string_view filePath, World& outWo
 
 BunnyResult WorldLoader::loadPbrTestWorldWithGltfMeshes(std::string_view filePath, World& outWorld)
 {
+    assert(mPbrMaterialBank != nullptr);
+
     std::filesystem::path path(filePath);
     constexpr auto gltfOptions = fastgltf::Options::DontRequireValidAssetMember | fastgltf::Options::AllowDouble |
                                  fastgltf::Options::LoadGLBBuffers | fastgltf::Options::LoadExternalBuffers |
@@ -197,6 +211,8 @@ BunnyResult WorldLoader::loadPbrTestWorldWithGltfMeshes(std::string_view filePat
 
 BunnyResult WorldLoader::loadTestWorld(World& outWorld)
 {
+    assert(mMaterialBank != nullptr);
+
     //  create meshes and save them in the mesh asset bank
     const Render::IdType meshId = Render::createCubeMeshToBank(
         mMeshBank, mMaterialBank->getDefaultMaterialId(), mMaterialBank->getDefaultMaterialInstanceId());

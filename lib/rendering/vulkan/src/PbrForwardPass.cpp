@@ -11,6 +11,13 @@
 
 namespace Bunny::Render
 {
+PbrForwardPass::PbrForwardPass(const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer,
+    const PbrMaterialBank* materialBank, const MeshBank<NormalVertex>* meshBank, std::string_view vertShader,
+    std::string_view fragShader)
+    : super(vulkanResources, renderer, materialBank, meshBank, vertShader, fragShader)
+{
+}
+
 void PbrForwardPass::draw() const
 {
     static constexpr bool updateDepth = true;
@@ -120,7 +127,7 @@ void PbrForwardPass::prepareDrawCommandsForFrame()
         VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 }
 
-void PbrForwardPass::linkSceneData(const AllocatedBuffer& lightData, const AllocatedBuffer& cameraData)
+void PbrForwardPass::linkWorldData(const AllocatedBuffer& lightData, const AllocatedBuffer& cameraData)
 {
     DescriptorWriter writer;
     writer.writeBuffer(0, lightData.mBuffer, sizeof(PbrLightData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
@@ -139,6 +146,11 @@ void PbrForwardPass::linkObjectData(const AllocatedBuffer& objectBuffer, size_t 
     {
         writer.updateSet(mVulkanResources->getDevice(), frame.mObjectDescSet);
     }
+}
+
+const size_t PbrForwardPass::getDrawCommandBufferSize() const
+{
+    return sizeof(VkDrawIndexedIndirectCommand) * mDrawCommandsData.size();
 }
 
 BunnyResult PbrForwardPass::initPipeline()
@@ -171,6 +183,8 @@ BunnyResult PbrForwardPass::initPipeline()
     builder.setPipelineLayout(mPipelineLayout);
 
     mPipeline = builder.build(device);
+
+    mDeletionStack.AddFunction([this]() { vkDestroyPipeline(mVulkanResources->getDevice(), mPipeline, nullptr); });
 
     return BUNNY_HAPPY;
 }
