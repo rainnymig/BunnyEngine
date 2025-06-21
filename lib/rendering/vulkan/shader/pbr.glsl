@@ -47,7 +47,7 @@ struct PbrMaterial
 };
 
 //  update irregularly, maybe only once at start if materials don't change
-layout(std430, set = 2, binding = 0) buffer MaterialData
+layout(std430, set = 2, binding = 0) readonly buffer MaterialData
 {
     PbrMaterial materialInstances[];
 };

@@ -361,8 +361,8 @@ void loadMeshFromGltf(MeshBank<NormalVertex>* meshBank, MaterialProvider* materi
             if (tangentAttr != primitive.attributes.end())
             {
                 fastgltf::Accessor& tangentAccessor = gltfAsset.accessors[tangentAttr->accessorIndex];
-                fastgltf::iterateAccessorWithIndex<glm::vec3>(
-                    gltfAsset, tangentAccessor, [&vertices, initialVtx](glm::vec3 tangent, size_t idx) {
+                fastgltf::iterateAccessorWithIndex<glm::vec4>(
+                    gltfAsset, tangentAccessor, [&vertices, initialVtx](glm::vec4 tangent, size_t idx) {
                         vertices[initialVtx + idx].mTangent = tangent;
                     });
             }

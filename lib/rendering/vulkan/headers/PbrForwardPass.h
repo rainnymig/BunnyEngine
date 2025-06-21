@@ -37,7 +37,7 @@ class PbrForwardPass : public PbrGraphicsPass
 
     struct FrameData
     {
-        VkDescriptorSet mSceneDescSet;
+        VkDescriptorSet mWorldDescSet;
         VkDescriptorSet mObjectDescSet;
         VkDescriptorSet mMaterialDescSet;
     };

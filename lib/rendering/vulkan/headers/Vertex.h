@@ -88,12 +88,12 @@ struct NormalVertex
         attributeDescriptions[2].offset = offsetof(NormalVertex, mTangent);
 
         attributeDescriptions[3].binding = 0;
-        attributeDescriptions[3].location = 2;
+        attributeDescriptions[3].location = 3;
         attributeDescriptions[3].format = VK_FORMAT_R32G32B32A32_SFLOAT;
         attributeDescriptions[3].offset = offsetof(NormalVertex, mColor);
 
         attributeDescriptions[4].binding = 0;
-        attributeDescriptions[4].location = 3;
+        attributeDescriptions[4].location = 4;
         attributeDescriptions[4].format = VK_FORMAT_R32G32_SFLOAT;
         attributeDescriptions[4].offset = offsetof(NormalVertex, mTexCoord);
 

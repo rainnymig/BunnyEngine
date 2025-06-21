@@ -118,7 +118,7 @@ BunnyResult WorldRenderDataTranslator::updatePbrWorldData(const World* world)
 
     {
         void* mappedLightData = mPbrLightBuffer.mAllocationInfo.pMappedData;
-        memcpy(mappedLightData, &mPbrLightData, sizeof(Render::LightData));
+        memcpy(mappedLightData, &mPbrLightData, sizeof(Render::PbrLightData));
     }
 
     return BUNNY_HAPPY;
