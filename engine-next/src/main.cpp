@@ -72,6 +72,7 @@ int main(void)
     Bunny::Render::MeshBank<Bunny::Render::NormalVertex> meshBank(&renderResources);
     Bunny::Render::PbrMaterialBank pbrMaterialBank(&renderResources, &renderer, &textureBank);
 
+    textureBank.initialize();
     pbrMaterialBank.initialize();
 
     {
@@ -95,6 +96,7 @@ int main(void)
             },
             matInstId);
     }
+    pbrMaterialBank.recreateMaterialBuffer();
 
     Bunny::Render::PbrForwardPass pbrForwardPass(&renderResources, &renderer, &pbrMaterialBank, &meshBank,
         "pbr_culled_instanced_vert.spv", "pbr_forward_frag.spv");
@@ -107,7 +109,8 @@ int main(void)
 
     World bunnyWorld;
     WorldLoader worldLoader(&renderResources, &pbrMaterialBank, &meshBank);
-    worldLoader.loadTestWorld(bunnyWorld);
+    static constexpr std::string_view gltfFilePath = "./assets/model/suzanne.glb";
+    worldLoader.loadPbrTestWorldWithGltfMeshes(gltfFilePath, bunnyWorld);
 
     pbrForwardPass.buildDrawCommands();
 
@@ -156,7 +159,7 @@ int main(void)
 
         cameraSystem.update(&bunnyWorld, timer.getDeltaTime());
 
-        worldTranslator.updateSceneData(&bunnyWorld);
+        worldTranslator.updatePbrWorldData(&bunnyWorld);
 
         const auto camComps = bunnyWorld.mEntityRegistry.view<PbrCameraComponent>();
         if (!camComps.empty())

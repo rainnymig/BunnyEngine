@@ -156,32 +156,61 @@ BunnyResult WorldLoader::loadPbrTestWorldWithGltfMeshes(std::string_view filePat
 
     //  load meshes
     Render::loadMeshFromGltf(mMeshBank, mPbrMaterialBank, gltf);
+    mMeshBank->buildMeshBuffers();
 
-    static constexpr float spawnAreaXMax = 10;
-    static constexpr float spawnAreaYMax = 10;
-    static constexpr float spawnAreaZMax = 5;
-    static constexpr uint32_t objectCount = 30;
-    static constexpr float scaleMax = 1.2f;
-    static constexpr float scaleMin = 0.8f;
+    // static constexpr float spawnAreaXMax = 10;
+    // static constexpr float spawnAreaYMax = 10;
+    // static constexpr float spawnAreaZMax = 5;
+    // static constexpr uint32_t objectCount = 30;
+    // static constexpr float scaleMax = 1.2f;
+    // static constexpr float scaleMin = 0.8f;
 
-    static std::random_device rd;
-    static std::mt19937 re(rd());
-    static std::uniform_real_distribution<float> xDist(-spawnAreaXMax, spawnAreaXMax);
-    static std::uniform_real_distribution<float> yDist(-spawnAreaYMax, spawnAreaYMax);
-    static std::uniform_real_distribution<float> zDist(-spawnAreaZMax, spawnAreaZMax);
-    static std::uniform_real_distribution<float> scaleDist(scaleMin, scaleMax);
-    static std::uniform_real_distribution<float> rotDist(-glm::pi<float>(), glm::pi<float>());
+    // static std::random_device rd;
+    // static std::mt19937 re(rd());
+    // static std::uniform_real_distribution<float> xDist(-spawnAreaXMax, spawnAreaXMax);
+    // static std::uniform_real_distribution<float> yDist(-spawnAreaYMax, spawnAreaYMax);
+    // static std::uniform_real_distribution<float> zDist(-spawnAreaZMax, spawnAreaZMax);
+    // static std::uniform_real_distribution<float> scaleDist(scaleMin, scaleMax);
+    // static std::uniform_real_distribution<float> rotDist(-glm::pi<float>(), glm::pi<float>());
 
-    for (uint32_t i = 0; i < objectCount; i++)
+    // for (uint32_t i = 0; i < objectCount; i++)
+    // {
+    //     float nodeScale = scaleDist(re);
+    //     Base::Transform nodeTransform(
+    //         {xDist(re), xDist(re), xDist(re)}, {0, rotDist(re), 0}, {nodeScale, nodeScale, nodeScale});
+    //     const auto nodeEntity = outWorld.mEntityRegistry.create();
+    //     outWorld.mEntityRegistry.emplace<TransformComponent>(nodeEntity, nodeTransform);
+    //     //  assign a random material instance from the pbr material bank instead of using the one from the mesh
+    //     outWorld.mEntityRegistry.emplace<MeshComponent>(
+    //         nodeEntity, mMeshBank->getRandomMeshId(), mPbrMaterialBank->giveMeAMaterialInstance());
+    // }
+
+    //  create scene structure
+    //  create grid of cubes to fill the scene
+    constexpr int resolution = 5;
+    constexpr float gap = 3;
+    std::vector<glm::vec3> positions;
+    glm::vec3 startingPos{-gap * resolution / 2, -gap * resolution / 2, -gap * resolution / 2};
+    size_t idx = 0;
+    for (int z = 0; z < resolution; z++)
     {
-        float nodeScale = scaleDist(re);
-        Base::Transform nodeTransform({xDist(re), yDist(re), zDist(re)}, {rotDist(re), rotDist(re), rotDist(re)},
-            {nodeScale, nodeScale, nodeScale});
+        for (int y = 0; y < resolution; y++)
+        {
+            for (int x = 0; x < resolution; x++)
+            {
+                positions.emplace_back(
+                    glm::vec3{startingPos.x + x * gap, startingPos.y + y * gap, startingPos.z + z * gap});
+            }
+        }
+    }
+
+    for (int idx = 0; idx < positions.size(); idx++)
+    {
+        Base::Transform nodeTransform(positions[idx], {0, 0, 0}, {1, 1, 1});
         const auto nodeEntity = outWorld.mEntityRegistry.create();
         outWorld.mEntityRegistry.emplace<TransformComponent>(nodeEntity, nodeTransform);
-        //  assign a random material instance from the pbr material bank instead of using the one from the mesh
         outWorld.mEntityRegistry.emplace<MeshComponent>(
-            nodeEntity, mMeshBank->getRandomMeshId(), mPbrMaterialBank->giveMeAMaterialInstance());
+            nodeEntity, mMeshBank->getRandomMeshId(), mMaterialBank->getDefaultMaterialInstanceId());
     }
 
     //  camera

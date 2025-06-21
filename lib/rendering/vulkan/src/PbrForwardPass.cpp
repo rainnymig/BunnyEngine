@@ -35,7 +35,7 @@ void PbrForwardPass::draw() const
     //  they are laid out properly in FrameData
     //  if the layout changes this needs to be updated
     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout, 0, 3,
-        &mFrameData[mRenderer->getCurrentFrameIdx()].mObjectDescSet, 0, nullptr);
+        &mFrameData[mRenderer->getCurrentFrameIdx()].mWorldDescSet, 0, nullptr);
 
     vkCmdDrawIndexedIndirect(cmd, mDrawCommandsBuffer.mBuffer, 0, 1, sizeof(VkDrawIndexedIndirectCommand));
 
@@ -109,7 +109,7 @@ void PbrForwardPass::updateDrawInstanceCounts(std::unordered_map<IdType, size_t>
 
         //  link instance object buffer to descriptor
         DescriptorWriter writer;
-        writer.writeBuffer(0, mInstanceObjectBuffer.mBuffer, bufferSize, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+        writer.writeBuffer(1, mInstanceObjectBuffer.mBuffer, bufferSize, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
         for (FrameData& frame : mFrameData)
         {
             writer.updateSet(mVulkanResources->getDevice(), frame.mObjectDescSet);
@@ -134,7 +134,7 @@ void PbrForwardPass::linkWorldData(const AllocatedBuffer& lightData, const Alloc
     writer.writeBuffer(1, cameraData.mBuffer, sizeof(PbrCameraData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
     for (const FrameData& frame : mFrameData)
     {
-        writer.updateSet(mVulkanResources->getDevice(), frame.mSceneDescSet);
+        writer.updateSet(mVulkanResources->getDevice(), frame.mWorldDescSet);
     }
 }
 
@@ -205,7 +205,10 @@ BunnyResult PbrForwardPass::initDescriptors()
     for (FrameData& frame : mFrameData)
     {
         //  allocate all 3 sets of one frame at once
-        mDescriptorAllocator.allocate(device, descLayouts, &frame.mSceneDescSet, 3);
+        mDescriptorAllocator.allocate(device, descLayouts, &frame.mWorldDescSet, 3);
+
+        //  link material data to material descriptor set
+        mMaterialBank->updateMaterialDescriptorSet(frame.mMaterialDescSet);
     }
 
     mDeletionStack.AddFunction([this]() { mDescriptorAllocator.destroyPools(mVulkanResources->getDevice()); });

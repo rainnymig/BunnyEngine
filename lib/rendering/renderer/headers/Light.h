@@ -28,5 +28,6 @@ struct PbrLight
     float mInnerAngle;
     float mOuterAngle;
     LightType mType = LightType::Directional;
+    float mPadding;
 };
 } // namespace Bunny::Render

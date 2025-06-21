@@ -67,7 +67,10 @@ BunnyResult TextureBank::addTexture(const char* filePath, VkFormat format, IdTyp
 
 BunnyResult TextureBank::addDescriptorSetWrite(uint32_t binding, DescriptorWriter& outWriter) const
 {
-    assert(mTextures.size() > 0);
+    if (mTextures.empty())
+    {
+        return BUNNY_HAPPY;
+    }
     std::vector<VkDescriptorImageInfo> imageInfos;
     imageInfos.reserve(mTextures.size());
     std::transform(

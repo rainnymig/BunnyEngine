@@ -8,6 +8,7 @@
 #include "TextureBank.h"
 
 #include <random>
+#include <cassert>
 
 namespace Bunny::Render
 {
@@ -75,6 +76,7 @@ BunnyResult PbrMaterialBank::initialize()
 
 void PbrMaterialBank::cleanup()
 {
+    mVulkanResources->destroyBuffer(mMaterialBuffer);
     mDeletionStack.Flush();
 }
 
@@ -140,18 +142,32 @@ BunnyResult PbrMaterialBank::addMaterialInstance(const PbrMaterialLoadParams& ma
     return BUNNY_HAPPY;
 }
 
-void PbrMaterialBank::updateMaterialDescriptorSet(VkDescriptorSet descriptorSet)
+void PbrMaterialBank::updateMaterialDescriptorSet(VkDescriptorSet descriptorSet) const
 {
-    if (mMaterialBufferNeedUpdate)
-    {
-        recreateMaterialBuffer();
-    }
+    assert(!mMaterialBufferNeedUpdate);
 
     DescriptorWriter writer;
     writer.writeBuffer(0, mMaterialBuffer.mBuffer, mMaterialInstances.size() * sizeof(PbrMaterialParameters), 0,
         VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     mTextureBank->addDescriptorSetWrite(1, writer);
     writer.updateSet(mVulkanResources->getDevice(), descriptorSet);
+}
+
+BunnyResult PbrMaterialBank::recreateMaterialBuffer()
+{
+    //  maybe need to wait for current rendering to finish?
+
+    //  clean existing material buffer
+    mVulkanResources->destroyBuffer(mMaterialBuffer);
+
+    //  and then recreate using new data
+    BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(mVulkanResources->createBufferWithData(mMaterialInstances.data(),
+        mMaterialInstances.size() * sizeof(PbrMaterialParameters), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+        VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, VMA_MEMORY_USAGE_AUTO, mMaterialBuffer))
+
+    mMaterialBufferNeedUpdate = false;
+
+    return BUNNY_HAPPY;
 }
 
 BunnyResult PbrMaterialBank::buildDescriptorSetLayouts()
@@ -249,23 +265,6 @@ BunnyResult PbrMaterialBank::buildPipelineLayouts()
         vkDestroyPipelineLayout(device, mPbrGBufferPipelineLayout, nullptr);
         vkDestroyPipelineLayout(device, mPbrDeferredPipelineLayout, nullptr);
     });
-
-    return BUNNY_HAPPY;
-}
-
-BunnyResult PbrMaterialBank::recreateMaterialBuffer()
-{
-    //  maybe need to wait for current rendering to finish?
-
-    //  clean existing material buffer
-    mVulkanResources->destroyBuffer(mMaterialBuffer);
-
-    //  and then recreate using new data
-    BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(mVulkanResources->createBufferWithData(mMaterialInstances.data(),
-        mMaterialInstances.size() * sizeof(PbrMaterialParameters), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-        VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, VMA_MEMORY_USAGE_AUTO, mMaterialBuffer))
-
-    mMaterialBufferNeedUpdate = false;
 
     return BUNNY_HAPPY;
 }

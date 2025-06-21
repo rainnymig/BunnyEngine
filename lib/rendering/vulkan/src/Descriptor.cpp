@@ -195,6 +195,8 @@ void DescriptorWriter::writeImages(
         .descriptorCount = static_cast<uint32_t>(infos.size()),
         .descriptorType = type,
         .pImageInfo = infos.data()};
+
+    mWrites.push_back(write);
 }
 
 void DescriptorWriter::writeBuffers(
@@ -210,6 +212,8 @@ void DescriptorWriter::writeBuffers(
         .descriptorCount = static_cast<uint32_t>(infos.size()),
         .descriptorType = type,
         .pBufferInfo = infos.data()};
+
+    mWrites.push_back(write);
 }
 
 void DescriptorWriter::updateSet(VkDevice device, VkDescriptorSet descriptorSet)

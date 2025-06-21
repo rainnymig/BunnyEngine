@@ -32,6 +32,7 @@ struct ObjectData
     glm::vec3 scale;
     IdType meshId;
     IdType materialId;
+    float mPadding[3];
 };
 
 struct PbrLightData
