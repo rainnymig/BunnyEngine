@@ -81,7 +81,7 @@ int main(void)
             PbrMaterialLoadParams{
                 .mBaseColor = glm::vec4(0.8f, 0.8f, 0.5f, 1.0f),
                 .mEmissiveColor = glm::vec4(0, 0, 0, 0),
-                .mMetallic = 0.5f,
+                .mMetallic = 0.05f,
                 .mRoughness = 0.5f,
                 .mReflectance = 0.5f,
             },
@@ -90,7 +90,7 @@ int main(void)
             PbrMaterialLoadParams{
                 .mBaseColor = glm::vec4(0.5f, 0.8f, 0.9f, 1.0f),
                 .mEmissiveColor = glm::vec4(0, 0, 0, 0),
-                .mMetallic = 0.5f,
+                .mMetallic = 0.05f,
                 .mRoughness = 0.5f,
                 .mReflectance = 0.5f,
             },
