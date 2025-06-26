@@ -2,6 +2,7 @@ add_library(VulkanRenderer)
 
 target_sources(VulkanRenderer
     PUBLIC
+        headers/AccelerationStructureBuilder.h
         headers/ComputePipelineBuilder.h
         headers/CullingPass.h
         headers/DeferredShadingPass.h
@@ -18,6 +19,7 @@ target_sources(VulkanRenderer
         headers/PbrForwardPass.h
         headers/PbrGraphicsPass.h
         headers/QueueFamilyIndices.h
+        headers/RaytracingPipelineBuilder.h
         headers/ForwardPass.h
         headers/Shader.h
         headers/ShaderData.h
@@ -27,6 +29,7 @@ target_sources(VulkanRenderer
         headers/VulkanGraphicsRenderer.h
         headers/VulkanRenderResources.h
     PRIVATE
+        src/AccelerationStructureBuilder.cpp
         src/ComputePipelineBuilder.cpp
         src/CullingPass.cpp
         src/DeferredShadingPass.cpp
@@ -38,6 +41,7 @@ target_sources(VulkanRenderer
         src/MeshBank.cpp
         src/PbrForwardPass.cpp
         src/PbrGraphicsPass.cpp
+        src/RaytracingPipelineBuilder.cpp
         src/ForwardPass.cpp
         src/GBufferPass.cpp
         src/GraphicsPipelineBuilder.cpp
