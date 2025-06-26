@@ -87,13 +87,25 @@ BunnyResult VulkanRenderResources::initialize(Base::Window* window)
     //  needed for having different format of color attachments for gbuffer
     featureBasic.independentBlend = true;
 
+    VkPhysicalDeviceAccelerationStructureFeaturesKHR featureAccel{
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR};
+
+    VkPhysicalDeviceRayTracingPipelineFeaturesKHR featureRtPipeline{
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR};
+
     vkb::PhysicalDeviceSelector selector{vkbInstance};
-    auto deviceSelectResult = selector.set_minimum_version(1, 3)
-                                  .set_required_features_13(features13)
-                                  .set_required_features_12(features12)
-                                  .set_required_features(featureBasic)
-                                  .set_surface(mSurface)
-                                  .select();
+    auto deviceSelectResult =
+        selector.set_minimum_version(1, 3)
+            .add_required_extension(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME)
+            .add_required_extension_features<VkPhysicalDeviceAccelerationStructureFeaturesKHR>(featureAccel)
+            .add_required_extension(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME)
+            .add_required_extension_features<VkPhysicalDeviceRayTracingPipelineFeaturesKHR>(featureRtPipeline)
+            .add_required_extension(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME) //  required by ray tracing pipeline
+            .set_required_features_13(features13)
+            .set_required_features_12(features12)
+            .set_required_features(featureBasic)
+            .set_surface(mSurface)
+            .select();
     if (!deviceSelectResult)
     {
         PRINT_AND_RETURN_VALUE("Fail to select suitable Vulkan physical devcie.", BUNNY_SAD)
