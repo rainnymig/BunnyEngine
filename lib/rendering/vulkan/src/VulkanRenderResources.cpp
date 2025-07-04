@@ -93,14 +93,20 @@ BunnyResult VulkanRenderResources::initialize(Base::Window* window)
     VkPhysicalDeviceRayTracingPipelineFeaturesKHR featureRtPipeline{
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR};
 
+    // VkPhysicalDeviceBufferDeviceAddressFeatures featureDeviceAddress{
+    //     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_ADDRESS_FEATURES_EXT};
+    // featureDeviceAddress.bufferDeviceAddress = true;
+
     vkb::PhysicalDeviceSelector selector{vkbInstance};
     auto deviceSelectResult =
         selector.set_minimum_version(1, 3)
             .add_required_extension(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME)
-            .add_required_extension_features<VkPhysicalDeviceAccelerationStructureFeaturesKHR>(featureAccel)
+            .add_required_extension_features(featureAccel)
             .add_required_extension(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME)
-            .add_required_extension_features<VkPhysicalDeviceRayTracingPipelineFeaturesKHR>(featureRtPipeline)
+            .add_required_extension_features(featureRtPipeline)
             .add_required_extension(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME) //  required by ray tracing pipeline
+            // .add_required_extension(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME)
+            // .add_required_extension_features(featureDeviceAddress)
             .set_required_features_13(features13)
             .set_required_features_12(features12)
             .set_required_features(featureBasic)
@@ -417,6 +423,18 @@ BunnyResult VulkanRenderResources::immediateTransitionImageLayout(
     BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(endAndSubmitImmediateCommand())
 
     return BUNNY_HAPPY;
+}
+
+VkDeviceAddress VulkanRenderResources::getBufferDeviceAddress(const AllocatedBuffer& buffer) const
+{
+    if (buffer.mBuffer == nullptr)
+    {
+        return 0ull;
+    }
+
+    VkBufferDeviceAddressInfo info = {VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO};
+    info.buffer = buffer.mBuffer;
+    return vkGetBufferDeviceAddress(mDevice, &info);
 }
 
 VkFormat VulkanRenderResources::findSupportedFormat(

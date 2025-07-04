@@ -3,6 +3,7 @@
 #include "Fundamentals.h"
 #include "VulkanRenderResources.h"
 #include "BoundingBox.h"
+#include "AccelerationStructureData.h"
 
 #include <vulkan/vulkan.h>
 
@@ -59,7 +60,12 @@ class MeshBank
     const AllocatedBuffer& getBoundsBuffer() const { return mBoundsBuffer; }
     const size_t getBoundsBufferSize() const { return sizeof(Base::BoundingSphere) * mBoundsData.size(); }
 
+    [[nodiscard]] std::vector<BlasGeometryData> getBlasGeometryData() const;
+
   private:
+    BlasGeometryData buildTriangleBlasGeometryDataFromMesh(
+        const MeshLite& mesh, VkDeviceAddress vertexBufferAddress, VkDeviceAddress indexBufferAdress) const;
+
     AllocatedBuffer mVertexBuffer;
     AllocatedBuffer mIndexBuffer;
     AllocatedBuffer mBoundsBuffer;
@@ -124,10 +130,14 @@ void MeshBank<VertexType, IndexType>::buildMeshBuffers()
     const VkDeviceSize indexSize = mIndexBufferData.size() * sizeof(IndexType);
     const VkDeviceSize boundsSize = mBoundsData.size() * sizeof(Base::BoundingSphere);
 
-    mVulkanResources->createBufferWithData(mVertexBufferData.data(), vertexSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-        VMA_ALLOCATION_CREATE_MAPPED_BIT, VMA_MEMORY_USAGE_GPU_ONLY, mVertexBuffer);
-    mVulkanResources->createBufferWithData(mIndexBufferData.data(), indexSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-        VMA_ALLOCATION_CREATE_MAPPED_BIT, VMA_MEMORY_USAGE_GPU_ONLY, mIndexBuffer);
+    //  add VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT for vertex and index buffer
+    //  this is required when creating acceleration structures for ray tracing
+    mVulkanResources->createBufferWithData(mVertexBufferData.data(), vertexSize,
+        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, VMA_ALLOCATION_CREATE_MAPPED_BIT,
+        VMA_MEMORY_USAGE_GPU_ONLY, mVertexBuffer);
+    mVulkanResources->createBufferWithData(mIndexBufferData.data(), indexSize,
+        VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, VMA_ALLOCATION_CREATE_MAPPED_BIT,
+        VMA_MEMORY_USAGE_GPU_ONLY, mIndexBuffer);
     mVulkanResources->createBufferWithData(mBoundsData.data(), boundsSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
         VMA_ALLOCATION_CREATE_MAPPED_BIT, VMA_MEMORY_USAGE_GPU_ONLY, mBoundsBuffer); //  bounds of meshes for culling
 }
@@ -162,5 +172,61 @@ void MeshBank<VertexType, IndexType>::cleanup()
     mVertexBufferData.clear();
     mIndexBufferData.clear();
     mBoundsData.clear();
+}
+
+template <typename VertexType, typename IndexType>
+inline std::vector<BlasGeometryData> MeshBank<VertexType, IndexType>::getBlasGeometryData() const
+{
+    std::vector<BlasGeometryData> blasGeometryData;
+
+    VkDeviceAddress vertexBufferAddress = mVulkanResources->getBufferDeviceAddress(mVertexBuffer);
+    VkDeviceAddress indexBufferAddress = mVulkanResources->getBufferDeviceAddress(mIndexBuffer);
+
+    for (const MeshLite& mesh : mMeshes)
+    {
+        blasGeometryData.emplace_back(
+            buildTriangleBlasGeometryDataFromMesh(mesh, vertexBufferAddress, indexBufferAddress));
+    }
+
+    return blasGeometryData;
+}
+
+template <typename VertexType, typename IndexType>
+inline BlasGeometryData MeshBank<VertexType, IndexType>::buildTriangleBlasGeometryDataFromMesh(
+    const MeshLite& mesh, VkDeviceAddress vertexBufferAddress, VkDeviceAddress indexBufferAdress) const
+{
+    BlasGeometryData blasData;
+
+    static constexpr uint32_t indexCountPerTriangle = 3;
+
+    for (const SurfaceLite& surface : mesh.mSurfaces)
+    {
+        VkAccelerationStructureGeometryTrianglesDataKHR triangles{
+            VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR};
+
+        triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT; // vec3 vertex position data.
+
+        triangles.vertexData.deviceAddress = vertexBufferAddress;
+        triangles.vertexStride = sizeof(VertexType);
+        triangles.indexType = VK_INDEX_TYPE_UINT32; // hardcoded here, update later to make it change with IndexType
+        triangles.indexData.deviceAddress = indexBufferAdress;
+        //  Indicate identity transform by setting transformData to null device pointer.
+        //  triangles.transformData = {};
+        triangles.maxVertex = mVertexBufferData.size() - 1;
+
+        VkAccelerationStructureGeometryKHR& geometry =
+            blasData.mGeometries.emplace_back(VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR);
+        geometry.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_KHR;
+        geometry.flags = VK_GEOMETRY_OPAQUE_BIT_KHR; //  for now everything is opaque
+        geometry.geometry.triangles = triangles;
+
+        VkAccelerationStructureBuildRangeInfoKHR& offset = blasData.mBuildRanges.emplace_back();
+        offset.firstVertex = mesh.mVertexOffset;
+        offset.primitiveCount = surface.mIndexCount / indexCountPerTriangle;
+        offset.primitiveOffset = 0;
+        offset.transformOffset = 0;
+    }
+
+    return blasData;
 }
 } // namespace Bunny::Render
