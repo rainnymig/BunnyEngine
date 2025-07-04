@@ -62,6 +62,8 @@ class VulkanRenderResources
     BunnyResult immediateTransitionImageLayout(
         VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels = 1) const;
 
+    VkDeviceAddress getBufferDeviceAddress(const AllocatedBuffer& buffer) const;
+
     VkFormat findSupportedFormat(
         std::span<VkFormat> candidates, VkImageTiling tiling, VkFormatFeatureFlags features) const;
 

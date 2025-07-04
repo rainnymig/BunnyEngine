@@ -3,6 +3,7 @@ add_library(VulkanRenderer)
 target_sources(VulkanRenderer
     PUBLIC
         headers/AccelerationStructureBuilder.h
+        headers/AccelerationStructureData.h
         headers/ComputePipelineBuilder.h
         headers/CullingPass.h
         headers/DeferredShadingPass.h
