@@ -36,6 +36,7 @@ class WorldRenderDataTranslator
     const Render::AllocatedBuffer& getPbrLightBuffer() const { return mPbrLightBuffer; }
     const size_t getObjectBufferSize() const { return mObjectData.size() * sizeof(Render::ObjectData); }
     const uint32_t getObjectCount() const { return mObjectData.size(); }
+    const std::vector<Render::ObjectData>& getObjectData() const { return mObjectData; }
 
     const std::unordered_map<Render::IdType, size_t>& getMeshInstanceCounts() const { return mMeshInstanceCounts; }
 

@@ -6,6 +6,7 @@
 
 #include <vulkan/vulkan.h>
 #include <glm/vec3.hpp>
+#include <glm/mat4x4.hpp>
 #include <fastgltf/core.hpp>
 
 #include <vector>
@@ -52,5 +53,7 @@ void loadMeshFromGltf(MeshBank<NormalVertex>* meshBank, MaterialProvider* materi
 uint32_t findPreviousPow2(uint32_t val);
 
 bool hasFlag(VkFlags testFlag, VkFlags targetFlag);
+
+VkTransformMatrixKHR convertToVkTransformMatrix(const glm::mat4& glmMat);
 
 } // namespace Bunny::Render
