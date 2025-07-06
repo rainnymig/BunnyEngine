@@ -60,10 +60,10 @@ class MeshBank
     const AllocatedBuffer& getBoundsBuffer() const { return mBoundsBuffer; }
     const size_t getBoundsBufferSize() const { return sizeof(Base::BoundingSphere) * mBoundsData.size(); }
 
-    [[nodiscard]] std::vector<BlasGeometryData> getBlasGeometryData() const;
+    [[nodiscard]] std::vector<AcceStructGeometryData> getBlasGeometryData() const;
 
   private:
-    BlasGeometryData buildTriangleBlasGeometryDataFromMesh(
+    AcceStructGeometryData buildTriangleBlasGeometryDataFromMesh(
         const MeshLite& mesh, VkDeviceAddress vertexBufferAddress, VkDeviceAddress indexBufferAdress) const;
 
     AllocatedBuffer mVertexBuffer;
@@ -175,9 +175,9 @@ void MeshBank<VertexType, IndexType>::cleanup()
 }
 
 template <typename VertexType, typename IndexType>
-inline std::vector<BlasGeometryData> MeshBank<VertexType, IndexType>::getBlasGeometryData() const
+inline std::vector<AcceStructGeometryData> MeshBank<VertexType, IndexType>::getBlasGeometryData() const
 {
-    std::vector<BlasGeometryData> blasGeometryData;
+    std::vector<AcceStructGeometryData> blasGeometryData;
 
     VkDeviceAddress vertexBufferAddress = mVulkanResources->getBufferDeviceAddress(mVertexBuffer);
     VkDeviceAddress indexBufferAddress = mVulkanResources->getBufferDeviceAddress(mIndexBuffer);
@@ -192,10 +192,10 @@ inline std::vector<BlasGeometryData> MeshBank<VertexType, IndexType>::getBlasGeo
 }
 
 template <typename VertexType, typename IndexType>
-inline BlasGeometryData MeshBank<VertexType, IndexType>::buildTriangleBlasGeometryDataFromMesh(
+inline AcceStructGeometryData MeshBank<VertexType, IndexType>::buildTriangleBlasGeometryDataFromMesh(
     const MeshLite& mesh, VkDeviceAddress vertexBufferAddress, VkDeviceAddress indexBufferAdress) const
 {
-    BlasGeometryData blasData;
+    AcceStructGeometryData blasData;
 
     static constexpr uint32_t indexCountPerTriangle = 3;
 

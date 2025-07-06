@@ -67,6 +67,11 @@ class VulkanRenderResources
     VkFormat findSupportedFormat(
         std::span<VkFormat> candidates, VkImageTiling tiling, VkFormatFeatureFlags features) const;
 
+    //  query physical device properties
+    //  should pass in a pointer to physical device property struct
+    //  https://registry.khronos.org/vulkan/specs/latest/man/html/VkPhysicalDeviceProperties2.html#VUID-VkPhysicalDeviceProperties2-pNext-pNext
+    void getPhysicalDeviceProperties(void* properties) const;
+
     ~VulkanRenderResources();
 
   private:

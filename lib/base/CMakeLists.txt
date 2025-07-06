@@ -2,6 +2,7 @@ add_library(Base)
 
 target_sources(Base
     PUBLIC
+        headers/AlignHelpers.h
         headers/BoundingBox.h
         headers/BunnyGuard.h
         headers/BunnyResult.h
