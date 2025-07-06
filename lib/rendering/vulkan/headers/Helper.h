@@ -51,4 +51,6 @@ void loadMeshFromGltf(MeshBank<NormalVertex>* meshBank, MaterialProvider* materi
 //  find the largest power of 2 that's less than val
 uint32_t findPreviousPow2(uint32_t val);
 
+bool hasFlag(VkFlags testFlag, VkFlags targetFlag);
+
 } // namespace Bunny::Render

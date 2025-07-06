@@ -189,15 +189,18 @@ BunnyResult VulkanRenderResources::createBufferWithData(void* data, VkDeviceSize
 
     memcpy(stagingBuffer.mAllocationInfo.pMappedData, data, size);
 
-    BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(startImmedidateCommand(CommandQueueType::Transfer))
+    VkCommandBuffer cmdBuf = startImmedidateCommand(CommandQueueType::Transfer);
+    if (cmdBuf == nullptr)
+    {
+        return BUNNY_SAD;
+    }
 
     VkBufferCopy bufCopy{0};
     bufCopy.dstOffset = 0;
     bufCopy.srcOffset = 0;
     bufCopy.size = size;
 
-    vkCmdCopyBuffer(mImmediateCommands.at(CommandQueueType::Transfer).mBuffer, stagingBuffer.mBuffer, outBuffer.mBuffer,
-        1, &bufCopy);
+    vkCmdCopyBuffer(cmdBuf, stagingBuffer.mBuffer, outBuffer.mBuffer, 1, &bufCopy);
 
     BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(endAndSubmitImmediateCommand(CommandQueueType::Transfer))
 
@@ -220,7 +223,11 @@ BunnyResult VulkanRenderResources::createImageWithData(void* data, VkDeviceSize 
 
     memcpy(stagingBuffer.mAllocationInfo.pMappedData, data, dataSize);
 
-    BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(startImmedidateCommand(CommandQueueType::Graphics))
+    VkCommandBuffer cmdBuf = startImmedidateCommand(CommandQueueType::Graphics);
+    if (cmdBuf == nullptr)
+    {
+        return BUNNY_SAD;
+    }
 
     VkImageSubresourceLayers imageSubresource{
         .aspectMask = aspectFlags, .mipLevel = 0, .baseArrayLayer = 0, .layerCount = 1};
@@ -235,16 +242,15 @@ BunnyResult VulkanRenderResources::createImageWithData(void* data, VkDeviceSize 
     };
 
     //  transition image layout to be transfer destination
-    transitionImageLayout(mImmediateCommands.at(CommandQueueType::Graphics).mBuffer, outImage.mImage, outImage.mFormat,
-        VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    transitionImageLayout(
+        cmdBuf, outImage.mImage, outImage.mFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
     //  copy the image data into the image
-    vkCmdCopyBufferToImage(mImmediateCommands.at(CommandQueueType::Graphics).mBuffer, stagingBuffer.mBuffer,
-        outImage.mImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &bufImgCopy);
+    vkCmdCopyBufferToImage(
+        cmdBuf, stagingBuffer.mBuffer, outImage.mImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &bufImgCopy);
 
     //  transition the image layout to the desired layout
-    transitionImageLayout(mImmediateCommands.at(CommandQueueType::Graphics).mBuffer, outImage.mImage, outImage.mFormat,
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, layout);
+    transitionImageLayout(cmdBuf, outImage.mImage, outImage.mFormat, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, layout);
 
     BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(endAndSubmitImmediateCommand(CommandQueueType::Graphics))
 
@@ -415,12 +421,15 @@ void VulkanRenderResources::transitionImageLayout(VkCommandBuffer commandBuffer,
 BunnyResult VulkanRenderResources::immediateTransitionImageLayout(
     VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels) const
 {
-    BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(startImmedidateCommand())
+    VkCommandBuffer cmdBuf = startImmedidateCommand(CommandQueueType::Graphics);
+    if (cmdBuf == nullptr)
+    {
+        return BUNNY_SAD;
+    }
 
-    this->transitionImageLayout(
-        mImmediateCommands.at(CommandQueueType::Graphics).mBuffer, image, format, oldLayout, newLayout, mipLevels);
+    this->transitionImageLayout(cmdBuf, image, format, oldLayout, newLayout, mipLevels);
 
-    BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(endAndSubmitImmediateCommand())
+    BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(endAndSubmitImmediateCommand(CommandQueueType::Graphics))
 
     return BUNNY_HAPPY;
 }
@@ -542,21 +551,21 @@ BunnyResult VulkanRenderResources::createImmediateCommand()
     return BUNNY_HAPPY;
 }
 
-BunnyResult VulkanRenderResources::startImmedidateCommand(CommandQueueType cmdType) const
+VkCommandBuffer VulkanRenderResources::startImmedidateCommand(CommandQueueType cmdType) const
 {
-    VK_CHECK_OR_RETURN_BUNNY_SAD(vkResetFences(mDevice, 1, &mImmediateFence));
+    VK_CHECK_OR_RETURN_VALUE(vkResetFences(mDevice, 1, &mImmediateFence), nullptr);
 
     VkCommandBuffer cmdBuf = mImmediateCommands.at(cmdType).mBuffer;
 
-    VK_CHECK_OR_RETURN_BUNNY_SAD(vkResetCommandBuffer(cmdBuf, 0));
+    VK_CHECK_OR_RETURN_VALUE(vkResetCommandBuffer(cmdBuf, 0), nullptr);
 
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
-    VK_CHECK_OR_RETURN_BUNNY_SAD(vkBeginCommandBuffer(cmdBuf, &beginInfo));
+    VK_CHECK_OR_RETURN_VALUE(vkBeginCommandBuffer(cmdBuf, &beginInfo), nullptr);
 
-    return BUNNY_HAPPY;
+    return cmdBuf;
 }
 
 BunnyResult VulkanRenderResources::endAndSubmitImmediateCommand(CommandQueueType cmdType) const
