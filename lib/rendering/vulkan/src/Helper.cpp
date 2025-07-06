@@ -416,4 +416,9 @@ uint32_t findPreviousPow2(uint32_t val)
     return result;
 }
 
+bool hasFlag(VkFlags testFlag, VkFlags targetFlag)
+{
+    return (testFlag & targetFlag) == targetFlag;
+}
+
 } // namespace Bunny::Render

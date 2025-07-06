@@ -29,6 +29,18 @@ class VulkanRenderResources
         std::optional<uint32_t> mQueueFamilyIndex;
     };
 
+    enum class CommandQueueType
+    {
+        Graphics,
+        Transfer
+    };
+
+    struct ImmediateCommand
+    {
+        VkCommandPool mPool;
+        VkCommandBuffer mBuffer;
+    };
+
     BunnyResult initialize(Base::Window* window);
     void cleanup();
 
@@ -67,6 +79,9 @@ class VulkanRenderResources
     VkFormat findSupportedFormat(
         std::span<VkFormat> candidates, VkImageTiling tiling, VkFormatFeatureFlags features) const;
 
+    VkCommandBuffer startImmedidateCommand(CommandQueueType cmdType = CommandQueueType::Graphics) const;
+    BunnyResult endAndSubmitImmediateCommand(CommandQueueType cmdType = CommandQueueType::Graphics) const;
+
     //  query physical device properties
     //  should pass in a pointer to physical device property struct
     //  https://registry.khronos.org/vulkan/specs/latest/man/html/VkPhysicalDeviceProperties2.html#VUID-VkPhysicalDeviceProperties2-pNext-pNext
@@ -75,22 +90,8 @@ class VulkanRenderResources
     ~VulkanRenderResources();
 
   private:
-    enum class CommandQueueType
-    {
-        Graphics,
-        Transfer
-    };
-
-    struct ImmediateCommand
-    {
-        VkCommandPool mPool;
-        VkCommandBuffer mBuffer;
-    };
-
     BunnyResult getQueueFromDevice(Queue& queue, const vkb::Device& device, vkb::QueueType queueType) const;
     BunnyResult createImmediateCommand();
-    BunnyResult startImmedidateCommand(CommandQueueType cmdType = CommandQueueType::Graphics) const;
-    BunnyResult endAndSubmitImmediateCommand(CommandQueueType cmdType = CommandQueueType::Graphics) const;
 
     Base::Window* mWindow = nullptr;
     VkInstance mInstance = VK_NULL_HANDLE;

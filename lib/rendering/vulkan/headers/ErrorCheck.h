@@ -24,4 +24,16 @@
         }                                                                                                              \
     }
 
-#define VK_CHECK_OR_RETURN_BUNNY_SAD(exp) if (VkResult r = exp; r != VK_SUCCESS) { fmt::print("Vulkan error: {}, return BUNNY_SAD.", string_VkResult(r)); return BUNNY_SAD; }
+#define VK_CHECK_OR_RETURN_BUNNY_SAD(exp)                                                                              \
+    if (VkResult r = exp; r != VK_SUCCESS)                                                                             \
+    {                                                                                                                  \
+        fmt::print("Vulkan error: {}, return BUNNY_SAD.", string_VkResult(r));                                         \
+        return BUNNY_SAD;                                                                                              \
+    }
+
+#define VK_CHECK_OR_RETURN_VALUE(exp, val)                                                                             \
+    if (VkResult r = exp; r != VK_SUCCESS)                                                                             \
+    {                                                                                                                  \
+        fmt::print("Vulkan error: {}, returned.", string_VkResult(r));                                                 \
+        return val;                                                                                                    \
+    }
