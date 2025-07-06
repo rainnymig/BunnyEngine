@@ -421,4 +421,15 @@ bool hasFlag(VkFlags testFlag, VkFlags targetFlag)
     return (testFlag & targetFlag) == targetFlag;
 }
 
+VkTransformMatrixKHR convertToVkTransformMatrix(const glm::mat4& glmMat)
+{
+    //  glm::mat4 -> column major
+    //  VkTransformMatrixKHR -> row major
+
+    glm::mat4 transposedMat = glm::transpose(glmMat);
+    VkTransformMatrixKHR vkMat;
+    memcpy(&vkMat, &transposedMat, sizeof(VkTransformMatrixKHR));
+    return vkMat;
+}
+
 } // namespace Bunny::Render
