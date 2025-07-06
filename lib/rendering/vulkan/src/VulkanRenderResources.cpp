@@ -458,6 +458,13 @@ VkFormat VulkanRenderResources::findSupportedFormat(
     return VK_FORMAT_UNDEFINED;
 }
 
+void VulkanRenderResources::getPhysicalDeviceProperties(void* properties) const
+{
+    VkPhysicalDeviceProperties2 physicalDeviceProp2{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2};
+    physicalDeviceProp2.pNext = properties;
+    vkGetPhysicalDeviceProperties2(mPhysicalDevice, &physicalDeviceProp2);
+}
+
 VulkanRenderResources::~VulkanRenderResources()
 {
     cleanup();
