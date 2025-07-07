@@ -21,6 +21,8 @@ AccelerationStructureBuilder::AccelerationStructureBuilder(
 
 void AccelerationStructureBuilder::cleanup()
 {
+    destroyAcceStruct(mTopLevelAcceStruct);
+
     for (BuiltAccelerationStructure& acceStruct : mBottomLevelAcceStructs)
     {
         destroyAcceStruct(acceStruct);
@@ -67,27 +69,7 @@ AccelerationStructureBuilder::AcceStructBuildData AccelerationStructureBuilder::
         .mGeometries = blasData.mGeometries,
         .mBuildRanges = blasData.mBuildRanges};
 
-    buildData.mGeometryInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
-    buildData.mGeometryInfo.type = buildData.mType;
-    buildData.mGeometryInfo.flags = blasData.mBuildFlags | flags;
-    buildData.mGeometryInfo.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
-    buildData.mGeometryInfo.srcAccelerationStructure = VK_NULL_HANDLE;
-    buildData.mGeometryInfo.dstAccelerationStructure = VK_NULL_HANDLE;
-    buildData.mGeometryInfo.geometryCount = static_cast<uint32_t>(buildData.mGeometries.size());
-    buildData.mGeometryInfo.pGeometries = buildData.mGeometries.data();
-    buildData.mGeometryInfo.ppGeometries = nullptr;
-    buildData.mGeometryInfo.scratchData.deviceAddress = 0;
-
-    size_t geometryCount = blasData.mBuildRanges.size();
-    std::vector<uint32_t> primitiveCounts(geometryCount);
-    for (size_t i = 0; i < geometryCount; ++i)
-    {
-        primitiveCounts[i] = blasData.mBuildRanges[i].primitiveCount;
-    }
-
-    vkGetAccelerationStructureBuildSizesKHR(mVulkanResources->getDevice(),
-        VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &buildData.mGeometryInfo, primitiveCounts.data(),
-        &buildData.mSizeInfo);
+    prepareAcceBuildGeoSizeInfo(buildData, blasData.mBuildFlags | flags);
 }
 
 AllocatedBuffer AccelerationStructureBuilder::buildScratchBufferForAcceStruct(
@@ -260,6 +242,32 @@ void AccelerationStructureBuilder::compactAccelerationStructures(
     }
 }
 
+void AccelerationStructureBuilder::prepareAcceBuildGeoSizeInfo(
+    AcceStructBuildData& buildData, VkBuildAccelerationStructureFlagsKHR flags) const
+{
+    buildData.mGeometryInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
+    buildData.mGeometryInfo.type = buildData.mType;
+    buildData.mGeometryInfo.flags = flags;
+    buildData.mGeometryInfo.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
+    buildData.mGeometryInfo.srcAccelerationStructure = VK_NULL_HANDLE;
+    buildData.mGeometryInfo.dstAccelerationStructure = VK_NULL_HANDLE;
+    buildData.mGeometryInfo.geometryCount = static_cast<uint32_t>(buildData.mGeometries.size());
+    buildData.mGeometryInfo.pGeometries = buildData.mGeometries.data();
+    buildData.mGeometryInfo.ppGeometries = nullptr;
+    buildData.mGeometryInfo.scratchData.deviceAddress = 0;
+
+    size_t geometryCount = buildData.mBuildRanges.size();
+    std::vector<uint32_t> primitiveCounts(geometryCount);
+    for (size_t i = 0; i < geometryCount; ++i)
+    {
+        primitiveCounts[i] = buildData.mBuildRanges[i].primitiveCount;
+    }
+
+    vkGetAccelerationStructureBuildSizesKHR(mVulkanResources->getDevice(),
+        VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &buildData.mGeometryInfo, primitiveCounts.data(),
+        &buildData.mSizeInfo);
+}
+
 BuiltAccelerationStructure AccelerationStructureBuilder::createAcceStruct(
     VkAccelerationStructureCreateInfoKHR createInfo) const
 {
@@ -292,6 +300,32 @@ void AccelerationStructureBuilder::destroyAcceStruct(BuiltAccelerationStructure&
     }
 
     mVulkanResources->destroyBuffer(acceStruct.mBuffer);
+}
+
+void AccelerationStructureBuilder::updateAcceStruct(
+    AcceStructBuildData& buildData, BuiltAccelerationStructure& acceStruct, VkDeviceAddress scratchAddress)
+{
+    assert(acceStruct.mAcceStruct != nullptr);
+
+    const VkAccelerationStructureBuildRangeInfoKHR* rangeInfo = buildData.mBuildRanges.data();
+
+    buildData.mGeometryInfo.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_UPDATE_KHR;
+    buildData.mGeometryInfo.srcAccelerationStructure = acceStruct.mAcceStruct;
+    buildData.mGeometryInfo.dstAccelerationStructure = acceStruct.mAcceStruct;
+    buildData.mGeometryInfo.scratchData.deviceAddress = scratchAddress;
+    buildData.mGeometryInfo.pGeometries = buildData.mGeometries.data();
+
+    VkCommandBuffer cmd = mVulkanResources->startImmedidateCommand(VulkanRenderResources::CommandQueueType::Graphics);
+
+    vkCmdBuildAccelerationStructuresKHR(cmd, 1, &buildData.mGeometryInfo, &rangeInfo);
+
+    VkMemoryBarrier barrier{VK_STRUCTURE_TYPE_MEMORY_BARRIER};
+    barrier.srcAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR;
+    barrier.dstAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR;
+    vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
+        VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, 0, 1, &barrier, 0, nullptr, 0, nullptr);
+
+    mVulkanResources->endAndSubmitImmediateCommand(VulkanRenderResources::CommandQueueType::Graphics);
 }
 
 void AccelerationStructureBuilder::queryAcceStructProperties()
