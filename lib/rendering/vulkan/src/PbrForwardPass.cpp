@@ -14,7 +14,9 @@ namespace Bunny::Render
 PbrForwardPass::PbrForwardPass(const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer,
     const PbrMaterialBank* materialBank, const MeshBank<NormalVertex>* meshBank, std::string_view vertShader,
     std::string_view fragShader)
-    : super(vulkanResources, renderer, materialBank, meshBank, vertShader, fragShader)
+    : super(vulkanResources, renderer, materialBank, meshBank),
+      mVertexShaderPath(vertShader),
+      mFragmentShaderPath(fragShader)
 {
 }
 

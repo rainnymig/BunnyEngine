@@ -70,6 +70,16 @@ VkPipelineShaderStageCreateInfo makeShaderStageCreateInfo(
     return info;
 }
 
+VkRayTracingShaderGroupCreateInfoKHR makeRayTracingShaderGroupCreateInfoKHR()
+{
+    VkRayTracingShaderGroupCreateInfoKHR createInfo{VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR};
+    createInfo.anyHitShader = VK_SHADER_UNUSED_KHR;
+    createInfo.closestHitShader = VK_SHADER_UNUSED_KHR;
+    createInfo.generalShader = VK_SHADER_UNUSED_KHR;
+    createInfo.intersectionShader = VK_SHADER_UNUSED_KHR;
+    return createInfo;
+}
+
 VkRenderingAttachmentInfo makeColorAttachmentInfo(VkImageView view, VkClearValue* clearValue, VkImageLayout layout)
 {
     VkRenderingAttachmentInfo colorAttachment{};

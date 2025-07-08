@@ -20,8 +20,7 @@ class PbrGraphicsPass
 {
   public:
     PbrGraphicsPass(const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer,
-        const PbrMaterialBank* materialBank, const MeshBank<NormalVertex>* meshBank, std::string_view vertShader,
-        std::string_view fragShader);
+        const PbrMaterialBank* materialBank, const MeshBank<NormalVertex>* meshBank);
     virtual ~PbrGraphicsPass();
 
     BunnyResult initializePass();
@@ -40,8 +39,6 @@ class PbrGraphicsPass
     VkPipelineLayout mPipelineLayout;
     VkPipeline mPipeline;
 
-    std::string_view mVertexShaderPath;
-    std::string_view mFragmentShaderPath;
     Base::FunctionStack<> mDeletionStack;
     bool mIsInitialized = false;
 };
