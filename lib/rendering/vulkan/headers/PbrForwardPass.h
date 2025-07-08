@@ -33,8 +33,6 @@ class PbrForwardPass : public PbrGraphicsPass
     const size_t getInstanceObjectBufferSize() const { return mInstanceObjectBufferSize; }
 
   protected:
-    using super = PbrGraphicsPass;
-
     struct FrameData
     {
         VkDescriptorSet mWorldDescSet;
@@ -44,6 +42,12 @@ class PbrForwardPass : public PbrGraphicsPass
 
     virtual BunnyResult initPipeline() override;
     virtual BunnyResult initDescriptors() override;
+
+  private:
+    using super = PbrGraphicsPass;
+
+    std::string_view mVertexShaderPath;
+    std::string_view mFragmentShaderPath;
 
     AllocatedBuffer mDrawCommandsBuffer;
     AllocatedBuffer mInitialDrawCommandBuffer;

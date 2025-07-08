@@ -7,14 +7,11 @@
 namespace Bunny::Render
 {
 PbrGraphicsPass::PbrGraphicsPass(const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer,
-    const PbrMaterialBank* materialBank, const MeshBank<NormalVertex>* meshBank, std::string_view vertShader,
-    std::string_view fragShader)
+    const PbrMaterialBank* materialBank, const MeshBank<NormalVertex>* meshBank)
     : mVulkanResources(vulkanResources),
       mRenderer(renderer),
       mMaterialBank(materialBank),
-      mMeshBank(meshBank),
-      mVertexShaderPath(vertShader),
-      mFragmentShaderPath(fragShader)
+      mMeshBank(meshBank)
 {
 }
 
