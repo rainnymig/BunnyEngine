@@ -8,8 +8,7 @@ class RaytracingShadowPass : public PbrGraphicsPass
 {
   public:
     RaytracingShadowPass(const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer,
-        const PbrMaterialBank* materialBank, const MeshBank<NormalVertex>* meshBank, std::string_view raygenShader,
-        std::string_view closestHitShader, std::string_view missShader);
+        const PbrMaterialBank* materialBank, const MeshBank<NormalVertex>* meshBank);
 
     virtual void draw() const override;
 
@@ -20,6 +19,7 @@ class RaytracingShadowPass : public PbrGraphicsPass
     using super = PbrGraphicsPass;
 
     BunnyResult buildPipelineLayout();
+    BunnyResult buildRaytracingDescSetLayouts();
 
     std::string_view mRaygenShaderPath;
     std::string_view mClosestHitShaderPath;
