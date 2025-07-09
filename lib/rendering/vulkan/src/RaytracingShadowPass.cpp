@@ -3,6 +3,8 @@
 #include "Error.h"
 #include "ErrorCheck.h"
 #include "MaterialBank.h"
+#include "Shader.h"
+#include "RaytracingPipelineBuilder.h"
 
 #include <vulkan/vulkan.h>
 
@@ -11,22 +13,41 @@
 namespace Bunny::Render
 {
 RaytracingShadowPass::RaytracingShadowPass(const VulkanRenderResources* vulkanResources,
-    const VulkanGraphicsRenderer* renderer, const PbrMaterialBank* materialBank, const MeshBank<NormalVertex>* meshBank,
-    std::string_view raygenShader, std::string_view closestHitShader, std::string_view missShader)
-    : super(vulkanResources, renderer, materialBank, meshBank),
-      mRaygenShaderPath(raygenShader),
-      mClosestHitShaderPath(closestHitShader),
-      mMissShaderPath(missShader)
+    const VulkanGraphicsRenderer* renderer, const PbrMaterialBank* materialBank, const MeshBank<NormalVertex>* meshBank)
+    : super(vulkanResources, renderer, materialBank, meshBank)
 {
 }
 
-void Render::RaytracingShadowPass::draw() const
+void RaytracingShadowPass::draw() const
 {
 }
 
-BunnyResult Render::RaytracingShadowPass::initPipeline()
+BunnyResult RaytracingShadowPass::initPipeline()
 {
     BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(buildPipelineLayout())
+
+    VkDevice device = mVulkanResources->getDevice();
+    Shader rayGenShader("rtbasic_rgen.sprv", device);
+    Shader closestHitShader("rtshadow_chit.sprv", device);
+    Shader basicMissShader("rtbasic_miss.sprv", device);
+    Shader shadowMissShader("rtshadow_miss.sprv", device);
+
+    RaytracingPipelineBuilder builder;
+    uint32_t rayGenIdx = builder.addShaderStage(rayGenShader.getShaderModule(), VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+    uint32_t basicMissIdx = builder.addShaderStage(basicMissShader.getShaderModule(), VK_SHADER_STAGE_MISS_BIT_KHR);
+    uint32_t shadowMissIdx = builder.addShaderStage(shadowMissShader.getShaderModule(), VK_SHADER_STAGE_MISS_BIT_KHR);
+    uint32_t closestHitIdx =
+        builder.addShaderStage(closestHitShader.getShaderModule(), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
+
+    builder.addGeneralShaderGroup(rayGenIdx);
+    builder.addGeneralShaderGroup(basicMissIdx);
+    builder.addGeneralShaderGroup(shadowMissIdx);
+    builder.addClosestHitShaderGroup(closestHitIdx);
+
+    builder.setMaxRecursionDepth(2); //  1 camera ray + 1 shadow ray
+                                     //  need more if multiple light?
+
+    mPipeline = builder.build(mVulkanResources->getDevice());
 
     mDeletionStack.AddFunction([this]() {
         if (mPipeline != nullptr)
@@ -39,7 +60,7 @@ BunnyResult Render::RaytracingShadowPass::initPipeline()
     return BUNNY_HAPPY;
 }
 
-BunnyResult Render::RaytracingShadowPass::buildPipelineLayout()
+BunnyResult RaytracingShadowPass::buildPipelineLayout()
 {
     //  take descriptor set layouts from material bank and build pipeline layout
     //  need to also add descriptor set layouts for vertex and index buffer as storage buffers
@@ -63,5 +84,14 @@ BunnyResult Render::RaytracingShadowPass::buildPipelineLayout()
     });
 
     return BUNNY_HAPPY;
+}
+
+BunnyResult Render::RaytracingShadowPass::buildRaytracingDescSetLayouts()
+{
+    //  build descriptor set layouts that are specific to the ray tracing pipeline
+    //  such as desc sets for acceleration structures, vertex buffer, index buffer and output image
+
+    return BUNNY_HAPPY;
+}
 
 } // namespace Bunny::Render
