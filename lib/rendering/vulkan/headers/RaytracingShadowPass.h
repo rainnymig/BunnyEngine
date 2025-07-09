@@ -20,10 +20,16 @@ class RaytracingShadowPass : public PbrGraphicsPass
 
     BunnyResult buildPipelineLayout();
     BunnyResult buildRaytracingDescSetLayouts();
+    BunnyResult buildShaderBindingTable();
+    void queryRaytracingProperties();
 
-    std::string_view mRaygenShaderPath;
-    std::string_view mClosestHitShaderPath;
-    std::string_view mMissShaderPath;
+    AllocatedBuffer mShaderBindingTableBuffer;
+    VkStridedDeviceAddressRegionKHR mRayGenRegion;
+    VkStridedDeviceAddressRegionKHR mMissRegion;
+    VkStridedDeviceAddressRegionKHR mHitRegion;
+
+    VkPhysicalDeviceRayTracingPipelinePropertiesKHR mRaytracingProperties{
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
 };
 
 } // namespace Bunny::Render

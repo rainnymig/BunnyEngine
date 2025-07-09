@@ -73,7 +73,7 @@ class AccelerationStructureBuilder
     void initializeQueryPool(uint32_t queryCount);
 
     VkPhysicalDeviceAccelerationStructurePropertiesKHR mAcceStructProperties{
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_PROPERTIES_KHR};
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_PROPERTIES_KHR};
 
     std::vector<BuiltAccelerationStructure> mBottomLevelAcceStructs;
     BuiltAccelerationStructure mTopLevelAcceStruct;
