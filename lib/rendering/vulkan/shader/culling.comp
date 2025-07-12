@@ -1,4 +1,6 @@
-#version 450
+#version 460
+
+#include "pbrCommon.glsl"
 
 layout (local_size_x = 256) in;
 
@@ -10,15 +12,6 @@ struct DrawCommand
     int vertexOffset;
     uint firstInstance;
     vec3 padding;
-};
-
-struct ObjectData
-{
-    mat4 model;
-    mat4 invTransModel;
-    vec3 scale;
-    uint meshId;
-    uint materialId;
 };
 
 struct Plane

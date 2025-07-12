@@ -94,6 +94,8 @@ BunnyResult WorldRenderDataTranslator::updatePbrWorldData(const World* world)
         mPbrCameraData.mPosition = cam.mCamera.getPosition();
         mPbrCameraData.mViewProjMat = cam.mCamera.getViewProjMatrix();
         mPbrCameraData.mExposure = cam.mCamera.getExposure();
+        mPbrCameraData.mInverseView = cam.mCamera.getInverseViewMatrix();
+        mPbrCameraData.mInverseProj = cam.mCamera.getInverseProjMatrix();
         break;
     }
 
@@ -135,12 +137,14 @@ BunnyResult WorldRenderDataTranslator::updateObjectData(const World* world)
         getEntityGlobalTransform(
             world->mEntityRegistry, entity, transform.mTransform.mMatrix, transform.mTransform.mScale, modelMat, scale);
         glm::mat4 invTransModel = glm::transpose(glm::inverse(modelMat));
+        const Render::MeshLite& meshLite = mMeshBank->getMesh(mesh.mMeshId);
         Render::ObjectData& obj = mObjectData[idx];
         obj.model = modelMat;
         obj.invTransModel = invTransModel;
         obj.scale = scale;
         obj.meshId = mesh.mMeshId;
         obj.materialId = mesh.mMaterialId;
+        obj.vertexOffset = meshLite.mVertexOffset;
         idx++;
     }
 
@@ -165,7 +169,9 @@ BunnyResult WorldRenderDataTranslator::initObjectDataBuffer(const World* world)
         getEntityGlobalTransform(
             world->mEntityRegistry, entity, transform.mTransform.mMatrix, transform.mTransform.mScale, modelMat, scale);
         glm::mat4 invTransModel = glm::transpose(glm::inverse(modelMat));
-        mObjectData.emplace_back(modelMat, invTransModel, scale, mesh.mMeshId, mesh.mMaterialId);
+        const Render::MeshLite& meshLite = mMeshBank->getMesh(mesh.mMeshId);
+        mObjectData.emplace_back(
+            modelMat, invTransModel, scale, mesh.mMeshId, mesh.mMaterialId, meshLite.mVertexOffset);
 
         mMeshInstanceCounts[mesh.mMeshId]++;
     }

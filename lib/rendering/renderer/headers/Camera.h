@@ -45,7 +45,9 @@ class Camera
 
     glm::mat4 getViewMatrix() const { return mViewMatrix; }
     glm::mat4 getProjMatrix() const { return mProjMatrix; }
-    glm::mat4 getViewProjMatrix() const { return mViewProjMatrix; }
+    [[nodiscard]] glm::mat4 getViewProjMatrix() const { return mProjMatrix * mViewMatrix; }
+    [[nodiscard]] glm::mat4 getInverseViewMatrix() const { return glm::inverse(mViewMatrix); }
+    [[nodiscard]] glm::mat4 getInverseProjMatrix() const { return glm::inverse(mProjMatrix); }
     glm::vec3 getPosition() const { return mPosition; }
     glm::vec3 getRotation() const { return mPitchYawRoll; }
     void getViewFrustum(ViewFrustum& outFrustum) const;
@@ -61,7 +63,6 @@ class Camera
 
     glm::mat4 mViewMatrix;
     glm::mat4 mProjMatrix;
-    glm::mat4 mViewProjMatrix;
     glm::vec3 mPosition;
     glm::vec3 mPitchYawRoll;
     glm::vec3 mForwardVec = StaticForward;

@@ -32,7 +32,9 @@ struct ObjectData
     glm::vec3 scale;
     IdType meshId;
     IdType materialId;
-    float mPadding[3];
+    uint32_t vertexOffset; //  small hack: put the vertex offset of the mesh here
+                           //  so that easier to find the vertices of a primitive in the ray tracing shaders
+    float mPadding[2];
 };
 
 struct PbrLightData
@@ -44,6 +46,8 @@ struct PbrLightData
 struct PbrCameraData
 {
     glm::mat4 mViewProjMat;
+    glm::mat4 mInverseView;
+    glm::mat4 mInverseProj;
     glm::vec3 mPosition;
     float mExposure;
 };
