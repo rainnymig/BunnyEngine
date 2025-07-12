@@ -29,10 +29,10 @@ BunnyResult RaytracingShadowPass::initPipeline()
     BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(buildPipelineLayout())
 
     VkDevice device = mVulkanResources->getDevice();
-    Shader rayGenShader("rtbasic_rgen.sprv", device);
-    Shader closestHitShader("rtshadow_chit.sprv", device);
-    Shader basicMissShader("rtbasic_miss.sprv", device);
-    Shader shadowMissShader("rtshadow_miss.sprv", device);
+    Shader rayGenShader("rtbasic_rgen.spv", device);
+    Shader closestHitShader("rtshadow_chit.spv", device);
+    Shader basicMissShader("rtbasic_miss.spv", device);
+    Shader shadowMissShader("rtshadow_miss.spv", device);
 
     RaytracingPipelineBuilder builder;
     uint32_t rayGenIdx = builder.addShaderStage(rayGenShader.getShaderModule(), VK_SHADER_STAGE_RAYGEN_BIT_KHR);

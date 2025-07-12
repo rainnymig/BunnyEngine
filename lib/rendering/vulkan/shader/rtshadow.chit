@@ -1,0 +1,36 @@
+#version 460
+
+#extension GL_EXT_ray_tracing : require
+#extension GL_EXT_buffer_reference2 : require
+#extension GL_EXT_scalar_block_layout : enable
+
+#include "pbr.glsl"
+
+//  https://stackoverflow.com/questions/60549218/what-use-has-the-layout-specifier-scalar-in-ext-scalar-block-layout
+layout(buffer_reference, scalar) buffer Vertices {Vertex v[]; }; // Positions of an object
+layout(buffer_reference, scalar) buffer Indices {uint i[]; }; // Triangle indices
+layout(buffer_reference, scalar)
+
+layout(std430, set = 1, binding = 0) buffer ObjectDataBuffer
+{
+    ObjectData objectData[];
+};
+
+//  top level acceleration structure for ray tracing
+layout(set = 3, binding = 0) uniform accelerationStructureEXT topLevelAcceStruct;
+//  output image of ray tracing result
+layout(set = 3, binding = 1, rgba32f) uniform image2D outImage;
+
+void main()
+{
+    //  to find the primitive of the hit:
+    //  first need to find index in index buffer using gl_PrimitiveID
+    //  index might not be used directly, as it needs to add vertex offset to get the real index into vertex buffer
+    //  vertex offset is saved in mesh data
+    //  (add mesh data buffer)
+    //  use gl_InstanceCustomIndexEXT, which should be mesh id now, to find mesh data in buffer
+    //  (or maybe change the mesh data to contain pre-offset index?)
+    //  get vertex offset
+    //  find vertex
+    //  do stuff
+}

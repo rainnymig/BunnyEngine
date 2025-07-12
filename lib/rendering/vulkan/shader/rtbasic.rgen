@@ -1,0 +1,41 @@
+#version 460
+
+#extension GL_EXT_ray_tracing : require
+#extension GL_EXT_buffer_reference2 : require
+#extension GL_EXT_scalar_block_layout : enable
+
+#include "pbr.glsl"
+
+/*//////
+Descriptor Sets:
+set 0: scene data
+set 1: object data
+set 2: material data
+//////*/
+
+//  top level acceleration structure for ray tracing
+layout(set = 3, binding = 0) uniform accelerationStructureEXT topLevelAcceStruct;
+//  output image of ray tracing result
+layout(set = 3, binding = 1, r32ui) uniform image2D outImage;
+
+layout(location = 0) rayPayloadEXT LightHitInfo lightHitInfo;
+
+void main()
+{
+    vec2 pixelCenter = vec2(gl_LaunchIDEXT.xy) + vec2(0.5);
+    vec2 inUV = pixelCenter / vec2(gl_LaunchSizeEXT.xy);
+    vec2 d = inUV * 2.0 - 1.0;
+
+    vec4 origin = vec4(cameraData.position, 1);
+    vec4 target = cameraData.inverseProj * vec4(d.x, d.y, 1, 1);
+    vec4 rayDir = cameraData.inverseView * vec4(normalize(target.xyz), 0);
+
+    uint  rayFlags = gl_RayFlagsOpaqueEXT;
+    float tMin = 0.001;
+    float tMax = 10000.0;
+
+    //  payload index 0
+    traceRayEXT(topLevelAcceStruct, rayFlags, 0xff, 0, 0, 0, camera.position, tMin, rayDir.xyz, tMax, 0);
+
+    imageStore(outImage, ivec2(gl_LaunchIDEXT.xy), lightHitInfo.lights);
+}

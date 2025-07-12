@@ -103,7 +103,6 @@ void Camera::updateMatrices()
     //  inverse Y direction to make it point upwards, ref:
     //  https://matthewwellings.com/blog/the-new-vulkan-coordinate-system/
     mProjMatrix[1][1] *= -1;
-    mViewProjMatrix = mProjMatrix * mViewMatrix;
 
     mForwardVec = rm * StaticForward;
     mUpVec = rm * StaticUp;

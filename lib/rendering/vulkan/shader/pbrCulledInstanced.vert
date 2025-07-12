@@ -1,32 +1,13 @@
-#version 450
+#version 460
 
 #include "pbr.glsl"
 
 /*//////
-
 Descriptor Sets:
 set 0: scene data
 set 1: object data
 set 2: material data
-
 //////*/
-
-struct ObjectData
-{
-    mat4 model;
-    mat4 invTransModel;
-    vec3 scale;
-    uint meshId;
-    uint materialId;
-};
-
-/*  buffer layouts  */
-// layout(set = 0, binding = 2) uniform SceneData 
-// {
-//     mat4 view;
-//     mat4 proj;
-//     mat4 viewProj;
-// } sceneData;
 
 layout(std430, set = 1, binding = 0) buffer ObjectDataBuffer
 {
