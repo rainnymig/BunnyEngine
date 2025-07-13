@@ -32,9 +32,11 @@ struct ObjectData
     glm::vec3 scale;
     IdType meshId;
     IdType materialId;
-    uint32_t vertexOffset; //  small hack: put the vertex offset of the mesh here
+    uint32_t vertexOffset; //  from mesh data: put the vertex offset of the mesh here
                            //  so that easier to find the vertices of a primitive in the ray tracing shaders
-    float mPadding[2];
+    uint32_t firstIndex;   //  from mesh data: also for rt pipeline
+                           //  the idx of the first index of the mesh in the shared index buffer
+    uint32_t mPadding;
 };
 
 struct PbrLightData

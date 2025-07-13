@@ -38,13 +38,14 @@ struct ObjectData
     uint meshId;
     uint materialId;
     uint vertexOffset;
+    uint firstIndex;
 };
 
 struct Vertex
 {
-    vec3 mPosition;
-    vec3 mNormal;
-    vec3 mTangent;
-    vec4 mColor;
-    vec2 mTexCoord;
+    vec3 position;
+    vec3 normal;
+    vec3 tangent;
+    vec4 color;
+    vec2 texCoord;
 };

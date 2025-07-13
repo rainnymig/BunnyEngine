@@ -5,6 +5,7 @@
 #extension GL_EXT_scalar_block_layout : enable
 
 #include "pbr.glsl"
+#include "rt.glsl"
 
 /*//////
 Descriptor Sets:

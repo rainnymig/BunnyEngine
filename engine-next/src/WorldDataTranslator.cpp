@@ -145,6 +145,7 @@ BunnyResult WorldRenderDataTranslator::updateObjectData(const World* world)
         obj.meshId = mesh.mMeshId;
         obj.materialId = mesh.mMaterialId;
         obj.vertexOffset = meshLite.mVertexOffset;
+        obj.firstIndex = meshLite.mSurfaces[0].mFirstIndex; //  for now just take the first index of the first surface
         idx++;
     }
 
@@ -170,8 +171,8 @@ BunnyResult WorldRenderDataTranslator::initObjectDataBuffer(const World* world)
             world->mEntityRegistry, entity, transform.mTransform.mMatrix, transform.mTransform.mScale, modelMat, scale);
         glm::mat4 invTransModel = glm::transpose(glm::inverse(modelMat));
         const Render::MeshLite& meshLite = mMeshBank->getMesh(mesh.mMeshId);
-        mObjectData.emplace_back(
-            modelMat, invTransModel, scale, mesh.mMeshId, mesh.mMaterialId, meshLite.mVertexOffset);
+        mObjectData.emplace_back(modelMat, invTransModel, scale, mesh.mMeshId, mesh.mMaterialId, meshLite.mVertexOffset,
+            meshLite.mSurfaces[0].mFirstIndex); //  for now just take the first index of the first surface
 
         mMeshInstanceCounts[mesh.mMeshId]++;
     }
