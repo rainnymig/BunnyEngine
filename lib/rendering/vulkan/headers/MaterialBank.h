@@ -84,7 +84,7 @@ class PbrMaterialBank : public MaterialProvider
     void updateMaterialDescriptorSet(VkDescriptorSet descriptorSet) const;
     BunnyResult recreateMaterialBuffer();
 
-    VkDescriptorSetLayout getSceneDescSetLayout() const { return mSceneDescSetLayout; }
+    VkDescriptorSetLayout getWorldDescSetLayout() const { return mWorldDescSetLayout; }
     VkDescriptorSetLayout getObjectDescSetLayout() const { return mObjectDescSetLayout; }
     VkDescriptorSetLayout getGBufferDescSetLayout() const { return mGBufferDescSetLayout; }
     VkDescriptorSetLayout getMaterialDescSetLayout() const { return mMaterialDescSetLayout; }
@@ -101,7 +101,7 @@ class PbrMaterialBank : public MaterialProvider
     const VulkanGraphicsRenderer* mRenderer;
     TextureBank* mTextureBank;
 
-    VkDescriptorSetLayout mSceneDescSetLayout;
+    VkDescriptorSetLayout mWorldDescSetLayout;
     VkDescriptorSetLayout mObjectDescSetLayout;
     VkDescriptorSetLayout mGBufferDescSetLayout;
     VkDescriptorSetLayout mMaterialDescSetLayout;

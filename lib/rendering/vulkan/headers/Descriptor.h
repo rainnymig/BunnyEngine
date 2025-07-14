@@ -60,6 +60,7 @@ class DescriptorWriter
     void writeImage(
         uint32_t binding, VkImageView imageView, VkSampler sampler, VkImageLayout layout, VkDescriptorType type);
     void writeBuffer(uint32_t binding, VkBuffer buffer, size_t size, size_t offset, VkDescriptorType type);
+    void writeAccelerationStructure(uint32_t binding, VkAccelerationStructureKHR acceStruct);
     void writeImages(uint32_t binding, std::vector<VkDescriptorImageInfo> imageInfos, VkDescriptorType type);
     void writeBuffers(uint32_t binding, std::vector<VkDescriptorBufferInfo> bufferInfos, VkDescriptorType type);
 
@@ -68,6 +69,8 @@ class DescriptorWriter
   private:
     std::deque<std::vector<VkDescriptorImageInfo>> mImageInfos;
     std::deque<std::vector<VkDescriptorBufferInfo>> mBufferInfos;
+    std::deque<VkAccelerationStructureKHR> mAcceStructs;
+    std::deque<VkWriteDescriptorSetAccelerationStructureKHR> mAcceStructWrites;
 
     std::vector<VkWriteDescriptorSet> mWrites;
 };

@@ -98,6 +98,11 @@ int main(void)
     }
     pbrMaterialBank.recreateMaterialBuffer();
 
+    World bunnyWorld;
+    WorldLoader worldLoader(&renderResources, &pbrMaterialBank, &meshBank);
+    static constexpr std::string_view gltfFilePath = "./assets/model/suzanne.glb";
+    worldLoader.loadPbrTestWorldWithGltfMeshes(gltfFilePath, bunnyWorld);
+
     Bunny::Render::PbrForwardPass pbrForwardPass(&renderResources, &renderer, &pbrMaterialBank, &meshBank,
         "pbr_culled_instanced_vert.spv", "pbr_forward_frag.spv");
     Bunny::Render::CullingPass cullingPass(&renderResources, &renderer, &meshBank);
@@ -106,11 +111,6 @@ int main(void)
     pbrForwardPass.initializePass();
     cullingPass.initializePass();
     depthReducePass.initializePass();
-
-    World bunnyWorld;
-    WorldLoader worldLoader(&renderResources, &pbrMaterialBank, &meshBank);
-    static constexpr std::string_view gltfFilePath = "./assets/model/suzanne.glb";
-    worldLoader.loadPbrTestWorldWithGltfMeshes(gltfFilePath, bunnyWorld);
 
     pbrForwardPass.buildDrawCommands();
 

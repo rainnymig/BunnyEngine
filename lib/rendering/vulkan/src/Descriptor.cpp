@@ -158,9 +158,11 @@ DescriptorWriter::~DescriptorWriter()
 
 void DescriptorWriter::clear()
 {
+    mWrites.clear();
     mImageInfos.clear();
     mBufferInfos.clear();
-    mWrites.clear();
+    mAcceStructWrites.clear();
+    mAcceStructs.clear();
 }
 
 void DescriptorWriter::writeImage(
@@ -180,6 +182,29 @@ void DescriptorWriter::writeBuffer(uint32_t binding, VkBuffer buffer, size_t siz
             {buffer, offset, size}
     },
         type);
+}
+
+void DescriptorWriter::writeAccelerationStructure(uint32_t binding, VkAccelerationStructureKHR acceStruct)
+{
+    const VkAccelerationStructureKHR& as = mAcceStructs.emplace_back(acceStruct);
+
+    const VkWriteDescriptorSetAccelerationStructureKHR& acceWrite =
+        mAcceStructWrites.emplace_back(VkWriteDescriptorSetAccelerationStructureKHR{
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,
+            .accelerationStructureCount = 1,
+            .pAccelerationStructures = &as});
+
+    VkWriteDescriptorSet write{
+        .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+        .pNext = &acceWrite,
+        .dstSet = VK_NULL_HANDLE,
+        .dstBinding = binding,
+        .dstArrayElement = 0,
+        .descriptorCount = 1,
+        .descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR,
+    };
+
+    mWrites.push_back(write);
 }
 
 void DescriptorWriter::writeImages(
