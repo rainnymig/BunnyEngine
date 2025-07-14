@@ -6,6 +6,9 @@
 #include "Shader.h"
 #include "RaytracingPipelineBuilder.h"
 #include "AlignHelpers.h"
+#include "VulkanRenderResources.h"
+#include "VulkanGraphicsRenderer.h"
+#include "Helper.h"
 
 #include <vulkan/vulkan.h>
 
@@ -22,6 +25,45 @@ RaytracingShadowPass::RaytracingShadowPass(const VulkanRenderResources* vulkanRe
 
 void RaytracingShadowPass::draw() const
 {
+}
+
+void RaytracingShadowPass::updateVertIdxBufferData(VkDeviceAddress vertBufAddress, VkDeviceAddress idxBufAddress)
+{
+    mVertIdxBufData.mVertexBufferAddress = vertBufAddress;
+    mVertIdxBufData.mIndexBufferAddress = idxBufAddress;
+
+    copyDataToBuffer(mVertIdxBufData, mVertIdxBufBuffer);
+}
+
+void RaytracingShadowPass::linkWorldData(const AllocatedBuffer& lightData, const AllocatedBuffer& cameraData)
+{
+    DescriptorWriter writer;
+    writer.writeBuffer(0, lightData.mBuffer, sizeof(PbrLightData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+    writer.writeBuffer(1, cameraData.mBuffer, sizeof(PbrCameraData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+    for (const FrameData& frame : mFrameData)
+    {
+        writer.updateSet(mVulkanResources->getDevice(), frame.mWorldDescSet);
+    }
+}
+
+void RaytracingShadowPass::linkObjectData(const AllocatedBuffer& objectBuffer, size_t bufferSize)
+{
+    Render::DescriptorWriter writer;
+    writer.writeBuffer(0, objectBuffer.mBuffer, bufferSize, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    for (const FrameData& frame : mFrameData)
+    {
+        writer.updateSet(mVulkanResources->getDevice(), frame.mObjectDescSet);
+    }
+}
+
+void RaytracingShadowPass::linkTopLevelAccelerationStructure(VkAccelerationStructureKHR acceStruct)
+{
+    DescriptorWriter writer;
+    writer.writeAccelerationStructure(0, acceStruct);
+    for (FrameData& frame : mFrameData)
+    {
+        writer.updateSet(mVulkanResources->getDevice(), frame.mRtDataDescSet);
+    }
 }
 
 BunnyResult RaytracingShadowPass::initPipeline()
@@ -62,12 +104,73 @@ BunnyResult RaytracingShadowPass::initPipeline()
     return BUNNY_HAPPY;
 }
 
+BunnyResult RaytracingShadowPass::initDescriptors()
+{
+    BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(buildRaytracingDescSetLayouts())
+
+    //  allocate descriptor sets
+    DescriptorAllocator::PoolSize poolSizes[] = {
+        {.mType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,             .mRatio = 4                                  },
+        {.mType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,             .mRatio = 6                                  },
+        {.mType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,     .mRatio = PbrMaterialBank::TEXTURE_ARRAY_SIZE},
+        {.mType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, .mRatio = 2                                  },
+        {.mType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,              .mRatio = 2                                  }
+    };
+    mDescriptorAllocator.init(mVulkanResources->getDevice(), 12, poolSizes);
+
+    VkDescriptorSetLayout descLayouts[] = {mMaterialBank->getWorldDescSetLayout(), mObjectDescSetLayout,
+        mMaterialBank->getMaterialDescSetLayout(), mRtDataDescSetLayout};
+    for (FrameData& frame : mFrameData)
+    {
+        //  allocate all 3 sets of one frame at once
+        mDescriptorAllocator.allocate(mVulkanResources->getDevice(), descLayouts, &frame.mWorldDescSet, 4);
+
+        //  link material data to material descriptor set
+        mMaterialBank->updateMaterialDescriptorSet(frame.mMaterialDescSet);
+    }
+
+    mDeletionStack.AddFunction([this]() { mDescriptorAllocator.destroyPools(mVulkanResources->getDevice()); });
+
+    return BUNNY_HAPPY;
+}
+
+BunnyResult RaytracingShadowPass::initDataAndResources()
+{
+    //  create uniform buffer to hold vertex and index buffer device address
+    mVertIdxBufBuffer =
+        mVulkanResources->createBuffer(sizeof(VertexIndexBufferData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+            VMA_MEMORY_USAGE_AUTO);
+    mDeletionStack.AddFunction([this]() { mVulkanResources->destroyBuffer(mVertIdxBufBuffer); });
+
+    //  create and bind out images for all frames
+    VkExtent2D swapchainExtent = mRenderer->getSwapChainExtent();
+    for (FrameData& frame : mFrameData)
+    {
+        frame.mOutImage = mVulkanResources->createImage(
+            VkExtent3D{.width = swapchainExtent.width, .height = swapchainExtent.height, .depth = 1},
+            VK_FORMAT_R32_UINT, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
+        mDeletionStack.AddFunction([this, &frame]() { mVulkanResources->destroyImage(frame.mOutImage); });
+
+        DescriptorWriter writer;
+        //  storage image, no need sampler?
+        writer.writeImage(
+            1, frame.mOutImage.mImageView, nullptr, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+        writer.updateSet(mVulkanResources->getDevice(), frame.mRtDataDescSet);
+
+        writer.clear();
+        writer.writeBuffer(
+            1, mVertIdxBufBuffer.mBuffer, sizeof(VertexIndexBufferData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+        writer.updateSet(mVulkanResources->getDevice(), frame.mObjectDescSet);
+    }
+}
+
 BunnyResult RaytracingShadowPass::buildPipelineLayout()
 {
     //  take descriptor set layouts from material bank and build pipeline layout
     //  need to also add descriptor set layouts for vertex and index buffer as storage buffers
-    std::array<VkDescriptorSetLayout, 3> descLayouts{mMaterialBank->getSceneDescSetLayout(),
-        mMaterialBank->getObjectDescSetLayout(), mMaterialBank->getMaterialDescSetLayout()};
+    std::array<VkDescriptorSetLayout, 4> descLayouts{mMaterialBank->getWorldDescSetLayout(), mObjectDescSetLayout,
+        mMaterialBank->getMaterialDescSetLayout(), mRtDataDescSetLayout};
     VkPipelineLayoutCreateInfo createInfo{.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
     createInfo.pushConstantRangeCount = 0;
     createInfo.pPushConstantRanges = nullptr;
@@ -90,8 +193,43 @@ BunnyResult RaytracingShadowPass::buildPipelineLayout()
 
 BunnyResult RaytracingShadowPass::buildRaytracingDescSetLayouts()
 {
+    //  build object descriptor set
+    VkDescriptorSetLayoutBinding storageBufferBinding{
+        0, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, nullptr};
+    VkDescriptorSetLayoutBinding addrUniformBinding{
+        1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, nullptr};
+
+    DescriptorLayoutBuilder builder;
+    builder.addBinding(storageBufferBinding);
+    builder.addBinding(addrUniformBinding);
+    mObjectDescSetLayout = builder.build(mVulkanResources->getDevice());
+
+    mDeletionStack.AddFunction([this]() {
+        if (mObjectDescSetLayout != nullptr)
+        {
+            vkDestroyDescriptorSetLayout(mVulkanResources->getDevice(), mObjectDescSetLayout, nullptr);
+            mObjectDescSetLayout = nullptr;
+        }
+    });
+
     //  build descriptor set layouts that are specific to the ray tracing pipeline
-    //  such as desc sets for acceleration structures, vertex buffer, index buffer and output image
+    VkDescriptorSetLayoutBinding acceStructBinding{0, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 1,
+        VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, nullptr};
+    VkDescriptorSetLayoutBinding outImageBinding{
+        1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_RAYGEN_BIT_KHR, nullptr};
+
+    builder.clear();
+    builder.addBinding(acceStructBinding);
+    builder.addBinding(outImageBinding);
+    mRtDataDescSetLayout = builder.build(mVulkanResources->getDevice());
+
+    mDeletionStack.AddFunction([this]() {
+        if (mRtDataDescSetLayout != nullptr)
+        {
+            vkDestroyDescriptorSetLayout(mVulkanResources->getDevice(), mRtDataDescSetLayout, nullptr);
+            mRtDataDescSetLayout = nullptr;
+        }
+    });
 
     return BUNNY_HAPPY;
 }

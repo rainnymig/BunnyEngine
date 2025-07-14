@@ -6,6 +6,7 @@
 #include <glm/matrix.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
+#include <vulkan/vulkan.h>
 
 namespace Bunny::Render
 {
@@ -52,6 +53,12 @@ struct PbrCameraData
     glm::mat4 mInverseProj;
     glm::vec3 mPosition;
     float mExposure;
+};
+
+struct VertexIndexBufferData
+{
+    VkDeviceAddress mVertexBufferAddress;
+    VkDeviceAddress mIndexBufferAddress;
 };
 
 } // namespace Bunny::Render

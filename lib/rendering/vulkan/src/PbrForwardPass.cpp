@@ -202,7 +202,7 @@ BunnyResult PbrForwardPass::initDescriptors()
     };
     mDescriptorAllocator.init(device, 8, poolSizes);
 
-    VkDescriptorSetLayout descLayouts[] = {mMaterialBank->getSceneDescSetLayout(),
+    VkDescriptorSetLayout descLayouts[] = {mMaterialBank->getWorldDescSetLayout(),
         mMaterialBank->getObjectDescSetLayout(), mMaterialBank->getMaterialDescSetLayout()};
     for (FrameData& frame : mFrameData)
     {

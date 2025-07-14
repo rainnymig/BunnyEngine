@@ -183,38 +183,51 @@ BunnyResult PbrMaterialBank::buildDescriptorSetLayouts()
 
     DescriptorLayoutBuilder builder;
 
+    //  light data
+    uniformBufferBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
     builder.addBinding(uniformBufferBinding);
+    //  camera data
     uniformBufferBinding.binding = 1;
-    uniformBufferBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+    uniformBufferBinding.stageFlags =
+        VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_RAYGEN_BIT_KHR;
     builder.addBinding(uniformBufferBinding);
-    mSceneDescSetLayout = builder.build(mVulkanResources->getDevice());
+    mWorldDescSetLayout = builder.build(mVulkanResources->getDevice());
 
     builder.clear();
+    //  object data
+    storageBufferBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
     builder.addBinding(storageBufferBinding);
+    //  instance to object id
     storageBufferBinding.binding = 1;
     builder.addBinding(storageBufferBinding);
     mObjectDescSetLayout = builder.build(mVulkanResources->getDevice());
 
     builder.clear();
+    //  color map
     builder.addBinding(imageBinding);
+    //  fragPos texU map
     imageBinding.binding = 1;
     builder.addBinding(imageBinding);
+    //  normal texV map
     imageBinding.binding = 2;
     builder.addBinding(imageBinding);
     mGBufferDescSetLayout = builder.build(mVulkanResources->getDevice());
 
     builder.clear();
+    //  all material data
     storageBufferBinding.binding = 0;
-    storageBufferBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    storageBufferBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
     builder.addBinding(storageBufferBinding);
+    //  all textures array
     imageBinding.binding = 1;
+    imageBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
     imageBinding.descriptorCount = TEXTURE_ARRAY_SIZE;
     builder.addBinding(imageBinding);
     mMaterialDescSetLayout = builder.build(mVulkanResources->getDevice());
 
     mDeletionStack.AddFunction([this]() {
         VkDevice device = mVulkanResources->getDevice();
-        vkDestroyDescriptorSetLayout(device, mSceneDescSetLayout, nullptr);
+        vkDestroyDescriptorSetLayout(device, mWorldDescSetLayout, nullptr);
         vkDestroyDescriptorSetLayout(device, mObjectDescSetLayout, nullptr);
         vkDestroyDescriptorSetLayout(device, mGBufferDescSetLayout, nullptr);
         vkDestroyDescriptorSetLayout(device, mMaterialDescSetLayout, nullptr);
@@ -226,7 +239,7 @@ BunnyResult PbrMaterialBank::buildDescriptorSetLayouts()
 BunnyResult PbrMaterialBank::buildPipelineLayouts()
 {
     {
-        VkDescriptorSetLayout layouts[] = {mSceneDescSetLayout, mObjectDescSetLayout, mMaterialDescSetLayout};
+        VkDescriptorSetLayout layouts[] = {mWorldDescSetLayout, mObjectDescSetLayout, mMaterialDescSetLayout};
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = 3;
@@ -237,7 +250,7 @@ BunnyResult PbrMaterialBank::buildPipelineLayouts()
     }
 
     {
-        VkDescriptorSetLayout layouts[] = {mSceneDescSetLayout, mObjectDescSetLayout};
+        VkDescriptorSetLayout layouts[] = {mWorldDescSetLayout, mObjectDescSetLayout};
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = 2;
@@ -248,7 +261,7 @@ BunnyResult PbrMaterialBank::buildPipelineLayouts()
     }
 
     {
-        VkDescriptorSetLayout layouts[] = {mSceneDescSetLayout, mGBufferDescSetLayout, mMaterialDescSetLayout};
+        VkDescriptorSetLayout layouts[] = {mWorldDescSetLayout, mGBufferDescSetLayout, mMaterialDescSetLayout};
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = 3;

@@ -3,6 +3,7 @@
 #include "Vertex.h"
 #include "MeshBank.h"
 #include "MaterialBank.h"
+#include "Fundamentals.h"
 
 #include <vulkan/vulkan.h>
 #include <glm/vec3.hpp>
@@ -15,6 +16,7 @@
 #include <optional>
 #include <unordered_map>
 #include <memory>
+#include <span>
 
 namespace Bunny::Render
 {
@@ -56,5 +58,19 @@ uint32_t findPreviousPow2(uint32_t val);
 bool hasFlag(VkFlags testFlag, VkFlags targetFlag);
 
 VkTransformMatrixKHR convertToVkTransformMatrix(const glm::mat4& glmMat);
+
+template <typename T>
+void copyDataToBuffer(const T& data, AllocatedBuffer& buffer)
+{
+    void* mappedData = buffer.mAllocationInfo.pMappedData;
+    memcpy(mappedData, &data, sizeof(T));
+}
+
+template <typename T>
+void copyDataArrayToBuffer(const std::span<T> data, AllocatedBuffer& buffer)
+{
+    void* mappedData = buffer.mAllocationInfo.pMappedData;
+    memcpy(mappedData, data.data(), data.size_bytes());
+}
 
 } // namespace Bunny::Render
