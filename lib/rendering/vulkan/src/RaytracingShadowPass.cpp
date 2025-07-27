@@ -25,6 +25,33 @@ RaytracingShadowPass::RaytracingShadowPass(const VulkanRenderResources* vulkanRe
 
 void RaytracingShadowPass::draw() const
 {
+    VkCommandBuffer cmd = mRenderer->getCurrentCommandBuffer();
+
+    const FrameData& frame = mFrameData[mRenderer->getCurrentFrameIdx()];
+
+    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, mPipeline);
+    vkCmdBindDescriptorSets(
+        cmd, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, mPipelineLayout, 0, 4, &frame.mWorldDescSet, 0, nullptr);
+
+    //  set up barrier to make sure the light shadow image has finished being read in the fragment shader of last frame
+    {
+        VkImageMemoryBarrier barrier = makeImageMemoryBarrier(frame.mOutImage.mImage, VK_ACCESS_SHADER_READ_BIT,
+            VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_ASPECT_COLOR_BIT);
+        vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,
+            VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 1, &barrier);
+    }
+
+    VkExtent2D renderExtent = mRenderer->getSwapChainExtent();
+    vkCmdTraceRaysKHR(
+        cmd, &mRayGenRegion, &mMissRegion, &mHitRegion, nullptr, renderExtent.width, renderExtent.height, 1);
+
+    //  set up barrier to make sure the light shadow image has finished rendering
+    {
+        VkImageMemoryBarrier barrier = makeImageMemoryBarrier(frame.mOutImage.mImage, VK_ACCESS_SHADER_WRITE_BIT,
+            VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_ASPECT_COLOR_BIT);
+        vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+            VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 1, &barrier);
+    }
 }
 
 void RaytracingShadowPass::updateVertIdxBufferData(VkDeviceAddress vertBufAddress, VkDeviceAddress idxBufAddress)
@@ -64,6 +91,16 @@ void RaytracingShadowPass::linkTopLevelAccelerationStructure(VkAccelerationStruc
     {
         writer.updateSet(mVulkanResources->getDevice(), frame.mRtDataDescSet);
     }
+}
+
+std::array<VkImageView, MAX_FRAMES_IN_FLIGHT> Render::RaytracingShadowPass::getOutImageViews() const
+{
+    std::array<VkImageView, MAX_FRAMES_IN_FLIGHT> imageViews;
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+    {
+        imageViews[i] = mFrameData[i].mOutImage.mImageView;
+    }
+    return imageViews;
 }
 
 BunnyResult RaytracingShadowPass::initPipeline()
@@ -122,7 +159,7 @@ BunnyResult RaytracingShadowPass::initDescriptors()
         mMaterialBank->getMaterialDescSetLayout(), mRtDataDescSetLayout};
     for (FrameData& frame : mFrameData)
     {
-        //  allocate all 3 sets of one frame at once
+        //  allocate all 4 sets of one frame at once
         mDescriptorAllocator.allocate(mVulkanResources->getDevice(), descLayouts, &frame.mWorldDescSet, 4);
 
         //  link material data to material descriptor set
@@ -152,6 +189,10 @@ BunnyResult RaytracingShadowPass::initDataAndResources()
             VK_FORMAT_R32_UINT, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
         mDeletionStack.AddFunction([this, &frame]() { mVulkanResources->destroyImage(frame.mOutImage); });
 
+        //  transition image layout to general
+        mVulkanResources->immediateTransitionImageLayout(
+            frame.mOutImage.mImage, frame.mOutImage.mFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
         DescriptorWriter writer;
         //  storage image, no need sampler?
         writer.writeImage(
@@ -163,6 +204,8 @@ BunnyResult RaytracingShadowPass::initDataAndResources()
             1, mVertIdxBufBuffer.mBuffer, sizeof(VertexIndexBufferData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
         writer.updateSet(mVulkanResources->getDevice(), frame.mObjectDescSet);
     }
+
+    return BUNNY_HAPPY;
 }
 
 BunnyResult RaytracingShadowPass::buildPipelineLayout()

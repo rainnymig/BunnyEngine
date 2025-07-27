@@ -7,6 +7,8 @@
 
 #include <vulkan/vulkan.h>
 
+#include <array>
+
 namespace Bunny::Render
 {
 class RaytracingShadowPass : public PbrGraphicsPass
@@ -21,6 +23,8 @@ class RaytracingShadowPass : public PbrGraphicsPass
     void linkWorldData(const AllocatedBuffer& lightData, const AllocatedBuffer& cameraData);
     void linkObjectData(const AllocatedBuffer& objectBuffer, size_t bufferSize);
     void linkTopLevelAccelerationStructure(VkAccelerationStructureKHR acceStruct);
+
+    [[nodiscard]] std::array<VkImageView, MAX_FRAMES_IN_FLIGHT> getOutImageViews() const;
 
   protected:
     virtual BunnyResult initPipeline() override;

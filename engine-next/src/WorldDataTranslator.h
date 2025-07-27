@@ -12,6 +12,7 @@
 namespace Bunny::Render
 {
 class VulkanRenderResources;
+class VulkanGraphicsRenderer;
 } // namespace Bunny::Render
 
 namespace Bunny::Engine
@@ -19,8 +20,8 @@ namespace Bunny::Engine
 class WorldRenderDataTranslator
 {
   public:
-    WorldRenderDataTranslator(
-        const Render::VulkanRenderResources* vulkanResources, const Render::MeshBank<Render::NormalVertex>* meshBank);
+    WorldRenderDataTranslator(const Render::VulkanRenderResources* vulkanResources,
+        const Render::VulkanGraphicsRenderer* renderer, const Render::MeshBank<Render::NormalVertex>* meshBank);
 
     BunnyResult initialize();
     BunnyResult updateSceneData(const World* world);
@@ -45,6 +46,7 @@ class WorldRenderDataTranslator
         const glm::mat4x4& transform, const glm::vec3& scale, glm::mat4x4& outTransform, glm::vec3& outScale);
 
     const Render::VulkanRenderResources* mVulkanResources;
+    const Render::VulkanGraphicsRenderer* mRenderer;
     const Render::MeshBank<Render::NormalVertex>* mMeshBank;
 
     Render::AllocatedBuffer mObjectDataBuffer;

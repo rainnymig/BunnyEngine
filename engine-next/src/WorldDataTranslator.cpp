@@ -1,13 +1,16 @@
 #include "WorldDataTranslator.h"
 
 #include "WorldComponents.h"
+#include "VulkanRenderResources.h"
+#include "VulkanGraphicsRenderer.h"
 
 namespace Bunny::Engine
 {
 
-WorldRenderDataTranslator::WorldRenderDataTranslator(
-    const Render::VulkanRenderResources* vulkanResources, const Render::MeshBank<Render::NormalVertex>* meshBank)
+WorldRenderDataTranslator::WorldRenderDataTranslator(const Render::VulkanRenderResources* vulkanResources,
+    const Render::VulkanGraphicsRenderer* renderer, const Render::MeshBank<Render::NormalVertex>* meshBank)
     : mVulkanResources(vulkanResources),
+      mRenderer(renderer),
       mMeshBank(meshBank)
 {
 }
@@ -96,6 +99,9 @@ BunnyResult WorldRenderDataTranslator::updatePbrWorldData(const World* world)
         mPbrCameraData.mExposure = cam.mCamera.getExposure();
         mPbrCameraData.mInverseView = cam.mCamera.getInverseViewMatrix();
         mPbrCameraData.mInverseProj = cam.mCamera.getInverseProjMatrix();
+        VkExtent2D renderExtent = mRenderer->getSwapChainExtent();
+        mPbrCameraData.mResolution = glm::vec2(renderExtent.width, renderExtent.height);
+
         break;
     }
 
