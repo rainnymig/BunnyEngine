@@ -181,6 +181,9 @@ BunnyResult PbrMaterialBank::buildDescriptorSetLayouts()
     VkDescriptorSetLayoutBinding imageBinding{
         0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr};
 
+    VkDescriptorSetLayoutBinding storageImageBinding{
+        0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr};
+
     DescriptorLayoutBuilder builder;
 
     //  light data
@@ -225,12 +228,18 @@ BunnyResult PbrMaterialBank::buildDescriptorSetLayouts()
     builder.addBinding(imageBinding);
     mMaterialDescSetLayout = builder.build(mVulkanResources->getDevice());
 
+    builder.clear();
+    //  light shadow info
+    builder.addBinding(storageImageBinding);
+    mEffectDescSetLayout = builder.build(mVulkanResources->getDevice());
+
     mDeletionStack.AddFunction([this]() {
         VkDevice device = mVulkanResources->getDevice();
         vkDestroyDescriptorSetLayout(device, mWorldDescSetLayout, nullptr);
         vkDestroyDescriptorSetLayout(device, mObjectDescSetLayout, nullptr);
         vkDestroyDescriptorSetLayout(device, mGBufferDescSetLayout, nullptr);
         vkDestroyDescriptorSetLayout(device, mMaterialDescSetLayout, nullptr);
+        vkDestroyDescriptorSetLayout(device, mEffectDescSetLayout, nullptr);
     });
 
     return BUNNY_HAPPY;
@@ -239,10 +248,11 @@ BunnyResult PbrMaterialBank::buildDescriptorSetLayouts()
 BunnyResult PbrMaterialBank::buildPipelineLayouts()
 {
     {
-        VkDescriptorSetLayout layouts[] = {mWorldDescSetLayout, mObjectDescSetLayout, mMaterialDescSetLayout};
+        VkDescriptorSetLayout layouts[] = {
+            mWorldDescSetLayout, mObjectDescSetLayout, mMaterialDescSetLayout, mEffectDescSetLayout};
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        pipelineLayoutInfo.setLayoutCount = 3;
+        pipelineLayoutInfo.setLayoutCount = 4;
         pipelineLayoutInfo.pSetLayouts = layouts;
         pipelineLayoutInfo.pushConstantRangeCount = 0;
         pipelineLayoutInfo.pPushConstantRanges = nullptr;

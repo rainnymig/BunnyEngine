@@ -31,6 +31,8 @@ class AccelerationStructureBuilder
     void buildTopLevelAccelerationStructures(
         const std::vector<ObjectDataType>& objectData, VkBuildAccelerationStructureFlagsKHR flags);
 
+    const BuiltAccelerationStructure& getTopLevelAccelerationStructure() const { return mTopLevelAcceStruct; }
+
   private:
     struct AcceStructBuildData
     {

@@ -29,7 +29,7 @@ layout(set = 3, binding = 0) uniform accelerationStructureEXT topLevelAcceStruct
 hitAttributeEXT vec2 hitAttributes;
 
 layout(location = 0) rayPayloadInEXT LightHitInfo lightHitInfo;
-layout(location = 1) rayPayloadEXT bool canReachLight;
+layout(location = 1) rayPayloadEXT bool isShadowed;
 
 void main()
 {
@@ -58,11 +58,11 @@ void main()
 
     //  trace a ray to each light
     //  only trace if this point can potentially see the ray
-    canReachLight = false;
+    isShadowed = false;
     uint lightCountCapped = min(lightCount, MAX_LIGHT_COUNT);
     uint rayFlags = gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT;
     float tMin = 0.001;
-    const uint lightBit = 1;
+    const uint shadowBit = 1;
     for (uint lightIdx = 0; lightIdx < lightCountCapped; lightIdx++)
     {
         Light light = lights[lightIdx];
@@ -78,14 +78,14 @@ void main()
             lightDistance = length(vecToLight);
             lightDir = vecToLight / lightDistance;
         }
-        canReachLight = false;
+        isShadowed = false;
         if (dot(worldNormal, lightDir) > 0)
         {
             //  payload index 1 - can reach light
             traceRayEXT(topLevelAcceStruct, rayFlags, 0xff, 0, 0, 0, worldPos, tMin, lightDir, lightDistance, 1);
-            if (canReachLight)
+            if (isShadowed)
             {
-                lightHitInfo.lights |= (lightBit << lightIdx);
+                lightHitInfo.lights |= (shadowBit << lightIdx);
             }
         }
     }

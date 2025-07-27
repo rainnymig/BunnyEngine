@@ -150,6 +150,19 @@ void PbrForwardPass::linkObjectData(const AllocatedBuffer& objectBuffer, size_t 
     }
 }
 
+void PbrForwardPass::linkShadowData(std::array<VkImageView, MAX_FRAMES_IN_FLIGHT> shadowImageViews)
+{
+    Render::DescriptorWriter writer;
+    VkDevice device = mVulkanResources->getDevice();
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+    {
+        const FrameData& frame = mFrameData[i];
+        writer.clear();
+        writer.writeImage(0, shadowImageViews[i], nullptr, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+        writer.updateSet(device, frame.mEffectDescSet);
+    }
+}
+
 const size_t PbrForwardPass::getDrawCommandBufferSize() const
 {
     return sizeof(VkDrawIndexedIndirectCommand) * mDrawCommandsData.size();
@@ -198,16 +211,18 @@ BunnyResult PbrForwardPass::initDescriptors()
     DescriptorAllocator::PoolSize poolSizes[] = {
         {.mType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,         .mRatio = 4                                  },
         {.mType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         .mRatio = 4                                  },
-        {.mType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .mRatio = PbrMaterialBank::TEXTURE_ARRAY_SIZE}
+        {.mType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .mRatio = PbrMaterialBank::TEXTURE_ARRAY_SIZE},
+        {.mType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,          .mRatio = 2                                  },
     };
-    mDescriptorAllocator.init(device, 8, poolSizes);
+    mDescriptorAllocator.init(device, 10, poolSizes);
 
     VkDescriptorSetLayout descLayouts[] = {mMaterialBank->getWorldDescSetLayout(),
-        mMaterialBank->getObjectDescSetLayout(), mMaterialBank->getMaterialDescSetLayout()};
+        mMaterialBank->getObjectDescSetLayout(), mMaterialBank->getMaterialDescSetLayout(),
+        mMaterialBank->getEffectDescSetLayout()};
     for (FrameData& frame : mFrameData)
     {
-        //  allocate all 3 sets of one frame at once
-        mDescriptorAllocator.allocate(device, descLayouts, &frame.mWorldDescSet, 3);
+        //  allocate all 4 sets of one frame at once
+        mDescriptorAllocator.allocate(device, descLayouts, &frame.mWorldDescSet, 4);
 
         //  link material data to material descriptor set
         mMaterialBank->updateMaterialDescriptorSet(frame.mMaterialDescSet);

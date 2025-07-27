@@ -88,6 +88,7 @@ class PbrMaterialBank : public MaterialProvider
     VkDescriptorSetLayout getObjectDescSetLayout() const { return mObjectDescSetLayout; }
     VkDescriptorSetLayout getGBufferDescSetLayout() const { return mGBufferDescSetLayout; }
     VkDescriptorSetLayout getMaterialDescSetLayout() const { return mMaterialDescSetLayout; }
+    VkDescriptorSetLayout getEffectDescSetLayout() const { return mEffectDescSetLayout; }
 
     VkPipelineLayout getPbrForwardPipelineLayout() const { return mPbrForwardPipelineLayout; }
     VkPipelineLayout getPbrGBufferPipelineLayout() const { return mPbrGBufferPipelineLayout; }
@@ -105,6 +106,7 @@ class PbrMaterialBank : public MaterialProvider
     VkDescriptorSetLayout mObjectDescSetLayout;
     VkDescriptorSetLayout mGBufferDescSetLayout;
     VkDescriptorSetLayout mMaterialDescSetLayout;
+    VkDescriptorSetLayout mEffectDescSetLayout;
 
     VkPipelineLayout mPbrForwardPipelineLayout;
     VkPipelineLayout mPbrGBufferPipelineLayout;

@@ -16,6 +16,9 @@ layout(set = 0, binding = 1) uniform CameraData
     mat4 inverseProj;
     vec3 position;
     float exposure;
+    vec2 resolution;
+    float pad1;
+    float pad2;
 } cameraData;
 
 //  update irregularly, maybe only once at start if materials don't change

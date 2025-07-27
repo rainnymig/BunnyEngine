@@ -53,6 +53,9 @@ struct PbrCameraData
     glm::mat4 mInverseProj;
     glm::vec3 mPosition;
     float mExposure;
+    glm::vec2 mResolution;
+    float mPadding1;
+    float mPadding2;
 };
 
 struct VertexIndexBufferData

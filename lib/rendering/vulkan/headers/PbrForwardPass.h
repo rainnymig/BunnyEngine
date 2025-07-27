@@ -26,6 +26,7 @@ class PbrForwardPass : public PbrGraphicsPass
     void prepareDrawCommandsForFrame();
     void linkWorldData(const AllocatedBuffer& lightData, const AllocatedBuffer& cameraData);
     void linkObjectData(const AllocatedBuffer& objectBuffer, size_t bufferSize);
+    void linkShadowData(std::array<VkImageView, MAX_FRAMES_IN_FLIGHT> shadowImageViews);
 
     const AllocatedBuffer& getDrawCommandBuffer() const { return mDrawCommandsBuffer; }
     const size_t getDrawCommandBufferSize() const;
@@ -38,6 +39,7 @@ class PbrForwardPass : public PbrGraphicsPass
         VkDescriptorSet mWorldDescSet;
         VkDescriptorSet mObjectDescSet;
         VkDescriptorSet mMaterialDescSet;
+        VkDescriptorSet mEffectDescSet; // for shadows
     };
 
     virtual BunnyResult initPipeline() override;

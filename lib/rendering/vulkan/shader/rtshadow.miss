@@ -4,9 +4,9 @@
 
 #include "rt.glsl"
 
-layout(location = 1) rayPayloadInEXT bool canReachLight;
+layout(location = 1) rayPayloadInEXT bool isShadowed;
 
 void main()
 {
-    canReachLight = true;
+    isShadowed = false;
 }
