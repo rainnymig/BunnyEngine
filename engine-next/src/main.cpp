@@ -22,6 +22,8 @@
 #include "DeferredShadingPass.h"
 #include "TextureBank.h"
 #include "PbrForwardPass.h"
+#include "AccelerationStructureBuilder.h"
+#include "RaytracingShadowPass.h"
 
 #include <imgui.h>
 #include <fmt/core.h>
@@ -30,6 +32,7 @@
 #include <memory>
 
 using namespace Bunny::Engine;
+using namespace Bunny::Render;
 
 using PbrMaterialLoadParams = Bunny::Render::PbrMaterialBank::PbrMaterialLoadParams;
 
@@ -52,14 +55,14 @@ int main(void)
     Bunny::Base::InputManager inputManager;
     inputManager.setupWithWindow(window);
 
-    Bunny::Render::VulkanRenderResources renderResources;
+    VulkanRenderResources renderResources;
 
     if (!BUNNY_SUCCESS(renderResources.initialize(&window)))
     {
         PRINT_AND_ABORT("Fail to initialize render resources.")
     }
 
-    Bunny::Render::VulkanGraphicsRenderer renderer(&renderResources);
+    VulkanGraphicsRenderer renderer(&renderResources);
 
     if (!BUNNY_SUCCESS(renderer.initialize()))
     {
@@ -68,15 +71,15 @@ int main(void)
 
     Bunny::Base::BasicTimer timer;
 
-    Bunny::Render::TextureBank textureBank(&renderResources, &renderer);
-    Bunny::Render::MeshBank<Bunny::Render::NormalVertex> meshBank(&renderResources);
-    Bunny::Render::PbrMaterialBank pbrMaterialBank(&renderResources, &renderer, &textureBank);
+    TextureBank textureBank(&renderResources, &renderer);
+    MeshBank<NormalVertex> meshBank(&renderResources);
+    PbrMaterialBank pbrMaterialBank(&renderResources, &renderer, &textureBank);
 
     textureBank.initialize();
     pbrMaterialBank.initialize();
 
     {
-        Bunny::Render::IdType matInstId;
+        IdType matInstId;
         pbrMaterialBank.addMaterialInstance(
             PbrMaterialLoadParams{
                 .mBaseColor = glm::vec4(0.8f, 0.8f, 0.5f, 1.0f),
@@ -103,25 +106,39 @@ int main(void)
     static constexpr std::string_view gltfFilePath = "./assets/model/suzanne.glb";
     worldLoader.loadPbrTestWorldWithGltfMeshes(gltfFilePath, bunnyWorld);
 
-    Bunny::Render::PbrForwardPass pbrForwardPass(&renderResources, &renderer, &pbrMaterialBank, &meshBank,
-        "pbr_culled_instanced_vert.spv", "pbr_forward_frag.spv");
-    Bunny::Render::CullingPass cullingPass(&renderResources, &renderer, &meshBank);
-    Bunny::Render::DepthReducePass depthReducePass(&renderResources, &renderer);
+    AccelerationStructureBuilder acceStructBuilder(&renderResources, &renderer);
+    acceStructBuilder.buildBottomLevelAccelerationStructures(
+        meshBank.getBlasGeometryData(), VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR);
 
+    RaytracingShadowPass rtShadowPass(&renderResources, &renderer, &pbrMaterialBank, &meshBank);
+    PbrForwardPass pbrForwardPass(&renderResources, &renderer, &pbrMaterialBank, &meshBank,
+        "pbr_culled_instanced_vert.spv", "pbr_forward_frag.spv");
+    CullingPass cullingPass(&renderResources, &renderer, &meshBank);
+    DepthReducePass depthReducePass(&renderResources, &renderer);
+
+    rtShadowPass.initializePass();
     pbrForwardPass.initializePass();
     cullingPass.initializePass();
     depthReducePass.initializePass();
 
     pbrForwardPass.buildDrawCommands();
 
-    WorldRenderDataTranslator worldTranslator(&renderResources, &meshBank);
+    WorldRenderDataTranslator worldTranslator(&renderResources, &renderer, &meshBank);
     worldTranslator.initialize();
     worldTranslator.initObjectDataBuffer(&bunnyWorld);
 
-    pbrForwardPass.updateDrawInstanceCounts(worldTranslator.getMeshInstanceCounts());
+    acceStructBuilder.buildTopLevelAccelerationStructures(
+        worldTranslator.getObjectData(), VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR);
 
+    rtShadowPass.updateVertIdxBufferData(meshBank.getVertexBufferAddress(), meshBank.getIndexBufferAddress());
+    rtShadowPass.linkWorldData(worldTranslator.getPbrLightBuffer(), worldTranslator.getPbrCameraBuffer());
+    rtShadowPass.linkObjectData(worldTranslator.getObjectBuffer(), worldTranslator.getObjectBufferSize());
+    rtShadowPass.linkTopLevelAccelerationStructure(acceStructBuilder.getTopLevelAccelerationStructure().mAcceStruct);
+
+    pbrForwardPass.updateDrawInstanceCounts(worldTranslator.getMeshInstanceCounts());
     pbrForwardPass.linkWorldData(worldTranslator.getPbrLightBuffer(), worldTranslator.getPbrCameraBuffer());
     pbrForwardPass.linkObjectData(worldTranslator.getObjectBuffer(), worldTranslator.getObjectBufferSize());
+    pbrForwardPass.linkShadowData(rtShadowPass.getOutImageViews());
 
     cullingPass.linkCullingData(depthReducePass.getDepthHierarchyImage(), depthReducePass.getDepthReduceSampler());
     cullingPass.linkMeshData(meshBank.getBoundsBuffer(), meshBank.getBoundsBufferSize());
@@ -173,9 +190,8 @@ int main(void)
         pbrForwardPass.prepareDrawCommandsForFrame();
 
         cullingPass.dispatch();
-
+        rtShadowPass.draw();
         pbrForwardPass.draw();
-
         depthReducePass.dispatch();
 
         renderer.beginImguiFrame();
@@ -195,10 +211,12 @@ int main(void)
 
     renderer.waitForRenderFinish();
 
-    worldTranslator.cleanup();
     cullingPass.cleanup();
     depthReducePass.cleanup();
     pbrForwardPass.cleanup();
+    rtShadowPass.cleanup();
+    acceStructBuilder.cleanup();
+    worldTranslator.cleanup();
 
     meshBank.cleanup();
     pbrMaterialBank.cleanup();
