@@ -62,6 +62,9 @@ class MeshBank
 
     [[nodiscard]] std::vector<AcceStructGeometryData> getBlasGeometryData() const;
 
+    VkDeviceAddress getVertexBufferAddress() const { return mVertexBufferAddress; }
+    VkDeviceAddress getIndexBufferAddress() const { return mIndexBufferAddress; }
+
   private:
     AcceStructGeometryData buildTriangleBlasGeometryDataFromMesh(
         const MeshLite& mesh, VkDeviceAddress vertexBufferAddress, VkDeviceAddress indexBufferAdress) const;
@@ -69,6 +72,9 @@ class MeshBank
     AllocatedBuffer mVertexBuffer;
     AllocatedBuffer mIndexBuffer;
     AllocatedBuffer mBoundsBuffer;
+
+    VkDeviceAddress mVertexBufferAddress;
+    VkDeviceAddress mIndexBufferAddress;
 
     std::vector<VertexType> mVertexBufferData;
     std::vector<IndexType> mIndexBufferData;
@@ -142,6 +148,9 @@ void MeshBank<VertexType, IndexType>::buildMeshBuffers()
         VMA_ALLOCATION_CREATE_MAPPED_BIT, VMA_MEMORY_USAGE_GPU_ONLY, mIndexBuffer);
     mVulkanResources->createBufferWithData(mBoundsData.data(), boundsSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
         VMA_ALLOCATION_CREATE_MAPPED_BIT, VMA_MEMORY_USAGE_GPU_ONLY, mBoundsBuffer); //  bounds of meshes for culling
+
+    mVertexBufferAddress = mVulkanResources->getBufferDeviceAddress(mVertexBuffer);
+    mIndexBufferAddress = mVulkanResources->getBufferDeviceAddress(mIndexBufferAddress);
 }
 
 template <typename VertexType, typename IndexType>
@@ -181,13 +190,10 @@ inline std::vector<AcceStructGeometryData> MeshBank<VertexType, IndexType>::getB
 {
     std::vector<AcceStructGeometryData> blasGeometryData;
 
-    VkDeviceAddress vertexBufferAddress = mVulkanResources->getBufferDeviceAddress(mVertexBuffer);
-    VkDeviceAddress indexBufferAddress = mVulkanResources->getBufferDeviceAddress(mIndexBuffer);
-
     for (const MeshLite& mesh : mMeshes)
     {
         blasGeometryData.emplace_back(
-            buildTriangleBlasGeometryDataFromMesh(mesh, vertexBufferAddress, indexBufferAddress));
+            buildTriangleBlasGeometryDataFromMesh(mesh, mVertexBufferAddress, mIndexBufferAddress));
     }
 
     return blasGeometryData;
