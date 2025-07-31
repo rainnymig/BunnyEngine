@@ -5,10 +5,9 @@
 #include "MaterialBank.h"
 #include "Fundamentals.h"
 
-#include <vulkan/vulkan.h>
+#include <volk.h>
 #include <glm/vec3.hpp>
 #include <glm/mat4x4.hpp>
-#include <fastgltf/core.hpp>
 
 #include <vector>
 #include <string_view>
@@ -37,20 +36,6 @@ VkRenderingInfo makeRenderingInfo(VkExtent2D renderExtent, uint32_t colorAttachm
 VkBufferMemoryBarrier makeBufferMemoryBarrier(VkBuffer buffer, uint32_t queueIndex);
 VkImageMemoryBarrier makeImageMemoryBarrier(VkImage image, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask,
     VkImageLayout oldLayout, VkImageLayout newLayout, VkImageAspectFlags aspectMask);
-
-void addVertex(const glm::vec3& position, const glm::vec3& normal, const glm::vec3& tangent, const glm::vec4& color,
-    const glm::vec2& texCoord, std::vector<uint32_t>& indices, std::vector<NormalVertex>& vertices,
-    std::unordered_map<NormalVertex, uint32_t, NormalVertex::Hash>& vertexToIndexMap);
-void addTriangle(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3, const glm::vec4& color,
-    const glm::vec2& texCoordBase, const float scale, std::vector<uint32_t>& indices,
-    std::vector<NormalVertex>& vertices,
-    std::unordered_map<NormalVertex, uint32_t, NormalVertex::Hash>& vertexToIndexMap);
-void addQuad(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3, const glm::vec3& p4, const glm::vec4& color,
-    const glm::vec2& texCoordBase, const float scale, std::vector<uint32_t>& indices,
-    std::vector<NormalVertex>& vertices,
-    std::unordered_map<NormalVertex, uint32_t, NormalVertex::Hash>& vertexToIndexMap);
-const IdType createCubeMeshToBank(MeshBank<NormalVertex>* meshBank, IdType materialId, IdType materialInstanceId);
-void loadMeshFromGltf(MeshBank<NormalVertex>* meshBank, MaterialProvider* materialBank, fastgltf::Asset& gltfAsset);
 
 //  find the largest power of 2 that's less than val
 uint32_t findPreviousPow2(uint32_t val);

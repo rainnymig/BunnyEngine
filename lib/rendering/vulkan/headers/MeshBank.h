@@ -5,7 +5,7 @@
 #include "BoundingBox.h"
 #include "AccelerationStructureData.h"
 
-#include <vulkan/vulkan.h>
+#include <volk.h>
 
 #include <vector>
 #include <string>

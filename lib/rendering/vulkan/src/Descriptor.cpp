@@ -43,7 +43,7 @@ void DescriptorAllocator::init(VkDevice device, uint32_t maxSets, std::span<Pool
 {
     assert(maxSets > 0 && !poolSizes.empty());
 
-    mMaxSets = std::min(maxSets, msMaxSetsLimit);
+    mMaxSets = (std::min)(maxSets, msMaxSetsLimit);
 
     for (const PoolSize& ps : poolSizes)
     {
@@ -146,7 +146,7 @@ VkDescriptorPool DescriptorAllocator::createPool(VkDevice device)
     VK_HARD_CHECK(vkCreateDescriptorPool(device, &poolInfo, nullptr, &newPool));
     if (newPool != nullptr)
     {
-        mMaxSets = std::min(static_cast<uint32_t>(mMaxSets * 1.5), msMaxSetsLimit);
+        mMaxSets = (std::min)(static_cast<uint32_t>(mMaxSets * 1.5), msMaxSetsLimit);
     }
     return newPool;
 }

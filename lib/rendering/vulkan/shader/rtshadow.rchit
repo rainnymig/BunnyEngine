@@ -41,13 +41,13 @@ void main()
     const uint firstIdxOfPrimitiveIndex = objData.firstIndex + gl_PrimitiveID * 3;
     //  find the 3 indices of the triangle
     //  need to add the vertex offset to it to get the actual position of the vertices in the vertex buffer
-    const uint i0 = indices[firstIdxOfPrimitiveIndex] + objData.vertexOffset;
-    const uint i1 = indices[firstIdxOfPrimitiveIndex + 1] + objData.vertexOffset;
-    const uint i2 = indices[firstIdxOfPrimitiveIndex + 2] + objData.vertexOffset;
+    const uint i0 = indices.i[firstIdxOfPrimitiveIndex] + objData.vertexOffset;
+    const uint i1 = indices.i[firstIdxOfPrimitiveIndex + 1] + objData.vertexOffset;
+    const uint i2 = indices.i[firstIdxOfPrimitiveIndex + 2] + objData.vertexOffset;
     //  find the 3 vertices of the triangle from the vertex buffer
-    Vertex v0 = vertices[i0];
-    Vertex v1 = vertices[i1];
-    Vertex v2 = vertices[i2];
+    Vertex v0 = vertices.v[i0];
+    Vertex v1 = vertices.v[i1];
+    Vertex v2 = vertices.v[i2];
 
     const vec3 barycentrics = vec3(1.0 - hitAttributes.x - hitAttributes.y, hitAttributes.x, hitAttributes.y);
     const vec3 pos = v0.position * barycentrics.x + v1.position * barycentrics.y + v2.position * barycentrics.z;

@@ -29,6 +29,8 @@ target_link_libraries(Base
         glfw 
         fmt::fmt 
         Vulkan::Vulkan
+    PRIVATE
+        volk
 )
 
 add_compile_definitions(GLM_FORCE_DEPTH_ZERO_TO_ONE GLM_FORCE_RADIANS GLM_FORCE_RIGHT_HANDED)

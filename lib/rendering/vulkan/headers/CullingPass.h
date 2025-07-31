@@ -10,7 +10,7 @@
 #include <glm/vec3.hpp>
 #include <glm/mat4x4.hpp>
 
-#include <vulkan/vulkan.h>
+#include <volk.h>
 
 #include <vector>
 #include <array>

@@ -12,6 +12,8 @@ target_sources(EngineNext
         src/WorldDataTranslator.h
         src/WorldLoader.cpp
         src/WorldLoader.h
+        src/WorldLoaderHelper.cpp
+        src/WorldLoaderHelper.h
         src/WorldSystems.cpp
         src/WorldSystems.h
 )

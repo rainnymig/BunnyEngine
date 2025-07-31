@@ -10,7 +10,7 @@
 #include "VulkanGraphicsRenderer.h"
 #include "Helper.h"
 
-#include <vulkan/vulkan.h>
+#include <volk.h>
 
 #include <array>
 
@@ -109,9 +109,9 @@ BunnyResult RaytracingShadowPass::initPipeline()
 
     VkDevice device = mVulkanResources->getDevice();
     Shader rayGenShader("rtbasic_rgen.spv", device);
-    Shader closestHitShader("rtshadow_chit.spv", device);
-    Shader basicMissShader("rtbasic_miss.spv", device);
-    Shader shadowMissShader("rtshadow_miss.spv", device);
+    Shader closestHitShader("rtshadow_rchit.spv", device);
+    Shader basicMissShader("rtbasic_rmiss.spv", device);
+    Shader shadowMissShader("rtshadow_rmiss.spv", device);
 
     RaytracingPipelineBuilder builder;
     uint32_t rayGenIdx = builder.addShaderStage(rayGenShader.getShaderModule(), VK_SHADER_STAGE_RAYGEN_BIT_KHR);
