@@ -12,6 +12,9 @@ set (CMAKE_CXX_STANDARD 20)
 find_package(Vulkan REQUIRED)
 
 # Third Parties
+# Volk
+set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_WIN32_KHR)
+add_subdirectory("./third-party/volk")
 # GLFW
 add_subdirectory("./third-party/glfw")
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "GLFW lib only")
@@ -47,16 +50,13 @@ target_sources(imgui
         "third-party/imgui/backends/imgui_impl_glfw.cpp"
 )
 target_include_directories(imgui PUBLIC "third-party/imgui/" "third-party/imgui/backends")
-target_link_libraries(imgui PUBLIC Vulkan::Vulkan glfw)
+target_link_libraries(imgui PUBLIC volk glfw)
 # fastgltf
 add_subdirectory("./third-party/fastgltf")
 # inifile-cpp
 add_subdirectory("./third-party/inifile-cpp")
 # EnTT
 add_subdirectory("./third-party/entt")
-# Volk
-set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_WIN32_KHR)
-add_subdirectory("./third-party/volk")
 
 # Bunny stuff
 add_subdirectory("./lib/base")

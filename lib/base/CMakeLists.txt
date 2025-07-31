@@ -21,14 +21,14 @@ target_sources(Base
 )
 
 target_include_directories(Base PUBLIC ./headers)
-target_include_directories(Base PUBLIC "${Vulkan_INCLUDE_DIRS}")
+# target_include_directories(Base PUBLIC "${Vulkan_INCLUDE_DIRS}")
 
 target_link_libraries(Base 
     PUBLIC 
         glm 
         glfw 
         fmt::fmt 
-        Vulkan::Vulkan
+        # Vulkan::Vulkan
     PRIVATE
         volk
 )

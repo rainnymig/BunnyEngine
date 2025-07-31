@@ -55,10 +55,10 @@ target_sources(VulkanRenderer
         src/VulkanRenderResources.cpp
 )
 
-target_compile_definitions(VulkanRenderer PUBLIC GLFW_INCLUDE_VULKAN)
+# target_compile_definitions(VulkanRenderer PUBLIC GLFW_INCLUDE_VULKAN)
 
 target_include_directories(VulkanRenderer PUBLIC "./headers")
-target_include_directories(VulkanRenderer PUBLIC "${Vulkan_INCLUDE_DIRS}")
+# target_include_directories(VulkanRenderer PUBLIC "${Vulkan_INCLUDE_DIRS}")
 
 target_link_libraries(VulkanRenderer 
     PUBLIC 
@@ -67,7 +67,7 @@ target_link_libraries(VulkanRenderer
         vk-bootstrap::vk-bootstrap
         volk
     PRIVATE
-        "${Vulkan_LIBRARIES}"
+        # "${Vulkan_LIBRARIES}"
         StbImage
         TinyObjLoader
         glfw
