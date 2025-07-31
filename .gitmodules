@@ -7,3 +7,6 @@
 [submodule "third-party/fastgltf"]
 	path = third-party/fastgltf
 	url = https://github.com/spnda/fastgltf.git
+[submodule "third-party/volk"]
+	path = third-party/volk
+	url = https://github.com/zeux/volk.git
