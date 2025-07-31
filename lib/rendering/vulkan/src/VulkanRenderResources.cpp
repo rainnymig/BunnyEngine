@@ -29,6 +29,9 @@ BunnyResult VulkanRenderResources::initialize(Base::Window* window)
                                    .request_validation_layers(false)
                                    .enable_validation_layers(false)
 #endif
+                                   .enable_extension(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME)
+                                   .enable_extension(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME)
+                                   .enable_extension(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME)
                                    .require_api_version(1, 3, 0)
                                    .build();
 

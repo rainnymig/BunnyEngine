@@ -1,7 +1,5 @@
 #include "AccelerationStructureBuilder.h"
 
-#include "VulkanRenderResources.h"
-#include "VulkanGraphicsRenderer.h"
 #include "AlignHelpers.h"
 #include "Error.h"
 #include "Helper.h"
@@ -70,6 +68,8 @@ AccelerationStructureBuilder::AcceStructBuildData AccelerationStructureBuilder::
         .mBuildRanges = blasData.mBuildRanges};
 
     prepareAcceBuildGeoSizeInfo(buildData, blasData.mBuildFlags | flags);
+
+    return buildData;
 }
 
 AllocatedBuffer AccelerationStructureBuilder::buildScratchBufferForAcceStruct(

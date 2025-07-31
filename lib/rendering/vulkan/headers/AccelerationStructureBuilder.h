@@ -3,6 +3,9 @@
 #include "AccelerationStructureData.h"
 #include "Fundamentals.h"
 #include "ErrorCheck.h"
+#include "VulkanRenderResources.h"
+#include "VulkanGraphicsRenderer.h"
+#include "Helper.h"
 
 #include <vulkan/vulkan.h>
 #include <glm/mat4x4.hpp>
@@ -14,8 +17,6 @@
 
 namespace Bunny::Render
 {
-class VulkanRenderResources;
-class VulkanGraphicsRenderer;
 
 class AccelerationStructureBuilder
 {
