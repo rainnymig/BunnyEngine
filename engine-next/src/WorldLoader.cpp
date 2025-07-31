@@ -1,10 +1,10 @@
 #include "WorldLoader.h"
 
-#include "Helper.h"
 #include "MeshBank.h"
 #include "MaterialBank.h"
 #include "Transform.h"
 #include "WorldComponents.h"
+#include "WorldLoaderHelper.h"
 
 #include <glm/mat4x4.hpp>
 #include <glm/ext/matrix_transform.hpp>
@@ -65,7 +65,7 @@ BunnyResult WorldLoader::loadGltfToWorld(std::string_view filePath, World& outWo
     //  load textures
 
     //  load meshes
-    Render::loadMeshFromGltf(mMeshBank, mMaterialBank, gltf);
+    loadMeshFromGltf(mMeshBank, mMaterialBank, gltf);
 
     //  save the mapping from fastgltf node idx to entity
     //  to convert the children
@@ -155,7 +155,7 @@ BunnyResult WorldLoader::loadPbrTestWorldWithGltfMeshes(std::string_view filePat
     fastgltf::Asset& gltf = parseResult.get();
 
     //  load meshes
-    Render::loadMeshFromGltf(mMeshBank, mPbrMaterialBank, gltf);
+    loadMeshFromGltf(mMeshBank, mPbrMaterialBank, gltf);
     mMeshBank->buildMeshBuffers();
 
     static constexpr float spawnAreaXMax = 10;
@@ -217,7 +217,7 @@ BunnyResult WorldLoader::loadTestWorld(World& outWorld)
     assert(mMaterialBank != nullptr);
 
     //  create meshes and save them in the mesh asset bank
-    const Render::IdType meshId = Render::createCubeMeshToBank(
+    const Render::IdType meshId = createCubeMeshToBank(
         mMeshBank, mMaterialBank->getDefaultMaterialId(), mMaterialBank->getDefaultMaterialInstanceId());
     mMeshBank->buildMeshBuffers();
 

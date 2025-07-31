@@ -2,7 +2,7 @@
 
 #include "BunnyResult.h"
 
-#include <vulkan/vulkan.h>
+#include <volk.h>
 #include <GLFW/glfw3.h>
 #include <string>
 
@@ -27,11 +27,11 @@ class Window
         glfwSetFramebufferSizeCallback(
             mGlfwWindow, [](GLFWwindow* window, int width, int height) { callback(width, height); });
     }
-    
+
     //  return true when window should close
     bool processWindowEvent();
 
-    GLFWwindow* getRawGlfwWindow() const {return mGlfwWindow;}
+    GLFWwindow* getRawGlfwWindow() const { return mGlfwWindow; }
 
     ~Window();
 

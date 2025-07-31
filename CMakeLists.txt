@@ -54,6 +54,9 @@ add_subdirectory("./third-party/fastgltf")
 add_subdirectory("./third-party/inifile-cpp")
 # EnTT
 add_subdirectory("./third-party/entt")
+# Volk
+set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_WIN32_KHR)
+add_subdirectory("./third-party/volk")
 
 # Bunny stuff
 add_subdirectory("./lib/base")

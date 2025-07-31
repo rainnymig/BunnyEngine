@@ -7,7 +7,7 @@
 #include "ShaderData.h"
 #include "Helper.h"
 
-#include <vulkan/vulkan.h>
+#include <volk.h>
 
 #include <vector>
 #include "DeferredShadingPass.h"

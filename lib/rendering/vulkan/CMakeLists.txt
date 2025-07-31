@@ -65,6 +65,7 @@ target_link_libraries(VulkanRenderer
         Renderer
         vma
         vk-bootstrap::vk-bootstrap
+        volk
     PRIVATE
         "${Vulkan_LIBRARIES}"
         StbImage
@@ -72,7 +73,6 @@ target_link_libraries(VulkanRenderer
         glfw
         fmt::fmt
         imgui
-        fastgltf::fastgltf
         glm
     )
     

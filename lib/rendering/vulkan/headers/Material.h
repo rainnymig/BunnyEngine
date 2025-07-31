@@ -6,7 +6,7 @@
 #include "BunnyResult.h"
 #include "BunnyGuard.h"
 
-#include <vulkan/vulkan.h>
+#include <volk.h>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 

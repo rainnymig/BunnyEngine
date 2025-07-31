@@ -16,3 +16,6 @@ glslc.exe --target-env=vulkan1.3 ./lib/rendering/vulkan/shader/pbrForward.frag  
 glslc.exe --target-env=vulkan1.3 ./lib/rendering/vulkan/shader/pbrDeferred.frag        -o ./build/engine-next/Debug/pbr_deferred_frag.spv
 
 glslc.exe --target-env=vulkan1.3 ./lib/rendering/vulkan/shader/rtbasic.rgen            -o ./build/engine-next/Debug/rtbasic_rgen.spv
+glslc.exe --target-env=vulkan1.3 ./lib/rendering/vulkan/shader/rtbasic.rmiss            -o ./build/engine-next/Debug/rtbasic_rmiss.spv
+glslc.exe --target-env=vulkan1.3 ./lib/rendering/vulkan/shader/rtshadow.rmiss           -o ./build/engine-next/Debug/rtshadow_rmiss.spv
+glslc.exe --target-env=vulkan1.3 ./lib/rendering/vulkan/shader/rtshadow.rchit           -o ./build/engine-next/Debug/rtshadow_rchit.spv

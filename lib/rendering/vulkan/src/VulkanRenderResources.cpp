@@ -15,6 +15,9 @@ BunnyResult VulkanRenderResources::initialize(Base::Window* window)
     assert(window != nullptr);
     mWindow = window;
 
+    //  initialize volk first
+    VK_CHECK_OR_RETURN_BUNNY_SAD(volkInitialize())
+
     vkb::InstanceBuilder builder;
 
     //  create VkInstance
@@ -46,6 +49,9 @@ BunnyResult VulkanRenderResources::initialize(Base::Window* window)
         vkDestroyInstance(mInstance, nullptr);
         mInstance = VK_NULL_HANDLE;
     });
+
+    //  let volk load all required vulkan entry points including extensions
+    volkLoadInstance(mInstance);
 
 #ifdef _DEBUG
     mDebugMessenger = vkbInstance.debug_messenger;
@@ -135,6 +141,9 @@ BunnyResult VulkanRenderResources::initialize(Base::Window* window)
         vkDestroyDevice(mDevice, nullptr);
         mDevice = VK_NULL_HANDLE;
     });
+
+    //  optimizing device calls
+    volkLoadDevice(mDevice);
 
     //  get queue family
     if (!BUNNY_SUCCESS(getQueueFromDevice(mGraphicQueue, vkbDevice, vkb::QueueType::graphics)))
