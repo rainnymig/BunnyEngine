@@ -40,7 +40,9 @@ BunnyResult VulkanRenderResources::initialize(Base::Window* window)
 
     if (!instanceBuildResult)
     {
-        PRINT_AND_RETURN_VALUE("Failed to create Vulkan instance.", BUNNY_SAD)
+        std::string errorMsg = fmt::format("Failed to create Vulkan instance: {} - {}",
+            instanceBuildResult.error().value(), instanceBuildResult.error().message());
+        PRINT_AND_RETURN_VALUE(errorMsg, BUNNY_SAD)
     }
 
     vkb::Instance vkbInstance = instanceBuildResult.value();
@@ -164,6 +166,8 @@ BunnyResult VulkanRenderResources::initialize(Base::Window* window)
     }
 
     //  initialize the memory allocator
+    //  TODO: check this to make it work with volk:
+    //  https://stackoverflow.com/questions/73512602/using-vulkan-memory-allocator-with-volk
     VmaAllocatorCreateInfo allocatorInfo = {};
     allocatorInfo.physicalDevice = mPhysicalDevice;
     allocatorInfo.device = mDevice;
