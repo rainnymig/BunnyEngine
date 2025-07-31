@@ -150,7 +150,7 @@ void MeshBank<VertexType, IndexType>::buildMeshBuffers()
         VMA_ALLOCATION_CREATE_MAPPED_BIT, VMA_MEMORY_USAGE_GPU_ONLY, mBoundsBuffer); //  bounds of meshes for culling
 
     mVertexBufferAddress = mVulkanResources->getBufferDeviceAddress(mVertexBuffer);
-    mIndexBufferAddress = mVulkanResources->getBufferDeviceAddress(mIndexBufferAddress);
+    mIndexBufferAddress = mVulkanResources->getBufferDeviceAddress(mIndexBuffer);
 }
 
 template <typename VertexType, typename IndexType>

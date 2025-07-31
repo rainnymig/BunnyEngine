@@ -17,7 +17,7 @@ set 2: material data
 //  top level acceleration structure for ray tracing
 layout(set = 3, binding = 0) uniform accelerationStructureEXT topLevelAcceStruct;
 //  output image of ray tracing result
-layout(set = 3, binding = 1, r32ui) uniform image2D outImage;
+layout(set = 3, binding = 1, r32ui) uniform uimage2D outImage;
 
 layout(location = 0) rayPayloadEXT LightHitInfo lightHitInfo;
 
@@ -36,7 +36,7 @@ void main()
     float tMax = 10000.0;
 
     //  payload index 0
-    traceRayEXT(topLevelAcceStruct, rayFlags, 0xff, 0, 0, 0, camera.position, tMin, rayDir.xyz, tMax, 0);
+    traceRayEXT(topLevelAcceStruct, rayFlags, 0xff, 0, 0, 0, cameraData.position, tMin, rayDir.xyz, tMax, 0);
 
-    imageStore(outImage, ivec2(gl_LaunchIDEXT.xy), lightHitInfo.lights);
+    imageStore(outImage, ivec2(gl_LaunchIDEXT.xy), uvec4(lightHitInfo.lights, 0, 0, 0));
 }
