@@ -36,7 +36,7 @@ void PbrForwardPass::draw() const
     //  bind all scene, object and material descriptor sets at once
     //  they are laid out properly in FrameData
     //  if the layout changes this needs to be updated
-    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout, 0, 3,
+    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout, 0, 4,
         &mFrameData[mRenderer->getCurrentFrameIdx()].mWorldDescSet, 0, nullptr);
 
     vkCmdDrawIndexedIndirect(cmd, mDrawCommandsBuffer.mBuffer, 0, 1, sizeof(VkDrawIndexedIndirectCommand));

@@ -104,7 +104,7 @@ AllocatedBuffer AccelerationStructureBuilder::buildScratchBufferForAcceStruct(
     AllocatedBuffer scratchBuffer = mVulkanResources->createBuffer(bufferSize,
         VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
             VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-        0, VMA_MEMORY_USAGE_AUTO); //  what vma creation flag needed?
+        0, VMA_MEMORY_USAGE_AUTO, bufferAlignment); //  what vma creation flag needed?
 
     VkDeviceAddress scratchBufferAddress = mVulkanResources->getBufferDeviceAddress(scratchBuffer);
     for (VkDeviceAddress& address : outScratchAddress)

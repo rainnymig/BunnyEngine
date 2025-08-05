@@ -54,13 +54,14 @@ class VulkanRenderResources
     const Queue& getComputeQueue() const { return mComputeQueue; }
     const Queue& getTransferQueue() const { return mTransferQueue; }
 
-    BunnyResult createBufferWithData(void* data, VkDeviceSize size, VkBufferUsageFlags bufferUsage,
-        VmaAllocationCreateFlags vmaCreateFlags, VmaMemoryUsage vmaUsage, AllocatedBuffer& outBuffer) const;
+    BunnyResult createBufferWithData(const void* data, VkDeviceSize size, VkBufferUsageFlags bufferUsage,
+        VmaAllocationCreateFlags vmaCreateFlags, VmaMemoryUsage vmaUsage, AllocatedBuffer& outBuffer,
+        VkDeviceSize minAlignment = 0) const;
     BunnyResult createImageWithData(void* data, VkDeviceSize dataSize, VkExtent3D imageExtent, VkFormat format,
         VkImageUsageFlags usage, VkImageAspectFlags aspectFlags, VkImageLayout layout, AllocatedImage& outImage) const;
 
     AllocatedBuffer createBuffer(VkDeviceSize size, VkBufferUsageFlags bufferUsage,
-        VmaAllocationCreateFlags vmaCreateFlags, VmaMemoryUsage vmaUsage) const;
+        VmaAllocationCreateFlags vmaCreateFlags, VmaMemoryUsage vmaUsage, VkDeviceSize minAlignment = 0) const;
     AllocatedImage createImage(VkExtent3D size, VkFormat format, VkImageUsageFlags usage,
         VkImageAspectFlags aspectFlags, VkImageLayout layout = VK_IMAGE_LAYOUT_UNDEFINED, uint32_t mipCount = 1) const;
     void destroyBuffer(AllocatedBuffer& buffer) const;
