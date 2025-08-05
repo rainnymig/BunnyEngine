@@ -79,4 +79,9 @@ void RaytracingPipelineBuilder::setMaxRecursionDepth(uint32_t depth)
     mMaxRecursionDepth = depth;
 }
 
+void RaytracingPipelineBuilder::setPipelineLayout(VkPipelineLayout pipelineLayout)
+{
+    mPipelineLayout = pipelineLayout;
+}
+
 } // namespace Bunny::Render

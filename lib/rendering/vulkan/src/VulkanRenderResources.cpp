@@ -22,8 +22,8 @@ BunnyResult VulkanRenderResources::initialize(Base::Window* window)
 
     //  create VkInstance
     //  make the vulkan instance, with basic debug features
-    auto instanceBuildResult = builder
-                                   .set_app_name("BunnyEngine")
+    auto instanceBuildResult = builder.set_app_name("BunnyEngine")
+                                   .require_api_version(1, 3, 0)
 #ifdef _DEBUG
                                    .request_validation_layers(true)
                                    .enable_validation_layers(true)
@@ -32,10 +32,6 @@ BunnyResult VulkanRenderResources::initialize(Base::Window* window)
                                    .request_validation_layers(false)
                                    .enable_validation_layers(false)
 #endif
-                                   .enable_extension(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME)
-                                   .enable_extension(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME)
-                                   .enable_extension(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME)
-                                   .require_api_version(1, 3, 0)
                                    .build();
 
     if (!instanceBuildResult)
@@ -100,9 +96,12 @@ BunnyResult VulkanRenderResources::initialize(Base::Window* window)
 
     VkPhysicalDeviceAccelerationStructureFeaturesKHR featureAccel{
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR};
+    featureAccel.accelerationStructure = true;
 
     VkPhysicalDeviceRayTracingPipelineFeaturesKHR featureRtPipeline{
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR};
+    featureRtPipeline.rayTracingPipeline = true;
+    featureRtPipeline.rayTracingPipelineTraceRaysIndirect = true;
 
     // VkPhysicalDeviceBufferDeviceAddressFeatures featureDeviceAddress{
     //     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_ADDRESS_FEATURES_EXT};
@@ -128,6 +127,11 @@ BunnyResult VulkanRenderResources::initialize(Base::Window* window)
         PRINT_AND_RETURN_VALUE("Fail to select suitable Vulkan physical devcie.", BUNNY_SAD)
     }
     vkb::PhysicalDevice vkbPhysicalDevice = deviceSelectResult.value();
+
+    // //  enable physical device extensions
+    // vkbPhysicalDevice.enable_extensions_if_present({VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
+    //     VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME});
+
     mPhysicalDevice = vkbPhysicalDevice.physical_device;
 
     //  create logical VkDevice
@@ -166,13 +170,15 @@ BunnyResult VulkanRenderResources::initialize(Base::Window* window)
     }
 
     //  initialize the memory allocator
-    //  TODO: check this to make it work with volk:
-    //  https://stackoverflow.com/questions/73512602/using-vulkan-memory-allocator-with-volk
     VmaAllocatorCreateInfo allocatorInfo = {};
     allocatorInfo.physicalDevice = mPhysicalDevice;
     allocatorInfo.device = mDevice;
     allocatorInfo.instance = mInstance;
+    allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_3;
     allocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
+    VmaVulkanFunctions vmaVkFunctions;
+    vmaImportVulkanFunctionsFromVolk(&allocatorInfo, &vmaVkFunctions);
+    allocatorInfo.pVulkanFunctions = &vmaVkFunctions;
     vmaCreateAllocator(&allocatorInfo, &mAllocator);
 
     mDeletionStack.AddFunction([this]() {
@@ -191,12 +197,14 @@ void VulkanRenderResources::cleanup()
     mDeletionStack.Flush();
 }
 
-BunnyResult VulkanRenderResources::createBufferWithData(void* data, VkDeviceSize size, VkBufferUsageFlags bufferUsage,
-    VmaAllocationCreateFlags vmaCreateFlags, VmaMemoryUsage vmaUsage, AllocatedBuffer& outBuffer) const
+BunnyResult VulkanRenderResources::createBufferWithData(const void* data, VkDeviceSize size, VkBufferUsageFlags bufferUsage,
+    VmaAllocationCreateFlags vmaCreateFlags, VmaMemoryUsage vmaUsage, AllocatedBuffer& outBuffer,
+    VkDeviceSize minAlignment) const
 {
     //  create the buffer
     //  add the transfer dst usage to receive data from staging buffer
-    outBuffer = createBuffer(size, bufferUsage | VK_BUFFER_USAGE_TRANSFER_DST_BIT, vmaCreateFlags, vmaUsage);
+    outBuffer =
+        createBuffer(size, bufferUsage | VK_BUFFER_USAGE_TRANSFER_DST_BIT, vmaCreateFlags, vmaUsage, minAlignment);
 
     //  create staging buffer to map and transfer the data
     AllocatedBuffer stagingBuffer = createBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
@@ -276,7 +284,7 @@ BunnyResult VulkanRenderResources::createImageWithData(void* data, VkDeviceSize 
 }
 
 AllocatedBuffer VulkanRenderResources::createBuffer(VkDeviceSize size, VkBufferUsageFlags bufferUsage,
-    VmaAllocationCreateFlags vmaCreateFlags, VmaMemoryUsage vmaUsage) const
+    VmaAllocationCreateFlags vmaCreateFlags, VmaMemoryUsage vmaUsage, VkDeviceSize minAlignment) const
 {
     AllocatedBuffer newBuffer;
 
@@ -293,8 +301,16 @@ AllocatedBuffer VulkanRenderResources::createBuffer(VkDeviceSize size, VkBufferU
         .usage = vmaUsage,
     };
 
-    VK_HARD_CHECK(vmaCreateBuffer(
-        mAllocator, &bufferInfo, &vmaInfo, &newBuffer.mBuffer, &newBuffer.mAllocation, &newBuffer.mAllocationInfo));
+    if (minAlignment > 0)
+    {
+        vmaCreateBufferWithAlignment(mAllocator, &bufferInfo, &vmaInfo, minAlignment, &newBuffer.mBuffer,
+            &newBuffer.mAllocation, &newBuffer.mAllocationInfo);
+    }
+    else
+    {
+        vmaCreateBuffer(
+            mAllocator, &bufferInfo, &vmaInfo, &newBuffer.mBuffer, &newBuffer.mAllocation, &newBuffer.mAllocationInfo);
+    }
 
     return newBuffer;
 }

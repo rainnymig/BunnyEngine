@@ -11,6 +11,8 @@ set (CMAKE_CXX_STANDARD 20)
 # Vulkan
 find_package(Vulkan REQUIRED)
 
+add_compile_definitions(VK_NO_PROTOTYPES)
+
 # Third Parties
 # Volk
 set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_WIN32_KHR)
@@ -37,6 +39,7 @@ add_subdirectory("./third-party/vma")
 # fmt
 add_subdirectory("./third-party/fmt")
 # imgui
+add_compile_definitions(IMGUI_IMPL_VULKAN_NO_PROTOTYPES IMGUI_IMPL_VULKAN_USE_VOLK)
 add_library(imgui)
 target_sources(imgui 
     PRIVATE

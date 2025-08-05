@@ -21,6 +21,7 @@ class RaytracingPipelineBuilder
         uint32_t index, VkRayTracingShaderGroupTypeKHR type = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR);
     void addIntersectionShaderGroup(uint32_t index);
     void setMaxRecursionDepth(uint32_t depth);
+    void setPipelineLayout(VkPipelineLayout pipelineLayout);
 
   private:
     std::vector<VkPipelineShaderStageCreateInfo> mShaderStages;

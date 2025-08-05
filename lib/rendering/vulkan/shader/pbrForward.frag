@@ -11,7 +11,7 @@ layout (location = 5) flat in mat3 tbnMat;
 
 layout (location = 0) out vec4 outColor;
 
-layout(set = 3, binding = 0, r32ui) uniform uimage2D lightShadowMap;
+layout(set = 3, binding = 0, r32ui) uniform readonly uimage2D lightShadowMap;
 
 void main()
 {

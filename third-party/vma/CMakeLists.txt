@@ -10,5 +10,5 @@ target_sources(vma
 )
 
 target_include_directories(vma PRIVATE "${Vulkan_INCLUDE_DIRS}")
-
+target_include_directories(vma PRIVATE "../volk")
 target_include_directories(vma PUBLIC ./headers)

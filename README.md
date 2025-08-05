@@ -25,3 +25,8 @@
 1. install vulkan sdk
 2. run `git submodule update --init --recursive` to get glfw as git submodule
 3. use cmake to configure and build the solution
+
+### useful git submodule commands
+- add new submodule: `git submodule add [remote-repo] [path/for/new/submodule]`
+- update a submodule to latest: `git submodule update --remote [submodule]`
+- after pulling, grab the new submodules that were added somewhere else: `git submodule update --init --recursive`

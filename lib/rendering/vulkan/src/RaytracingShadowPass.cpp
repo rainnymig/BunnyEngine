@@ -43,7 +43,7 @@ void RaytracingShadowPass::draw() const
 
     VkExtent2D renderExtent = mRenderer->getSwapChainExtent();
     vkCmdTraceRaysKHR(
-        cmd, &mRayGenRegion, &mMissRegion, &mHitRegion, nullptr, renderExtent.width, renderExtent.height, 1);
+        cmd, &mRayGenRegion, &mMissRegion, &mHitRegion, &mCallableRegion, renderExtent.width, renderExtent.height, 1);
 
     //  set up barrier to make sure the light shadow image has finished rendering
     {
@@ -128,6 +128,8 @@ BunnyResult RaytracingShadowPass::initPipeline()
     builder.setMaxRecursionDepth(2); //  1 camera ray + 1 shadow ray
                                      //  need more if multiple light?
 
+    builder.setPipelineLayout(mPipelineLayout);
+
     mPipeline = builder.build(mVulkanResources->getDevice());
 
     mDeletionStack.AddFunction([this]() {
@@ -137,6 +139,8 @@ BunnyResult RaytracingShadowPass::initPipeline()
             mPipeline = nullptr;
         }
     });
+
+    buildShaderBindingTable();
 
     return BUNNY_HAPPY;
 }
@@ -238,7 +242,7 @@ BunnyResult RaytracingShadowPass::buildRaytracingDescSetLayouts()
 {
     //  build object descriptor set
     VkDescriptorSetLayoutBinding storageBufferBinding{
-        0, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, nullptr};
+        0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, nullptr};
     VkDescriptorSetLayoutBinding addrUniformBinding{
         1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, nullptr};
 
@@ -308,7 +312,7 @@ BunnyResult Render::RaytracingShadowPass::buildShaderBindingTable()
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
             VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR,
         VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
-        VMA_MEMORY_USAGE_AUTO);
+        VMA_MEMORY_USAGE_AUTO, groupAlignment);
     mDeletionStack.AddFunction([this]() { this->mVulkanResources->destroyBuffer(mShaderBindingTableBuffer); });
 
     VkDeviceAddress sbtAddress = mVulkanResources->getBufferDeviceAddress(mShaderBindingTableBuffer);

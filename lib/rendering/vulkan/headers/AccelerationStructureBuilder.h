@@ -96,6 +96,8 @@ inline void AccelerationStructureBuilder::buildTopLevelAccelerationStructures(
     acceStructInstances.reserve(objectData.size());
     std::transform(objectData.begin(), objectData.end(), std::back_inserter(acceStructInstances),
         [this](const ObjectDataType& data) { return makeAcceStructInstance(data); });
+    constexpr bool isUpdate = false;
+    buildTopLevelAcceStructFromInstances<VkAccelerationStructureInstanceKHR>(acceStructInstances, flags, isUpdate);
 }
 
 template <typename ObjectDataType>
@@ -127,10 +129,10 @@ inline void AccelerationStructureBuilder::buildTopLevelAcceStructFromInstances(
     //  create the buffer containing the instance data
     VkDeviceSize instanceBufferSize = sizeof(InstanceType) * instances.size();
     AllocatedBuffer instanceBuffer;
-    VK_CHECK_OR_RETURN(mVulkanResources->createBufferWithData(instances.data(), instanceBufferSize,
+    mVulkanResources->createBufferWithData(instances.data(), instanceBufferSize,
         VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
             VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
-        0, VMA_MEMORY_USAGE_AUTO, instanceBuffer))
+        0, VMA_MEMORY_USAGE_AUTO, instanceBuffer);
     VkDeviceAddress instanceBufferAddress = mVulkanResources->getBufferDeviceAddress(instanceBuffer);
 
     //  create geometry instance data from the instance buffer for building the tlas
@@ -161,7 +163,7 @@ inline void AccelerationStructureBuilder::buildTopLevelAcceStructFromInstances(
 
     if (isUpdate)
     {
-        updateAcceStruct(mTopLevelAcceStruct, scratchAddress);
+        updateAcceStruct(buildData, mTopLevelAcceStruct, scratchAddress);
     }
     else
     {

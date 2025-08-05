@@ -50,9 +50,10 @@ class RaytracingShadowPass : public PbrGraphicsPass
     void queryRaytracingProperties();
 
     AllocatedBuffer mShaderBindingTableBuffer;
-    VkStridedDeviceAddressRegionKHR mRayGenRegion;
-    VkStridedDeviceAddressRegionKHR mMissRegion;
-    VkStridedDeviceAddressRegionKHR mHitRegion;
+    VkStridedDeviceAddressRegionKHR mRayGenRegion{};
+    VkStridedDeviceAddressRegionKHR mMissRegion{};
+    VkStridedDeviceAddressRegionKHR mHitRegion{};
+    VkStridedDeviceAddressRegionKHR mCallableRegion{};
 
     VkPhysicalDeviceRayTracingPipelinePropertiesKHR mRaytracingProperties{
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};

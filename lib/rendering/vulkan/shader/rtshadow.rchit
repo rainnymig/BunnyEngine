@@ -8,8 +8,8 @@
 #include "rt.glsl"
 
 //  https://stackoverflow.com/questions/60549218/what-use-has-the-layout-specifier-scalar-in-ext-scalar-block-layout
-layout(buffer_reference, scalar) buffer Vertices {Vertex v[]; }; // Positions of an object
-layout(buffer_reference, scalar) buffer Indices {uint i[]; }; // Triangle indices
+layout(buffer_reference, std430) buffer Vertices {Vertex v[]; }; // Positions of an object
+layout(buffer_reference, std430) buffer Indices {uint i[]; }; // Triangle indices
 
 layout(std430, set = 1, binding = 0) buffer ObjectDataBuffer
 {
