@@ -48,6 +48,7 @@ class RaytracingShadowPass : public PbrGraphicsPass
     BunnyResult buildRaytracingDescSetLayouts();
     BunnyResult buildShaderBindingTable();
     void queryRaytracingProperties();
+    void resetFrameImage() const;
 
     AllocatedBuffer mShaderBindingTableBuffer;
     VkStridedDeviceAddressRegionKHR mRayGenRegion{};
@@ -60,6 +61,9 @@ class RaytracingShadowPass : public PbrGraphicsPass
 
     VertexIndexBufferData mVertIdxBufData;
     AllocatedBuffer mVertIdxBufBuffer;
+
+    //  buffer for resetting the frame out image
+    AllocatedBuffer mFrameImageResetBuffer;
 
     VkDescriptorSetLayout mObjectDescSetLayout;
     VkDescriptorSetLayout mRtDataDescSetLayout;

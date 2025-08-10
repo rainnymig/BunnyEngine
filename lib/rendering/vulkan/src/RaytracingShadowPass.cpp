@@ -29,6 +29,8 @@ void RaytracingShadowPass::draw() const
 
     const FrameData& frame = mFrameData[mRenderer->getCurrentFrameIdx()];
 
+    resetFrameImage();
+
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, mPipeline);
     vkCmdBindDescriptorSets(
         cmd, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, mPipelineLayout, 0, 4, &frame.mWorldDescSet, 0, nullptr);
@@ -184,13 +186,22 @@ BunnyResult RaytracingShadowPass::initDataAndResources()
             VMA_MEMORY_USAGE_AUTO);
     mDeletionStack.AddFunction([this]() { mVulkanResources->destroyBuffer(mVertIdxBufBuffer); });
 
-    //  create and bind out images for all frames
     VkExtent2D swapchainExtent = mRenderer->getSwapChainExtent();
+    //  create the frame image reset buffer
+    VkDeviceSize resetBufferSize = sizeof(uint32_t) * swapchainExtent.width * swapchainExtent.height;
+    std::vector<uint32_t> frameImageResetData(resetBufferSize, 0);
+    assert(frameImageResetData.size() == resetBufferSize);
+    mVulkanResources->createBufferWithData(frameImageResetData.data(), resetBufferSize,
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 0, VMA_MEMORY_USAGE_AUTO, mFrameImageResetBuffer);
+    mDeletionStack.AddFunction([this]() { mVulkanResources->destroyBuffer(mFrameImageResetBuffer); });
+    //  create and bind out images for all frames
     for (FrameData& frame : mFrameData)
     {
         frame.mOutImage = mVulkanResources->createImage(
             VkExtent3D{.width = swapchainExtent.width, .height = swapchainExtent.height, .depth = 1},
-            VK_FORMAT_R32_UINT, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
+            VK_FORMAT_R32_UINT,
+            VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+            VK_IMAGE_ASPECT_COLOR_BIT);
         mDeletionStack.AddFunction([this, &frame]() { mVulkanResources->destroyImage(frame.mOutImage); });
 
         //  transition image layout to general
@@ -350,6 +361,31 @@ BunnyResult Render::RaytracingShadowPass::buildShaderBindingTable()
 void RaytracingShadowPass::queryRaytracingProperties()
 {
     mVulkanResources->getPhysicalDeviceProperties(&mRaytracingProperties);
+}
+
+void Render::RaytracingShadowPass::resetFrameImage() const
+{
+    const AllocatedImage& frameImage = mFrameData[mRenderer->getCurrentFrameIdx()].mOutImage;
+
+    VkCommandBuffer cmd = mRenderer->getCurrentCommandBuffer();
+
+    VkImageSubresourceLayers imageSubresource{
+        .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, .mipLevel = 0, .baseArrayLayer = 0, .layerCount = 1};
+    VkBufferImageCopy bufImgCopy{
+        .bufferOffset = 0,
+        .bufferRowLength = 0, //  image data is tightly packed
+        .bufferImageHeight = 0, //  image data is tightly packed
+        .imageSubresource = imageSubresource,
+        .imageOffset = {0, 0, 0},
+        .imageExtent = frameImage.mExtent
+    };
+
+    mVulkanResources->transitionImageLayout(
+        cmd, frameImage.mImage, frameImage.mFormat, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    vkCmdCopyBufferToImage(
+        cmd, mFrameImageResetBuffer.mBuffer, frameImage.mImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &bufImgCopy);
+    mVulkanResources->transitionImageLayout(
+        cmd, frameImage.mImage, frameImage.mFormat, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
 }
 
 } // namespace Bunny::Render

@@ -35,6 +35,8 @@ void main()
     float tMin = 0.001;
     float tMax = 10000.0;
 
+    lightHitInfo.lights = 0;
+
     //  payload index 0
     traceRayEXT(topLevelAcceStruct, rayFlags, 0xff, 0, 0, 0, cameraData.position, tMin, rayDir.xyz, tMax, 0);
 

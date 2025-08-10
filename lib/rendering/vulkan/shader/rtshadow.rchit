@@ -8,8 +8,8 @@
 #include "rt.glsl"
 
 //  https://stackoverflow.com/questions/60549218/what-use-has-the-layout-specifier-scalar-in-ext-scalar-block-layout
-layout(buffer_reference, std430) buffer Vertices {Vertex v[]; }; // Positions of an object
-layout(buffer_reference, std430) buffer Indices {uint i[]; }; // Triangle indices
+layout(buffer_reference, scalar) buffer Vertices {Vertex v[]; }; // Positions of an object
+layout(buffer_reference, scalar) buffer Indices {uint i[]; }; // Triangle indices
 
 layout(std430, set = 1, binding = 0) buffer ObjectDataBuffer
 {
@@ -34,7 +34,20 @@ layout(location = 1) rayPayloadEXT bool isShadowed;
 void main()
 {
     //  find object data of the instance
-    ObjectData objData = objectData[gl_InstanceID];     
+    ObjectData objData = objectData[gl_InstanceID];
+
+
+    //if (gl_InstanceID < 15)
+    //{
+    //    lightHitInfo.lights |= 1;
+    //}
+    //else
+    //{
+    //    lightHitInfo.lights &= 0;
+    //}
+    //return;
+
+
     //  find the idx of Index of the first vertex in the hit primitive
     //  it's calculated from the idx of the first index of the whole mesh 
     //  plus primitive id times number of vertices per primitive (3 per triangle)
@@ -58,7 +71,7 @@ void main()
 
     //  trace a ray to each light
     //  only trace if this point can potentially see the ray
-    isShadowed = false;
+    isShadowed = true;
     uint lightCountCapped = min(lightCount, MAX_LIGHT_COUNT);
     uint rayFlags = gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT;
     float tMin = 0.001;
@@ -78,15 +91,16 @@ void main()
             lightDistance = length(vecToLight);
             lightDir = vecToLight / lightDistance;
         }
-        isShadowed = false;
+        isShadowed = true;
         if (dot(worldNormal, lightDir) > 0)
         {
-            //  payload index 1 - can reach light
-            traceRayEXT(topLevelAcceStruct, rayFlags, 0xff, 0, 0, 0, worldPos, tMin, lightDir, lightDistance, 1);
-            if (isShadowed)
-            {
-                lightHitInfo.lights |= (shadowBit << lightIdx);
-            }
+            //  payload index 1 - is shadowed
+            traceRayEXT(topLevelAcceStruct, rayFlags, 0xff, 0, 0, 1, worldPos, tMin, lightDir, lightDistance, 1);
+            //isShadowed = false;
+        }
+        if (isShadowed)
+        {
+            lightHitInfo.lights |= (shadowBit << lightIdx);
         }
     }
 }

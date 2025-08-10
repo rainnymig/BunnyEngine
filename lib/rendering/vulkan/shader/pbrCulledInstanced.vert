@@ -24,7 +24,7 @@ layout (location = 0) in vec3 position;
 layout (location = 1) in vec3 normal;
 layout (location = 2) in vec3 tangent;
 layout (location = 3) in vec4 color;
-layout (location = 4) in vec2 uv;
+layout (location = 4) in vec3 uv;
 
 /*  output layouts  */
 layout (location = 0) out vec3 outNormal;
@@ -44,7 +44,7 @@ void main()
     outColor = color.xyz;
     vec4 worldPos = objData.model * pos;
     outFragPos = worldPos.xyz;
-    outUV = uv;
+    outUV = uv.xy;
     outMatId = objData.materialId;
 
     vec3 tangentTransformed = normalize((objData.invTransModel * vec4(tangent, 0)).xyz);
