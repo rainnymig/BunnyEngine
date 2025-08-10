@@ -47,5 +47,5 @@ struct Vertex
     vec3 normal;
     vec3 tangent;
     vec4 color;
-    vec2 texCoord;
+    vec3 texCoord;
 };

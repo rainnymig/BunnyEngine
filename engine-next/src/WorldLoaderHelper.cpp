@@ -15,8 +15,11 @@ void addVertex(const glm::vec3& position, const glm::vec3& normal, const glm::ve
     const glm::vec2& texCoord, std::vector<uint32_t>& indices, std::vector<NormalVertex>& vertices,
     std::unordered_map<NormalVertex, uint32_t, NormalVertex::Hash>& vertexToIndexMap)
 {
-    NormalVertex newVertex{
-        .mPosition = position, .mNormal = normal, .mTangent = tangent, .mColor = color, .mTexCoord = texCoord};
+    NormalVertex newVertex{.mPosition = position,
+        .mNormal = normal,
+        .mTangent = tangent,
+        .mColor = color,
+        .mTexCoord = glm::vec3(texCoord.x, texCoord.y, 0)};
 
     const auto verIdxPair = vertexToIndexMap.find(newVertex);
     if (verIdxPair != vertexToIndexMap.end())
@@ -186,7 +189,7 @@ void loadMeshFromGltf(MeshBank<NormalVertex>* meshBank, MaterialProvider* materi
                         newVertex.mNormal = {0, 0, 1};
                         newVertex.mTangent = {1, 0, 0};
                         newVertex.mColor = {0.8f, 0.8f, 0.8f, 1.0f};
-                        newVertex.mTexCoord = {0, 0};
+                        newVertex.mTexCoord = {0, 0, 0};
                         vertices[initialVtx + idx] = newVertex;
 
                         minCorner.x = std::min(minCorner.x, vec.x);
@@ -234,7 +237,7 @@ void loadMeshFromGltf(MeshBank<NormalVertex>* meshBank, MaterialProvider* materi
                 fastgltf::Accessor& texCoordAccessor = gltfAsset.accessors[TexCoordAttr->accessorIndex];
                 fastgltf::iterateAccessorWithIndex<glm::vec2>(
                     gltfAsset, texCoordAccessor, [&vertices, initialVtx](glm::vec2 coord, size_t idx) {
-                        vertices[initialVtx + idx].mTexCoord = coord;
+                        vertices[initialVtx + idx].mTexCoord = glm::vec3(coord.x, coord.y, 0);
                     });
             }
 

@@ -59,7 +59,7 @@ struct NormalVertex
     glm::vec3 mNormal;
     glm::vec3 mTangent;
     glm::vec4 mColor;
-    glm::vec2 mTexCoord;
+    glm::vec3 mTexCoord;
 
     struct Hash
     {
@@ -94,7 +94,7 @@ struct NormalVertex
 
         attributeDescriptions[4].binding = 0;
         attributeDescriptions[4].location = 4;
-        attributeDescriptions[4].format = VK_FORMAT_R32G32_SFLOAT;
+        attributeDescriptions[4].format = VK_FORMAT_R32G32B32_SFLOAT;
         attributeDescriptions[4].offset = offsetof(NormalVertex, mTexCoord);
 
         return attributeDescriptions;
