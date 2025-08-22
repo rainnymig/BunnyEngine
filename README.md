@@ -30,3 +30,6 @@
 - add new submodule: `git submodule add [remote-repo] [path/for/new/submodule]`
 - update a submodule to latest: `git submodule update --remote [submodule]`
 - after pulling, grab the new submodules that were added somewhere else: `git submodule update --init --recursive`
+
+### TODOs
+[Todos](./Todo.md)
