@@ -163,7 +163,8 @@ BunnyResult PbrMaterialBank::recreateMaterialBuffer()
     //  and then recreate using new data
     BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(mVulkanResources->createBufferWithData(mMaterialInstances.data(),
         mMaterialInstances.size() * sizeof(PbrMaterialParameters), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-        VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, VMA_MEMORY_USAGE_AUTO, mMaterialBuffer))
+        VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+        VMA_MEMORY_USAGE_AUTO, mMaterialBuffer))
 
     mMaterialBufferNeedUpdate = false;
 
