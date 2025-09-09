@@ -24,6 +24,7 @@
 #include "PbrForwardPass.h"
 #include "AccelerationStructureBuilder.h"
 #include "RaytracingShadowPass.h"
+#include "ImguiHelper.h"
 
 #include <imgui.h>
 #include <fmt/core.h>
@@ -33,6 +34,8 @@
 
 using namespace Bunny::Engine;
 using namespace Bunny::Render;
+using Bunny::Base::ImguiHelper;
+using Bunny::Base::BasicTimer;
 
 using PbrMaterialLoadParams = Bunny::Render::PbrMaterialBank::PbrMaterialLoadParams;
 
@@ -69,7 +72,9 @@ int main(void)
         PRINT_AND_ABORT("Fail to initialize graphics renderer.")
     }
 
-    Bunny::Base::BasicTimer timer;
+    ImguiHelper::setup();
+
+    BasicTimer timer;
 
     TextureBank textureBank(&renderResources, &renderer);
     MeshBank<NormalVertex> meshBank(&renderResources);
@@ -155,6 +160,17 @@ int main(void)
     constexpr float interval = 0.5f;
     uint32_t accumulatedFrames = 0;
     float fps = 0;
+
+    auto showBasicInfo = [&fps]() {
+        ImGui::Begin("Game Stats");
+        ImGui::Text(fmt::format("FPS: {}", fps).c_str());
+        ImGui::Separator();
+        ImGui::Text("W: forward S: backward A: left D: right");
+        ImGui::Text("E: up C: down");
+        ImGui::End();
+    };
+    ImguiHelper::get().registerCommand(showBasicInfo);
+
     timer.start();
     while (true)
     {
@@ -195,18 +211,10 @@ int main(void)
         depthReducePass.dispatch();
 
         renderer.beginImguiFrame();
-
-        ImGui::Begin("Game Stats");
-        ImGui::Text(fmt::format("FPS: {}", fps).c_str());
-        ImGui::Separator();
-        ImGui::Text("W: forward S: backward A: left D: right");
-        ImGui::Text("E: up C: down");
-        ImGui::End();
-
+        ImguiHelper::get().render();
         renderer.finishImguiFrame();
 
         renderer.finishRenderFrame();
-        //
     }
 
     renderer.waitForRenderFinish();

@@ -8,12 +8,15 @@ target_sources(Base
         headers/BunnyResult.h
         headers/Error.h
         headers/FunctionStack.h
+        headers/ImguiHelper.h
         headers/Input.h
+        headers/Singleton.h
         headers/Timer.h
         headers/Transform.h
         headers/Window.h
     PRIVATE
         src/BoundingBox.cpp
+        src/ImguiHelper.cpp
         src/Input.cpp
         src/Timer.cpp
         src/Transform.cpp
