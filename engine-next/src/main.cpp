@@ -194,6 +194,8 @@ int main(void)
 
         worldTranslator.updatePbrWorldData(&bunnyWorld);
 
+        pbrMaterialBank.updateMaterialBuffer();
+
         const auto camComps = bunnyWorld.mEntityRegistry.view<PbrCameraComponent>();
         if (!camComps.empty())
         {

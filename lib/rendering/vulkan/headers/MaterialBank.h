@@ -83,6 +83,7 @@ class PbrMaterialBank : public MaterialProvider
     BunnyResult addMaterialInstance(const PbrMaterialLoadParams& materialParams, IdType& outId);
     void updateMaterialDescriptorSet(VkDescriptorSet descriptorSet) const;
     BunnyResult recreateMaterialBuffer();
+    void updateMaterialBuffer();
 
     VkDescriptorSetLayout getWorldDescSetLayout() const { return mWorldDescSetLayout; }
     VkDescriptorSetLayout getObjectDescSetLayout() const { return mObjectDescSetLayout; }
@@ -97,6 +98,8 @@ class PbrMaterialBank : public MaterialProvider
   private:
     BunnyResult buildDescriptorSetLayouts();
     BunnyResult buildPipelineLayouts();
+
+    void showImguiControlPanel();
 
     const VulkanRenderResources* mVulkanResources;
     const VulkanGraphicsRenderer* mRenderer;

@@ -6,9 +6,11 @@
 #include "GraphicsPipelineBuilder.h"
 #include "Error.h"
 #include "TextureBank.h"
+#include "ImguiHelper.h"
 
 #include <random>
 #include <cassert>
+#include <imgui.h>
 
 namespace Bunny::Render
 {
@@ -70,6 +72,8 @@ BunnyResult PbrMaterialBank::initialize()
 {
     BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(buildDescriptorSetLayouts())
     BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(buildPipelineLayouts())
+
+    Base::ImguiHelper::get().registerCommand([this]() { showImguiControlPanel(); });
 
     return BUNNY_HAPPY;
 }
@@ -169,6 +173,12 @@ BunnyResult PbrMaterialBank::recreateMaterialBuffer()
     mMaterialBufferNeedUpdate = false;
 
     return BUNNY_HAPPY;
+}
+
+void PbrMaterialBank::updateMaterialBuffer()
+{
+    void* mappedData = mMaterialBuffer.mAllocationInfo.pMappedData;
+    memcpy(mappedData, mMaterialInstances.data(), sizeof(PbrMaterialParameters) * mMaterialInstances.size());
 }
 
 BunnyResult PbrMaterialBank::buildDescriptorSetLayouts()
@@ -291,6 +301,23 @@ BunnyResult PbrMaterialBank::buildPipelineLayouts()
     });
 
     return BUNNY_HAPPY;
+}
+
+void PbrMaterialBank::showImguiControlPanel()
+{
+    ImGui::Begin("Materials");
+    for (PbrMaterialParameters& materialInst : mMaterialInstances)
+    {
+        ImGui::PushID(&materialInst);
+        ImGui::Separator();
+        ImGui::InputFloat4("Color", &materialInst.mBaseColor.x);
+        ImGui::InputFloat("Metallic", &materialInst.mMetallic);
+        ImGui::InputFloat("Roughness", &materialInst.mRoughness);
+        ImGui::InputFloat("Reflectance", &materialInst.mReflectance);
+        ImGui::InputFloat("Ambient Occlusion", &materialInst.mAmbientOcclusion);
+        ImGui::PopID();
+    }
+    ImGui::End();
 }
 
 } // namespace Bunny::Render
