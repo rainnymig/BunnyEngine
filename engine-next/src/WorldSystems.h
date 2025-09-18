@@ -27,4 +27,11 @@ class CameraSystem
     glm::vec3 mMoveVector{0, 0, 0};
     glm::vec3 mRotateVector{0, 0, 0};
 };
+
+class ObjectRandomMovementSystem
+{
+  public:
+    void update(World* world, float deltaTime, float time);
+};
+
 } // namespace Bunny::Engine

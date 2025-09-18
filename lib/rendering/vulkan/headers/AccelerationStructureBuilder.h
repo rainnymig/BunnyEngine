@@ -29,8 +29,8 @@ class AccelerationStructureBuilder
         const std::vector<AcceStructGeometryData>& blasData, VkBuildAccelerationStructureFlagsKHR flags);
 
     template <typename ObjectDataType>
-    void buildTopLevelAccelerationStructures(
-        const std::vector<ObjectDataType>& objectData, VkBuildAccelerationStructureFlagsKHR flags);
+    void buildTopLevelAccelerationStructures(const std::vector<ObjectDataType>& objectData,
+        VkBuildAccelerationStructureFlagsKHR flags, bool isUpdate = false);
 
     const BuiltAccelerationStructure& getTopLevelAccelerationStructure() const { return mTopLevelAcceStruct; }
 
@@ -90,13 +90,12 @@ class AccelerationStructureBuilder
 
 template <typename ObjectDataType>
 inline void AccelerationStructureBuilder::buildTopLevelAccelerationStructures(
-    const std::vector<ObjectDataType>& objectData, VkBuildAccelerationStructureFlagsKHR flags)
+    const std::vector<ObjectDataType>& objectData, VkBuildAccelerationStructureFlagsKHR flags, bool isUpdate)
 {
     std::vector<VkAccelerationStructureInstanceKHR> acceStructInstances;
     acceStructInstances.reserve(objectData.size());
     std::transform(objectData.begin(), objectData.end(), std::back_inserter(acceStructInstances),
         [this](const ObjectDataType& data) { return makeAcceStructInstance(data); });
-    constexpr bool isUpdate = false;
     buildTopLevelAcceStructFromInstances<VkAccelerationStructureInstanceKHR>(acceStructInstances, flags, isUpdate);
 }
 

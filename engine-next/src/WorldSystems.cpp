@@ -73,4 +73,15 @@ void Engine::CameraSystem::onKeyboardInput(const std::string& keyName, Base::Inp
     }
 }
 
+void Engine::ObjectRandomMovementSystem::update(World* world, float deltaTime, float time)
+{
+    constexpr static glm::vec3 maxTranslateVelocity{0, 0, 3.0f};
+    auto meshComps = world->mEntityRegistry.view<TransformComponent>();
+    for (auto [entity, transform] : meshComps.each())
+    {
+        transform.mTransform.mMatrix =
+            glm::translate(transform.mTransform.mMatrix, maxTranslateVelocity * glm::sin(time) * deltaTime);
+    }
+}
+
 } // namespace Bunny::Engine

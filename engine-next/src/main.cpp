@@ -157,6 +157,7 @@ int main(void)
         depthReducePass.getDepthHierarchyLevels());
 
     CameraSystem cameraSystem(&inputManager);
+    ObjectRandomMovementSystem objRandMovSystem;
 
     float accumulatedTime = 0;
     constexpr float interval = 0.5f;
@@ -193,11 +194,20 @@ int main(void)
         }
 
         cameraSystem.update(&bunnyWorld, timer.getDeltaTime());
+        //  update object transforms
+        objRandMovSystem.update(&bunnyWorld, timer.getDeltaTime(), timer.getTime());
+
+        //  update object data buffer
+        worldTranslator.updateObjectData(&bunnyWorld);
+
+        //  update acceleration structures
+        acceStructBuilder.buildTopLevelAccelerationStructures(worldTranslator.getObjectData(),
+            VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR |
+                VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR,
+            true);
 
         worldTranslator.updatePbrWorldData(&bunnyWorld);
-
         pbrMaterialBank.updateMaterialBuffer();
-
         const auto camComps = bunnyWorld.mEntityRegistry.view<PbrCameraComponent>();
         if (!camComps.empty())
         {

@@ -214,6 +214,7 @@ void WorldRenderDataTranslator::cleanup()
 void WorldRenderDataTranslator::getEntityGlobalTransform(const entt::registry& registry, entt::entity entity,
     const glm::mat4x4& transform, const glm::vec3& scale, glm::mat4x4& outTransform, glm::vec3& outScale)
 {
+    //  todo: optimize this to not avoid recalculate parent transform
     if (const auto* hierComp = registry.try_get<HierarchyComponent>(entity);
         hierComp && hierComp->mParent != entt::null)
     {
