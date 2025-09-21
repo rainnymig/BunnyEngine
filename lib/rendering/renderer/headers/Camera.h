@@ -81,11 +81,11 @@ class PhysicalCamera : public Camera
 
     float getExposure() const;
 
-    void setAperture(float apurture) { mAperture = mAperture; }
+    void setAperture(float aperture) { mAperture = aperture; }
     void setShutterTime(float shutterTime) { mShutterTime = shutterTime; }
     void setIso(float iso) { mIso = iso; }
 
-  protected:
+    // protected:
     float mAperture = 2.8f;
     float mShutterTime = 0.01f;
     float mIso = 100;

@@ -41,6 +41,8 @@ class WorldRenderDataTranslator
 
     const std::unordered_map<Render::IdType, size_t>& getMeshInstanceCounts() const { return mMeshInstanceCounts; }
 
+    void showImguiControlPanel(World* world);
+
   private:
     static void getEntityGlobalTransform(const entt::registry& registry, entt::entity entity,
         const glm::mat4x4& transform, const glm::vec3& scale, glm::mat4x4& outTransform, glm::vec3& outScale);

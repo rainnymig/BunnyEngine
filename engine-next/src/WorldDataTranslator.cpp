@@ -3,6 +3,9 @@
 #include "WorldComponents.h"
 #include "VulkanRenderResources.h"
 #include "VulkanGraphicsRenderer.h"
+#include "ImguiHelper.h"
+
+#include <imgui.h>
 
 namespace Bunny::Engine
 {
@@ -209,6 +212,43 @@ void WorldRenderDataTranslator::cleanup()
     mVulkanResources->destroyBuffer(mLightDataBuffer);
     mVulkanResources->destroyBuffer(mPbrCameraBuffer);
     mVulkanResources->destroyBuffer(mPbrLightBuffer);
+}
+
+void WorldRenderDataTranslator::showImguiControlPanel(World* world)
+{
+    ImGui::Begin("Camera and Lights");
+
+    const auto camComps = world->mEntityRegistry.view<PbrCameraComponent>();
+    if (!camComps.empty())
+    {
+        ImGui::LabelText("CameraTitle", "Camera");
+        auto& cam = world->mEntityRegistry.get<PbrCameraComponent>(camComps.front());
+        ImGui::DragFloat("Aperture", &cam.mCamera.mAperture, 0.02f, 1.0f, 22.0f, "%.1f");
+        ImGui::InputFloat("Shutter Time", &cam.mCamera.mShutterTime, 0.00001f, 0.001f, "%.6f");
+        ImGui::DragFloat("ISO", &cam.mCamera.mIso, 20, 100, 8000, "%.1f");
+        ImGui::Separator();
+    }
+
+    auto lightComps = world->mEntityRegistry.view<PbrLightComponent>();
+    if (!lightComps.empty())
+    {
+        ImGui::LabelText("LightsTitle", "Lights");
+        size_t idx = 0;
+        for (auto [entity, light] : lightComps.each())
+        {
+            auto& pbrLight = light.mLight;
+            ImGui::PushID(idx);
+            //  add control for position or direction
+            //  (need proper handling to normalize direction)
+            ImGui::DragFloat("Intensity", &pbrLight.mIntensity, 10, 0, 200000, "%.1f");
+            ImGui::DragFloat3("Color", &pbrLight.mColor.x, 0.01f, 0, 1, "%.2f");
+            ImGui::Separator();
+            ImGui::PopID();
+            idx++;
+        }
+    }
+
+    ImGui::End();
 }
 
 void WorldRenderDataTranslator::getEntityGlobalTransform(const entt::registry& registry, entt::entity entity,

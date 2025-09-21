@@ -173,6 +173,10 @@ int main(void)
         ImGui::End();
     };
     ImguiHelper::get().registerCommand(showBasicInfo);
+    auto showCamAndLightControl = [&bunnyWorld, &worldTranslator]() {
+        worldTranslator.showImguiControlPanel(&bunnyWorld);
+    };
+    ImguiHelper::get().registerCommand(showCamAndLightControl);
 
     timer.start();
     while (true)
