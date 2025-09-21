@@ -11,7 +11,6 @@ struct DrawCommand
     uint firstIndex;
     int vertexOffset;
     uint firstInstance;
-    vec3 padding;
 };
 
 struct Plane
@@ -179,7 +178,7 @@ bool isObjectInView(ObjectData obj, out vec4 db)
 
             isInView = isInView && depthSphere <= depth;
 
-            db = vec4(level, depth, depthSphere, 1.0);
+            db = vec4(level, depth, isInView ? 1.0 : 0.0, obj.meshId);
         }
     }
     
@@ -203,6 +202,8 @@ void main()
 
     bool inView = isObjectInView(obj, deb);
 
+    debugData[objId] = deb;
+
     if (inView)
     {
         //  for now for simplicity, we assume only one surface per mesh
@@ -211,7 +212,7 @@ void main()
         uint instanceId = commands[obj.meshId].firstInstance + instCount;
 
         instToObj[instanceId] = objId;
-        
+        debugData[objId] = vec4(objId, obj.meshId, commands[obj.meshId].firstIndex, instCount);
     }
-    debugData[objId] = deb;
+    // debugData[objId] = deb;
 }

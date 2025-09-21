@@ -39,7 +39,8 @@ void PbrForwardPass::draw() const
     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout, 0, 4,
         &mFrameData[mRenderer->getCurrentFrameIdx()].mWorldDescSet, 0, nullptr);
 
-    vkCmdDrawIndexedIndirect(cmd, mDrawCommandsBuffer.mBuffer, 0, 1, sizeof(VkDrawIndexedIndirectCommand));
+    vkCmdDrawIndexedIndirect(
+        cmd, mDrawCommandsBuffer.mBuffer, 0, mDrawCommandsData.size(), sizeof(VkDrawIndexedIndirectCommand));
 
     mRenderer->finishRender();
 }

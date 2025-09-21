@@ -232,7 +232,7 @@ inline AcceStructGeometryData MeshBank<VertexType, IndexType>::buildTriangleBlas
         VkAccelerationStructureBuildRangeInfoKHR& offset = blasData.mBuildRanges.emplace_back();
         offset.firstVertex = mesh.mVertexOffset;
         offset.primitiveCount = surface.mIndexCount / indexCountPerTriangle;
-        offset.primitiveOffset = 0;
+        offset.primitiveOffset = surface.mFirstIndex * sizeof(IndexType);
         offset.transformOffset = 0;
     }
 

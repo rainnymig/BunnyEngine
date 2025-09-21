@@ -90,7 +90,7 @@ BunnyResult VulkanRenderResources::initialize(Base::Window* window)
     VkPhysicalDeviceFeatures featureBasic{};
     featureBasic.samplerAnisotropy = true;
     featureBasic.vertexPipelineStoresAndAtomics = true;
-
+    featureBasic.multiDrawIndirect = true;
     //  needed for having different format of color attachments for gbuffer
     featureBasic.independentBlend = true;
 

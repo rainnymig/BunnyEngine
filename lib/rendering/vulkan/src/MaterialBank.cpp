@@ -311,10 +311,10 @@ void PbrMaterialBank::showImguiControlPanel()
         ImGui::PushID(&materialInst);
         ImGui::Separator();
         ImGui::InputFloat4("Color", &materialInst.mBaseColor.x);
-        ImGui::InputFloat("Metallic", &materialInst.mMetallic);
-        ImGui::InputFloat("Roughness", &materialInst.mRoughness);
-        ImGui::InputFloat("Reflectance", &materialInst.mReflectance);
-        ImGui::InputFloat("Ambient Occlusion", &materialInst.mAmbientOcclusion);
+        ImGui::InputFloat("Metallic", &materialInst.mMetallic, 0.05f, 0.2f, "%.2f");
+        ImGui::InputFloat("Roughness", &materialInst.mRoughness, 0.05f, 0.2f, "%.2f");
+        ImGui::InputFloat("Reflectance", &materialInst.mReflectance, 0.05f, 0.2f, "%.2f");
+        ImGui::InputFloat("Ambient Occlusion", &materialInst.mAmbientOcclusion, 0.05f, 0.2f, "%.2f");
         ImGui::PopID();
     }
     ImGui::End();
