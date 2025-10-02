@@ -19,10 +19,8 @@ target_sources(VulkanRenderer
         headers/MeshBank.h
         headers/PbrForwardPass.h
         headers/PbrGraphicsPass.h
-        headers/QueueFamilyIndices.h
         headers/RaytracingPipelineBuilder.h
         headers/RaytracingShadowPass.h
-        headers/ForwardPass.h
         headers/Shader.h
         headers/ShaderData.h
         headers/SwapChainSupportDetails.h
@@ -45,7 +43,6 @@ target_sources(VulkanRenderer
         src/PbrGraphicsPass.cpp
         src/RaytracingPipelineBuilder.cpp
         src/RaytracingShadowPass.cpp
-        src/ForwardPass.cpp
         src/GBufferPass.cpp
         src/GraphicsPipelineBuilder.cpp
         src/Shader.cpp

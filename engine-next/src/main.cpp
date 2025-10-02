@@ -15,7 +15,6 @@
 #include "Material.h"
 #include "MaterialBank.h"
 #include "Vertex.h"
-#include "ForwardPass.h"
 #include "CullingPass.h"
 #include "DepthReducePass.h"
 #include "GBufferPass.h"

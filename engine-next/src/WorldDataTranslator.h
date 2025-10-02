@@ -24,14 +24,11 @@ class WorldRenderDataTranslator
         const Render::VulkanGraphicsRenderer* renderer, const Render::MeshBank<Render::NormalVertex>* meshBank);
 
     BunnyResult initialize();
-    BunnyResult updateSceneData(const World* world);
     BunnyResult updatePbrWorldData(const World* world); //  update camera and light data
     BunnyResult updateObjectData(const World* world);
     BunnyResult initObjectDataBuffer(const World* world);
     void cleanup();
 
-    const Render::AllocatedBuffer& getSceneBuffer() const { return mSceneDataBuffer; }
-    const Render::AllocatedBuffer& getLightBuffer() const { return mLightDataBuffer; }
     const Render::AllocatedBuffer& getObjectBuffer() const { return mObjectDataBuffer; }
     const Render::AllocatedBuffer& getPbrCameraBuffer() const { return mPbrCameraBuffer; }
     const Render::AllocatedBuffer& getPbrLightBuffer() const { return mPbrLightBuffer; }
@@ -55,11 +52,6 @@ class WorldRenderDataTranslator
     std::vector<Render::ObjectData> mObjectData;
 
     std::unordered_map<Render::IdType, size_t> mMeshInstanceCounts;
-
-    Render::AllocatedBuffer mSceneDataBuffer;
-    Render::AllocatedBuffer mLightDataBuffer;
-    Render::SceneData mSceneData;
-    Render::LightData mLightData;
 
     //  PBR
     Render::AllocatedBuffer mPbrCameraBuffer;

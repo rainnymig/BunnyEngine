@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.26)
 include(FetchContent)
 
 project(BunnyEngine
-        VERSION "0.0.1"
+        VERSION "0.9.0"
         DESCRIPTION "A cute little graphics engine like a bunny.")
 
 set (CMAKE_CXX_STANDARD 20)
@@ -67,6 +67,5 @@ add_subdirectory("./lib/rendering/renderer")
 add_subdirectory("./lib/rendering/vulkan")
 add_subdirectory("./lib/physics")
 add_subdirectory("./lib/task-system")
-add_subdirectory("./engine")
 add_subdirectory("./engine-next")
 add_subdirectory("./playground")

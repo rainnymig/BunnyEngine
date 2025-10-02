@@ -16,7 +16,6 @@ namespace Bunny::Render
 
 class VulkanRenderResources;
 class VulkanGraphicsRenderer;
-class MaterialBank;
 
 class GBufferPass
 {

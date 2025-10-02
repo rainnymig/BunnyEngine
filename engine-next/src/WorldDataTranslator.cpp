@@ -20,14 +20,6 @@ WorldRenderDataTranslator::WorldRenderDataTranslator(const Render::VulkanRenderR
 
 BunnyResult WorldRenderDataTranslator::initialize()
 {
-    mSceneDataBuffer = mVulkanResources->createBuffer(sizeof(Render::SceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-        VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
-        VMA_MEMORY_USAGE_AUTO);
-
-    mLightDataBuffer = mVulkanResources->createBuffer(sizeof(Render::LightData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-        VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
-        VMA_MEMORY_USAGE_AUTO);
-
     //  PBR
     mPbrCameraBuffer = mVulkanResources->createBuffer(sizeof(Render::PbrCameraData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
         VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
@@ -36,52 +28,6 @@ BunnyResult WorldRenderDataTranslator::initialize()
     mPbrLightBuffer = mVulkanResources->createBuffer(sizeof(Render::PbrLightData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
         VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
         VMA_MEMORY_USAGE_AUTO);
-
-    return BUNNY_HAPPY;
-}
-
-BunnyResult WorldRenderDataTranslator::updateSceneData(const World* world)
-{
-    const auto camComps = world->mEntityRegistry.view<CameraComponent>();
-
-    if (camComps.empty())
-    {
-        return BUNNY_SAD;
-    }
-
-    for (auto [entity, cam] : camComps.each())
-    {
-        mSceneData.mProjMatrix = cam.mCamera.getProjMatrix();
-        mSceneData.mViewMatrix = cam.mCamera.getViewMatrix();
-        mSceneData.mViewProjMatrix = cam.mCamera.getViewProjMatrix();
-        mLightData.mCameraPos = cam.mCamera.getPosition();
-        break;
-    }
-
-    {
-        void* mappedSceneData = mSceneDataBuffer.mAllocationInfo.pMappedData;
-        memcpy(mappedSceneData, &mSceneData, sizeof(Render::SceneData));
-    }
-
-    const auto lightComps = world->mEntityRegistry.view<DirectionLightComponent>();
-    if (lightComps.empty())
-    {
-        return BUNNY_SAD;
-    }
-
-    size_t idx = 0;
-    for (auto [entity, light] : lightComps.each())
-    {
-        mLightData.mLights[idx].mColor = light.mLight.mColor;
-        mLightData.mLights[idx].mDirection = light.mLight.mDirection;
-        idx++;
-    }
-    mLightData.mLightCount = idx;
-
-    {
-        void* mappedLightData = mLightDataBuffer.mAllocationInfo.pMappedData;
-        memcpy(mappedLightData, &mLightData, sizeof(Render::LightData));
-    }
 
     return BUNNY_HAPPY;
 }
@@ -208,8 +154,6 @@ BunnyResult WorldRenderDataTranslator::initObjectDataBuffer(const World* world)
 void WorldRenderDataTranslator::cleanup()
 {
     mVulkanResources->destroyBuffer(mObjectDataBuffer);
-    mVulkanResources->destroyBuffer(mSceneDataBuffer);
-    mVulkanResources->destroyBuffer(mLightDataBuffer);
     mVulkanResources->destroyBuffer(mPbrCameraBuffer);
     mVulkanResources->destroyBuffer(mPbrLightBuffer);
 }

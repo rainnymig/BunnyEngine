@@ -23,29 +23,6 @@ class MaterialProvider
     virtual IdType giveMeAMaterialInstance() const = 0;
 };
 
-class MaterialBank : public MaterialProvider
-{
-  public:
-    void cleanup();
-
-    void addMaterial(std::unique_ptr<Material>&& material);
-    void addMaterialInstance(MaterialInstance materialInstance);
-
-    const Material* getMaterial(IdType materialId) const;
-    const MaterialInstance& getMaterialInstance(IdType instanceId) const;
-
-    //  helper function to return a default material
-    constexpr IdType getDefaultMaterialId() const { return 0; }
-    constexpr IdType getDefaultMaterialInstanceId() const { return 0; }
-
-    virtual IdType giveMeAMaterial() const override;
-    virtual IdType giveMeAMaterialInstance() const override;
-
-  private:
-    std::vector<std::unique_ptr<Material>> mMaterials;
-    std::vector<MaterialInstance> mMaterialInstances;
-};
-
 class PbrMaterialBank : public MaterialProvider
 {
   public:
