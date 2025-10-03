@@ -62,19 +62,14 @@ BunnyResult WorldLoader::loadPbrTestWorldWithGltfMeshes(std::string_view filePat
     static constexpr float scaleMax = 2.0f;
     static constexpr float scaleMin = 0.8f;
 
-    std::random_device rd;
-    std::mt19937 re(rd());
-    std::uniform_real_distribution<float> xDist(-spawnAreaXMax, spawnAreaXMax);
-    std::uniform_real_distribution<float> yDist(-spawnAreaYMax, spawnAreaYMax);
-    std::uniform_real_distribution<float> zDist(-spawnAreaZMax, spawnAreaZMax);
-    std::uniform_real_distribution<float> scaleDist(scaleMin, scaleMax);
-    std::uniform_real_distribution<float> rotDist(-glm::pi<float>(), glm::pi<float>());
+    static constexpr float intervalX = 2;
+    static constexpr float startX = -static_cast<float>(objectCount - 1) / 2 * intervalX;
 
     for (uint32_t i = 0; i < objectCount; i++)
     {
-        float nodeScale = scaleDist(re);
-        Base::Transform nodeTransform({xDist(re), yDist(re), zDist(re)}, {rotDist(re), rotDist(re), rotDist(re)},
-            {nodeScale, nodeScale, nodeScale});
+        float offsetX = startX + i * intervalX;
+        Base::Transform nodeTransform({offsetX, 0, 0}, {0, 0, 0}, {1, 1, 1});
+
         const auto nodeEntity = outWorld.mEntityRegistry.create();
         outWorld.mEntityRegistry.emplace<TransformComponent>(nodeEntity, nodeTransform);
         //  assign a random material instance from the pbr material bank instead of using the one from the mesh
@@ -85,7 +80,7 @@ BunnyResult WorldLoader::loadPbrTestWorldWithGltfMeshes(std::string_view filePat
     //  camera
     {
         const auto cameraEntity = outWorld.mEntityRegistry.create();
-        Render::PhysicalCamera camera(glm::vec3{0, 5, 15}, glm::vec3{-glm::pi<float>() / 8, 0, 0});
+        Render::PhysicalCamera camera(glm::vec3{0, 5, 10}, glm::vec3{-glm::pi<float>() / 16, 0, 0});
         camera.setAperture(4);
         camera.setShutterTime(1.0f / 1600);
         outWorld.mEntityRegistry.emplace<PbrCameraComponent>(cameraEntity, camera);

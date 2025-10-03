@@ -49,7 +49,7 @@ int main(void)
 #endif
 
     Config config;
-    // config.loadConfigFile("./config.ini");
+    config.loadConfigFile("./assets/config.ini");
 
     Bunny::Base::Window window;
     window.initialize(config.mWindowWidth, config.mWindowHeight, config.mIsFullScreen, config.mWindowName);
