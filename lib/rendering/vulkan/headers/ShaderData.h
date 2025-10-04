@@ -2,6 +2,7 @@
 
 #include "Light.h"
 #include "Fundamentals.h"
+#include "BoundingBox.h"
 
 #include <glm/matrix.hpp>
 #include <glm/vec3.hpp>
@@ -10,6 +11,7 @@
 
 namespace Bunny::Render
 {
+//  non PBR legacy
 struct SceneData
 {
     glm::mat4x4 mViewMatrix;
@@ -19,6 +21,7 @@ struct SceneData
 
 static constexpr size_t MAX_LIGHT_COUNT = 8;
 
+//  non PBR legacy
 struct LightData
 {
     glm::vec3 mCameraPos;
@@ -40,12 +43,14 @@ struct ObjectData
     uint32_t mPadding;
 };
 
+//  PBR
 struct PbrLightData
 {
     PbrLight mLights[MAX_LIGHT_COUNT];
     uint32_t mLightCount;
 };
 
+//  PBR
 struct PbrCameraData
 {
     glm::mat4 mViewProjMat;
@@ -56,6 +61,11 @@ struct PbrCameraData
     glm::vec2 mResolution;
     float mPadding1;
     float mPadding2;
+};
+
+struct MeshData
+{
+    Base::BoundingSphere mBoundingSphere;
 };
 
 struct VertexIndexBufferData

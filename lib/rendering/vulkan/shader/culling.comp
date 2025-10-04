@@ -166,11 +166,6 @@ bool isObjectInView(ObjectData obj, out vec4 db)
             float level = floor(log2(max(width, height)));
 
             float depth = textureLod(depthHierarchy, (aabb.xy + aabb.zw) / 2, level).x;
-            // float depth1 = textureLod(depthHierarchy, aabb.xy, level).x;
-            // float depth2 = textureLod(depthHierarchy, aabb.xw, level).x;
-            // float depth3 = textureLod(depthHierarchy, aabb.zy, level).x;
-            // float depth4 = textureLod(depthHierarchy, aabb.zw, level).x;
-            // float depth = max(max(depth1, depth2), max(depth3, depth4));
 
             vec4 sphereTestPoint = vec4(centerViewSpace + vec3(0, 0, radius), 1.0);
             vec4 projected = projMat * sphereTestPoint;

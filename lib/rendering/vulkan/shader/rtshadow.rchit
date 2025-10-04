@@ -36,16 +36,8 @@ void main()
     //  find object data of the instance
     ObjectData objData = objectData[gl_InstanceID];
 
-
-    //if (gl_InstanceID < 15)
-    //{
-    //    lightHitInfo.lights |= 1;
-    //}
-    //else
-    //{
-    //    lightHitInfo.lights &= 0;
-    //}
-    //return;
+    //  udpate: use gl_GeometryIndexEXT to find which surface (which geometry in the blas) the hit happens
+    //  use gl_GeometryIndexEXT and gl_PrimitiveID to locate the correct primitive in a multi surface mesh
 
 
     //  find the idx of Index of the first vertex in the hit primitive

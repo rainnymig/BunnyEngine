@@ -62,7 +62,7 @@ BunnyResult WorldLoader::loadPbrTestWorldWithGltfMeshes(std::string_view filePat
     static constexpr float scaleMax = 2.0f;
     static constexpr float scaleMin = 0.8f;
 
-    static constexpr float intervalX = 2;
+    static constexpr float intervalX = 3;
     static constexpr float startX = -static_cast<float>(objectCount - 1) / 2 * intervalX;
 
     for (uint32_t i = 0; i < objectCount; i++)
