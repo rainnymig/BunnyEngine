@@ -103,7 +103,7 @@ const IdType createCubeMeshToBank(MeshBank<NormalVertex>* meshBank, IdType mater
 
     SurfaceLite cubeSurface;
     cubeSurface.mFirstIndex = 0;
-    cubeSurface.mMaterialInstanceId = materialId;
+    cubeSurface.mMaterialId = materialId;
     cubeSurface.mMaterialInstanceId = materialInstanceId;
 
     std::vector<uint32_t> indices;
@@ -159,6 +159,9 @@ void loadMeshFromGltf(MeshBank<NormalVertex>* meshBank, MaterialProvider* materi
         glm::vec3 maxCorner{-100000, -100000, -100000};
         glm::vec3 minCorner{100000, 100000, 100000};
 
+        //  the idx of primitive (surface) within this mesh
+        uint32_t primitiveIdx = 0;
+
         //  create mesh surfaces
         for (auto&& primitive : mesh.primitives)
         {
@@ -182,14 +185,15 @@ void loadMeshFromGltf(MeshBank<NormalVertex>* meshBank, MaterialProvider* materi
                     gltfAsset.accessors[primitive.findAttribute("POSITION")->accessorIndex];
                 vertices.resize(vertices.size() + posAccessor.count);
 
-                fastgltf::iterateAccessorWithIndex<glm::vec3>(
-                    gltfAsset, posAccessor, [&vertices, &minCorner, &maxCorner, initialVtx](glm::vec3 vec, size_t idx) {
+                fastgltf::iterateAccessorWithIndex<glm::vec3>(gltfAsset, posAccessor,
+                    [&vertices, &minCorner, &maxCorner, initialVtx, primitiveIdx](glm::vec3 vec, size_t idx) {
                         Render::NormalVertex newVertex;
                         newVertex.mPosition = vec;
                         newVertex.mNormal = {0, 0, 1};
                         newVertex.mTangent = {1, 0, 0};
                         newVertex.mColor = {0.8f, 0.8f, 0.8f, 1.0f};
                         newVertex.mTexCoord = {0, 0, 0};
+                        newVertex.mSurfaceIndex = primitiveIdx;
                         vertices[initialVtx + idx] = newVertex;
 
                         minCorner.x = std::min(minCorner.x, vec.x);
@@ -244,9 +248,12 @@ void loadMeshFromGltf(MeshBank<NormalVertex>* meshBank, MaterialProvider* materi
             //  load material
             //  for now all use default material
             newSurface.mMaterialId = materialBank->giveMeAMaterial();
-            newSurface.mMaterialInstanceId = materialBank->giveMeAMaterialInstance();
+            newSurface.mMaterialInstanceId =
+                newSurface.mMaterialId; //  now we only have 1 material (i.e. 1 pipeline) and the material id is
+                                        //  actually material instance id
 
             newMesh.mSurfaces.push_back(newSurface);
+            primitiveIdx++;
         }
 
         //  calculate bounding sphere of mesh

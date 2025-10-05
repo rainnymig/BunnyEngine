@@ -41,6 +41,26 @@ struct ObjectData
     uint firstIndex;
 };
 
+struct BoundingSphere
+{
+    vec3 center;
+    float radius;
+};
+
+struct SurfaceData
+{
+    uint materialId;
+    uint firstIndex;
+};
+
+struct MeshData
+{
+    BoundingSphere bounds;
+    uint firstSurface;
+    uint surfaceCount;
+    uint vertexOffset;
+};
+
 struct Vertex
 {
     vec3 position;
@@ -48,4 +68,5 @@ struct Vertex
     vec3 tangent;
     vec4 color;
     vec3 texCoord;
+    uint surfaceIdx;    //  the index of surface in the mesh (not in the surface data array)
 };

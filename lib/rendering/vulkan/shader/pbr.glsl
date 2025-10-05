@@ -27,7 +27,17 @@ layout(std430, set = 2, binding = 0) readonly buffer MaterialData
     PbrMaterial materialInstances[];
 };
 
-layout(set = 2, binding = 1) uniform sampler2D textures[];
+layout(std430, set = 2, binding = 1) readonly buffer MeshDataBuffer
+{
+    MeshData meshData[];
+};
+
+layout(std430, set = 2, binding = 2) readonly buffer SurfaceDataBuffer
+{
+    SurfaceData surfaceData[];
+};
+
+layout(set = 2, binding = 3) uniform sampler2D textures[];
 
 //  normal distribution function (specular D)
 //  ndoth: normal dot halfway vector

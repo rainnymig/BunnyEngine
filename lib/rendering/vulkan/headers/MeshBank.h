@@ -4,6 +4,8 @@
 #include "VulkanRenderResources.h"
 #include "BoundingBox.h"
 #include "AccelerationStructureData.h"
+#include "ShaderData.h"
+#include "Helper.h"
 
 #include <volk.h>
 
@@ -46,7 +48,6 @@ class MeshBank
     MeshBank(const VulkanRenderResources* vulkanResources) : mVulkanResources(vulkanResources) {}
     ~MeshBank();
 
-    //  the indices should be unprocessed, i.e. as they are starting from 0
     IdType addMesh(std::span<VertexType> vertices, std::span<IndexType> indices, const MeshLite& mesh);
     void buildMeshBuffers();
     void bindMeshBuffers(VkCommandBuffer cmdBuf) const;
@@ -58,7 +59,14 @@ class MeshBank
     void cleanup();
 
     const AllocatedBuffer& getBoundsBuffer() const { return mBoundsBuffer; }
-    const size_t getBoundsBufferSize() const { return sizeof(Base::BoundingSphere) * mBoundsData.size(); }
+    // const size_t getBoundsBufferSize() const { return getContainerDataSize(mBoundsData); }
+    const size_t getBoundsBufferSize() const;
+    const AllocatedBuffer& getSurfaceDataBuffer() const { return mSurfaceDataBuffer; }
+    // const size_t getSurfaceDataBufferSize() const { return getContainerDataSize(mSurfaceData); }
+    const size_t getSurfaceDataBufferSize() const;
+    const AllocatedBuffer& getMeshDataBuffer() const { return mMeshDataBuffer; }
+    // const size_t getMeshDataBufferSize() const { return getContainerDataSize(mMeshData); }
+    const size_t getMeshDataBufferSize() const;
 
     [[nodiscard]] std::vector<AcceStructGeometryData> getBlasGeometryData() const;
 
@@ -72,6 +80,8 @@ class MeshBank
     AllocatedBuffer mVertexBuffer;
     AllocatedBuffer mIndexBuffer;
     AllocatedBuffer mBoundsBuffer;
+    AllocatedBuffer mSurfaceDataBuffer;
+    AllocatedBuffer mMeshDataBuffer;
 
     VkDeviceAddress mVertexBufferAddress;
     VkDeviceAddress mIndexBufferAddress;
@@ -79,6 +89,11 @@ class MeshBank
     std::vector<VertexType> mVertexBufferData;
     std::vector<IndexType> mIndexBufferData;
     std::vector<Base::BoundingSphere> mBoundsData; //  maybe template this as well
+
+    //  surface and mesh data to be used in the shader
+    //  may even replace the current MeshLite vector (mMeshes) in the future, so that no duplicated data?
+    std::vector<SurfaceData> mSurfaceData;
+    std::vector<MeshData> mMeshData;
 
     std::vector<MeshLite> mMeshes;
     std::unordered_map<std::string_view, IdType> mMeshNameToIdMap;
@@ -102,12 +117,12 @@ IdType MeshBank<VertexType, IndexType>::addMesh(
     //  take the current number of indices in the index buffer
     //  because the newly added surfaces will need to offset their starting index from here
     uint32_t indexOffset = mIndexBufferData.size();
-    //  vertices can be directly insert into the buffer
+
+    //  insert the vertices and indices into the shared buffer with all vertices and indices
+    //  they keep the value as they are in the individual meshes
+    //  when using them, the user can use vertexOffset and firstIndex values to get to correct data from the big vertex
+    //  and index buffers.
     mVertexBufferData.insert(mVertexBufferData.end(), vertices.begin(), vertices.end());
-    //  indices need to add the offset first
-    //  update: no need, vertex offset set in mesh instead
-    // std::transform(indices.begin(), indices.end(), std::back_inserter(mIndexBufferData),
-    //     [vertexOffset](IndexType index) { return index + vertexOffset; });
     mIndexBufferData.insert(mIndexBufferData.end(), indices.begin(), indices.end());
 
     //  assign an id for the new mesh
@@ -123,6 +138,19 @@ IdType MeshBank<VertexType, IndexType>::addMesh(
     }
     mBoundsData.push_back(mMeshes[meshId].mBounds);
 
+    //  create and insert the new surfaces and mesh into the surface and mesh data array
+    MeshData& newMeshData = mMeshData.emplace_back();
+    newMeshData.mBoundingSphere = mMeshes[meshId].mBounds;
+    newMeshData.mVertexOffset = vertexOffset;
+    newMeshData.mFirstSurface = mSurfaceData.size();
+    newMeshData.mSurfaceCount = mMeshes[meshId].mSurfaces.size();
+    for (const SurfaceLite& surface : mMeshes[meshId].mSurfaces)
+    {
+        SurfaceData& newSurfaceData = mSurfaceData.emplace_back();
+        newSurfaceData.mFirstIndex = surface.mFirstIndex;
+        newSurfaceData.mMaterialId = surface.mMaterialId;
+    }
+
     //  update mesh name to id mapping to enable get mesh from name
     mMeshNameToIdMap[mMeshes[meshId].mName] = meshId;
 
@@ -132,10 +160,11 @@ IdType MeshBank<VertexType, IndexType>::addMesh(
 template <typename VertexType, typename IndexType>
 void MeshBank<VertexType, IndexType>::buildMeshBuffers()
 {
+    //  this function assumes the all buffers are no built yet
+    //  maybe modify it to enable "updating" the existing buffers for dynamic mesh addition and removel?
+
     const VkDeviceSize vertexSize = mVertexBufferData.size() * sizeof(VertexType);
     const VkDeviceSize indexSize = mIndexBufferData.size() * sizeof(IndexType);
-    const VkDeviceSize boundsSize = mBoundsData.size() * sizeof(Base::BoundingSphere);
-
     //  add VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT for vertex and index buffer
     //  this is required when creating acceleration structures for ray tracing
     mVulkanResources->createBufferWithData(mVertexBufferData.data(), vertexSize,
@@ -146,6 +175,15 @@ void MeshBank<VertexType, IndexType>::buildMeshBuffers()
         VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
             VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
         VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, VMA_MEMORY_USAGE_GPU_ONLY, mIndexBuffer);
+
+    const VkDeviceSize surfaceDataSize = mSurfaceData.size() * sizeof(SurfaceData);
+    const VkDeviceSize meshDataSize = mMeshData.size() * sizeof(MeshData);
+    mVulkanResources->createBufferWithData(mSurfaceData.data(), surfaceDataSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+        VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, VMA_MEMORY_USAGE_GPU_ONLY, mSurfaceDataBuffer);
+    mVulkanResources->createBufferWithData(mMeshData.data(), meshDataSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+        VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, VMA_MEMORY_USAGE_GPU_ONLY, mMeshDataBuffer);
+
+    const VkDeviceSize boundsSize = mBoundsData.size() * sizeof(Base::BoundingSphere);
     mVulkanResources->createBufferWithData(mBoundsData.data(), boundsSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
         VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, VMA_MEMORY_USAGE_GPU_ONLY,
         mBoundsBuffer); //  bounds of meshes for culling
@@ -179,11 +217,33 @@ void MeshBank<VertexType, IndexType>::cleanup()
 {
     mVulkanResources->destroyBuffer(mVertexBuffer);
     mVulkanResources->destroyBuffer(mIndexBuffer);
+    mVulkanResources->destroyBuffer(mMeshDataBuffer);
+    mVulkanResources->destroyBuffer(mSurfaceDataBuffer);
     mVulkanResources->destroyBuffer(mBoundsBuffer);
 
     mVertexBufferData.clear();
     mIndexBufferData.clear();
+    mMeshData.clear();
+    mSurfaceData.clear();
     mBoundsData.clear();
+}
+
+template <typename VertexType, typename IndexType>
+inline const size_t MeshBank<VertexType, IndexType>::getBoundsBufferSize() const
+{
+    return getContainerDataSize<std::vector<Base::BoundingSphere>>(mBoundsData);
+}
+
+template <typename VertexType, typename IndexType>
+inline const size_t MeshBank<VertexType, IndexType>::getSurfaceDataBufferSize() const
+{
+    return getContainerDataSize<std::vector<SurfaceData>>(mSurfaceData);
+}
+
+template <typename VertexType, typename IndexType>
+inline const size_t MeshBank<VertexType, IndexType>::getMeshDataBufferSize() const
+{
+    return getContainerDataSize<std::vector<MeshData>>(mMeshData);
 }
 
 template <typename VertexType, typename IndexType>

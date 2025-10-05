@@ -226,7 +226,7 @@ BunnyResult PbrForwardPass::initDescriptors()
         mDescriptorAllocator.allocate(device, descLayouts, &frame.mWorldDescSet, 4);
 
         //  link material data to material descriptor set
-        mMaterialBank->updateMaterialDescriptorSet(frame.mMaterialDescSet);
+        mMaterialBank->updateMaterialDescriptorSet(frame.mMaterialDescSet, mMeshBank);
     }
 
     mDeletionStack.AddFunction([this]() { mDescriptorAllocator.destroyPools(mVulkanResources->getDevice()); });

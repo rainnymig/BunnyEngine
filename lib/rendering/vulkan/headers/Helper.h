@@ -58,4 +58,10 @@ void copyDataArrayToBuffer(const std::span<T> data, AllocatedBuffer& buffer)
     memcpy(mappedData, data.data(), data.size_bytes());
 }
 
+template <typename ContainerT>
+size_t getContainerDataSize(const ContainerT& container)
+{
+    return container.size() * sizeof(typename ContainerT::value_type);
+}
+
 } // namespace Bunny::Render

@@ -63,9 +63,21 @@ struct PbrCameraData
     float mPadding2;
 };
 
+struct SurfaceData
+{
+    uint32_t mMaterialId; //  index into the material data array
+    uint32_t mFirstIndex; //  from mesh data: also for rt pipeline
+                          //  the idx of the first index of the mesh in the shared index buffer
+};
+
 struct MeshData
 {
     Base::BoundingSphere mBoundingSphere;
+    uint32_t mFirstSurface; //  the index of the first surface into the surface data array
+    uint32_t mSurfaceCount; //  the number of surfaces of the mesh
+    uint32_t mVertexOffset; //  from mesh data: put the vertex offset of the mesh here
+                            //  so that easier to find the vertices of a primitive in the ray tracing shaders
+    uint32_t mPadding;
 };
 
 struct VertexIndexBufferData

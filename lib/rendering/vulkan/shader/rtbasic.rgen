@@ -11,7 +11,7 @@
 Descriptor Sets:
 set 0: scene data
 set 1: object data
-set 2: material data
+set 2: material and mesh data
 //////*/
 
 //  top level acceleration structure for ray tracing

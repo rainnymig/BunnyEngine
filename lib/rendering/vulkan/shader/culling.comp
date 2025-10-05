@@ -19,12 +19,6 @@ struct Plane
     float distToOrigin;     //  distance from plane to the origin point
 };
 
-struct BoundingSphere
-{
-    vec3 center;
-    float radius;
-};
-
 layout(std140, set = 0, binding = 0) uniform CullingData
 {
     //  view frustum culling

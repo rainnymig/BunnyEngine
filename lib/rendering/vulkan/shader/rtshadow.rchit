@@ -38,17 +38,18 @@ void main()
 
     //  udpate: use gl_GeometryIndexEXT to find which surface (which geometry in the blas) the hit happens
     //  use gl_GeometryIndexEXT and gl_PrimitiveID to locate the correct primitive in a multi surface mesh
-
+    MeshData mesh = meshData[objData.meshId];
+    SurfaceData surface = surfaceData[mesh.firstSurface + gl_GeometryIndexEXT];
 
     //  find the idx of Index of the first vertex in the hit primitive
     //  it's calculated from the idx of the first index of the whole mesh 
     //  plus primitive id times number of vertices per primitive (3 per triangle)
-    const uint firstIdxOfPrimitiveIndex = objData.firstIndex + gl_PrimitiveID * 3;
+    const uint firstIdxOfPrimitiveIndex = surface.firstIndex + gl_PrimitiveID * 3;
     //  find the 3 indices of the triangle
     //  need to add the vertex offset to it to get the actual position of the vertices in the vertex buffer
-    const uint i0 = indices.i[firstIdxOfPrimitiveIndex] + objData.vertexOffset;
-    const uint i1 = indices.i[firstIdxOfPrimitiveIndex + 1] + objData.vertexOffset;
-    const uint i2 = indices.i[firstIdxOfPrimitiveIndex + 2] + objData.vertexOffset;
+    const uint i0 = indices.i[firstIdxOfPrimitiveIndex] + mesh.vertexOffset;
+    const uint i1 = indices.i[firstIdxOfPrimitiveIndex + 1] + mesh.vertexOffset;
+    const uint i2 = indices.i[firstIdxOfPrimitiveIndex + 2] + mesh.vertexOffset;
     //  find the 3 vertices of the triangle from the vertex buffer
     Vertex v0 = vertices.v[i0];
     Vertex v1 = vertices.v[i1];

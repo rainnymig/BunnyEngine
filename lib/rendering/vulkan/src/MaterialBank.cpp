@@ -100,14 +100,19 @@ BunnyResult PbrMaterialBank::addMaterialInstance(const PbrMaterialLoadParams& ma
     return BUNNY_HAPPY;
 }
 
-void PbrMaterialBank::updateMaterialDescriptorSet(VkDescriptorSet descriptorSet) const
+void PbrMaterialBank::updateMaterialDescriptorSet(
+    VkDescriptorSet descriptorSet, const MeshBank<NormalVertex>* meshBank) const
 {
     assert(!mMaterialBufferNeedUpdate);
 
     DescriptorWriter writer;
     writer.writeBuffer(0, mMaterialBuffer.mBuffer, mMaterialInstances.size() * sizeof(PbrMaterialParameters), 0,
         VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-    mTextureBank->addDescriptorSetWrite(1, writer);
+    writer.writeBuffer(1, meshBank->getMeshDataBuffer().mBuffer, meshBank->getMeshDataBufferSize(), 0,
+        VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    writer.writeBuffer(2, meshBank->getSurfaceDataBuffer().mBuffer, meshBank->getSurfaceDataBufferSize(), 0,
+        VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    mTextureBank->addDescriptorSetWrite(3, writer);
     writer.updateSet(mVulkanResources->getDevice(), descriptorSet);
 }
 
@@ -186,8 +191,14 @@ BunnyResult PbrMaterialBank::buildDescriptorSetLayouts()
     storageBufferBinding.binding = 0;
     storageBufferBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
     builder.addBinding(storageBufferBinding);
+    //  mesh data array
+    storageBufferBinding.binding = 1;
+    builder.addBinding(storageBufferBinding);
+    //  surface data array
+    storageBufferBinding.binding = 2;
+    builder.addBinding(storageBufferBinding);
     //  all textures array
-    imageBinding.binding = 1;
+    imageBinding.binding = 3;
     imageBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
     imageBinding.descriptorCount = TEXTURE_ARRAY_SIZE;
     builder.addBinding(imageBinding);

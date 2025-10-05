@@ -4,6 +4,8 @@
 #include "Material.h"
 #include "BunnyResult.h"
 #include "FunctionStack.h"
+#include "MeshBank.h"
+#include "Vertex.h"
 
 #include <memory>
 #include <unordered_map>
@@ -58,7 +60,9 @@ class PbrMaterialBank : public MaterialProvider
     PbrMaterialParameters getMaterialInstance(IdType id) const;
     IdType getRandomMaterialInstanceId() const;
     BunnyResult addMaterialInstance(const PbrMaterialLoadParams& materialParams, IdType& outId);
-    void updateMaterialDescriptorSet(VkDescriptorSet descriptorSet) const;
+    //  temp solution, include mesh bank as parameter
+    //  maybe order the descriptors better to avoid this
+    void updateMaterialDescriptorSet(VkDescriptorSet descriptorSet, const MeshBank<NormalVertex>* meshBank) const;
     BunnyResult recreateMaterialBuffer();
     void updateMaterialBuffer();
 
