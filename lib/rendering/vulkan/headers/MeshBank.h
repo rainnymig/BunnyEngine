@@ -59,14 +59,11 @@ class MeshBank
     void cleanup();
 
     const AllocatedBuffer& getBoundsBuffer() const { return mBoundsBuffer; }
-    // const size_t getBoundsBufferSize() const { return getContainerDataSize(mBoundsData); }
-    const size_t getBoundsBufferSize() const;
+    const size_t getBoundsBufferSize() const { return getContainerDataSize(mBoundsData); }
     const AllocatedBuffer& getSurfaceDataBuffer() const { return mSurfaceDataBuffer; }
-    // const size_t getSurfaceDataBufferSize() const { return getContainerDataSize(mSurfaceData); }
-    const size_t getSurfaceDataBufferSize() const;
+    const size_t getSurfaceDataBufferSize() const { return getContainerDataSize(mSurfaceData); }
     const AllocatedBuffer& getMeshDataBuffer() const { return mMeshDataBuffer; }
-    // const size_t getMeshDataBufferSize() const { return getContainerDataSize(mMeshData); }
-    const size_t getMeshDataBufferSize() const;
+    const size_t getMeshDataBufferSize() const { return Bunny::Render::getContainerDataSize(mMeshData); }
 
     [[nodiscard]] std::vector<AcceStructGeometryData> getBlasGeometryData() const;
 
@@ -163,8 +160,8 @@ void MeshBank<VertexType, IndexType>::buildMeshBuffers()
     //  this function assumes the all buffers are no built yet
     //  maybe modify it to enable "updating" the existing buffers for dynamic mesh addition and removel?
 
-    const VkDeviceSize vertexSize = mVertexBufferData.size() * sizeof(VertexType);
-    const VkDeviceSize indexSize = mIndexBufferData.size() * sizeof(IndexType);
+    const VkDeviceSize vertexSize = getContainerDataSize(mVertexBufferData);
+    const VkDeviceSize indexSize = getContainerDataSize(mIndexBufferData);
     //  add VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT for vertex and index buffer
     //  this is required when creating acceleration structures for ray tracing
     mVulkanResources->createBufferWithData(mVertexBufferData.data(), vertexSize,
@@ -176,14 +173,14 @@ void MeshBank<VertexType, IndexType>::buildMeshBuffers()
             VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
         VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, VMA_MEMORY_USAGE_GPU_ONLY, mIndexBuffer);
 
-    const VkDeviceSize surfaceDataSize = mSurfaceData.size() * sizeof(SurfaceData);
-    const VkDeviceSize meshDataSize = mMeshData.size() * sizeof(MeshData);
+    const VkDeviceSize surfaceDataSize = getSurfaceDataBufferSize();
+    const VkDeviceSize meshDataSize = getMeshDataBufferSize();
     mVulkanResources->createBufferWithData(mSurfaceData.data(), surfaceDataSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
         VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, VMA_MEMORY_USAGE_GPU_ONLY, mSurfaceDataBuffer);
     mVulkanResources->createBufferWithData(mMeshData.data(), meshDataSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
         VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, VMA_MEMORY_USAGE_GPU_ONLY, mMeshDataBuffer);
 
-    const VkDeviceSize boundsSize = mBoundsData.size() * sizeof(Base::BoundingSphere);
+    const VkDeviceSize boundsSize = getBoundsBufferSize();
     mVulkanResources->createBufferWithData(mBoundsData.data(), boundsSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
         VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, VMA_MEMORY_USAGE_GPU_ONLY,
         mBoundsBuffer); //  bounds of meshes for culling
@@ -226,24 +223,6 @@ void MeshBank<VertexType, IndexType>::cleanup()
     mMeshData.clear();
     mSurfaceData.clear();
     mBoundsData.clear();
-}
-
-template <typename VertexType, typename IndexType>
-inline const size_t MeshBank<VertexType, IndexType>::getBoundsBufferSize() const
-{
-    return getContainerDataSize<std::vector<Base::BoundingSphere>>(mBoundsData);
-}
-
-template <typename VertexType, typename IndexType>
-inline const size_t MeshBank<VertexType, IndexType>::getSurfaceDataBufferSize() const
-{
-    return getContainerDataSize<std::vector<SurfaceData>>(mSurfaceData);
-}
-
-template <typename VertexType, typename IndexType>
-inline const size_t MeshBank<VertexType, IndexType>::getMeshDataBufferSize() const
-{
-    return getContainerDataSize<std::vector<MeshData>>(mMeshData);
 }
 
 template <typename VertexType, typename IndexType>

@@ -126,7 +126,7 @@ inline void AccelerationStructureBuilder::buildTopLevelAcceStructFromInstances(
     uint32_t instanceCount = static_cast<uint32_t>(instances.size());
 
     //  create the buffer containing the instance data
-    VkDeviceSize instanceBufferSize = sizeof(InstanceType) * instances.size();
+    VkDeviceSize instanceBufferSize = getContainerDataSize(instances);
     AllocatedBuffer instanceBuffer;
     mVulkanResources->createBufferWithData(instances.data(), instanceBufferSize,
         VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |

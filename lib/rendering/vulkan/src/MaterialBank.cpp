@@ -106,8 +106,8 @@ void PbrMaterialBank::updateMaterialDescriptorSet(
     assert(!mMaterialBufferNeedUpdate);
 
     DescriptorWriter writer;
-    writer.writeBuffer(0, mMaterialBuffer.mBuffer, mMaterialInstances.size() * sizeof(PbrMaterialParameters), 0,
-        VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    writer.writeBuffer(
+        0, mMaterialBuffer.mBuffer, getContainerDataSize(mMaterialInstances), 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     writer.writeBuffer(1, meshBank->getMeshDataBuffer().mBuffer, meshBank->getMeshDataBufferSize(), 0,
         VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     writer.writeBuffer(2, meshBank->getSurfaceDataBuffer().mBuffer, meshBank->getSurfaceDataBufferSize(), 0,
@@ -125,7 +125,7 @@ BunnyResult PbrMaterialBank::recreateMaterialBuffer()
 
     //  and then recreate using new data
     BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(mVulkanResources->createBufferWithData(mMaterialInstances.data(),
-        mMaterialInstances.size() * sizeof(PbrMaterialParameters), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+        getContainerDataSize(mMaterialInstances), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
         VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
         VMA_MEMORY_USAGE_AUTO, mMaterialBuffer))
 
@@ -137,7 +137,7 @@ BunnyResult PbrMaterialBank::recreateMaterialBuffer()
 void PbrMaterialBank::updateMaterialBuffer()
 {
     void* mappedData = mMaterialBuffer.mAllocationInfo.pMappedData;
-    memcpy(mappedData, mMaterialInstances.data(), sizeof(PbrMaterialParameters) * mMaterialInstances.size());
+    memcpy(mappedData, mMaterialInstances.data(), getContainerDataSize(mMaterialInstances));
 }
 
 BunnyResult PbrMaterialBank::buildDescriptorSetLayouts()

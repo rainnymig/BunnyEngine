@@ -59,7 +59,7 @@ void PbrForwardPass::buildDrawCommands()
         }
     }
 
-    const VkDeviceSize drawCommandsSize = mDrawCommandsData.size() * sizeof(VkDrawIndexedIndirectCommand);
+    const VkDeviceSize drawCommandsSize = getContainerDataSize(mDrawCommandsData);
 
     mInitialDrawCommandBuffer = mVulkanResources->createBuffer(drawCommandsSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
         VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
@@ -97,7 +97,7 @@ void PbrForwardPass::updateDrawInstanceCounts(std::unordered_map<IdType, size_t>
         accumulatedInstances += meshInstanceCounts.at(mesh.mId);
     }
 
-    const VkDeviceSize drawCommandsSize = mDrawCommandsData.size() * sizeof(VkDrawIndexedIndirectCommand);
+    const VkDeviceSize drawCommandsSize = getContainerDataSize(mDrawCommandsData);
     void* mappedData = mInitialDrawCommandBuffer.mAllocationInfo.pMappedData;
     memcpy(mappedData, mDrawCommandsData.data(), drawCommandsSize);
 
@@ -122,7 +122,7 @@ void PbrForwardPass::updateDrawInstanceCounts(std::unordered_map<IdType, size_t>
 
 void PbrForwardPass::prepareDrawCommandsForFrame()
 {
-    const VkDeviceSize drawCommandsSize = mDrawCommandsData.size() * sizeof(VkDrawIndexedIndirectCommand);
+    const VkDeviceSize drawCommandsSize = getContainerDataSize(mDrawCommandsData);
     VkCommandBuffer cmd = mRenderer->getCurrentCommandBuffer();
     mVulkanResources->copyBuffer(cmd, mInitialDrawCommandBuffer.mBuffer, mDrawCommandsBuffer.mBuffer, drawCommandsSize);
     mVulkanResources->transitionBufferAccess(cmd, mDrawCommandsBuffer.mBuffer, VK_ACCESS_TRANSFER_WRITE_BIT,
@@ -166,7 +166,7 @@ void PbrForwardPass::linkShadowData(std::array<VkImageView, MAX_FRAMES_IN_FLIGHT
 
 const size_t PbrForwardPass::getDrawCommandBufferSize() const
 {
-    return sizeof(VkDrawIndexedIndirectCommand) * mDrawCommandsData.size();
+    return getContainerDataSize(mDrawCommandsData);
 }
 
 BunnyResult PbrForwardPass::initPipeline()

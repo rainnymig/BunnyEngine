@@ -1,8 +1,6 @@
 #pragma once
 
 #include "Vertex.h"
-#include "MeshBank.h"
-#include "MaterialBank.h"
 #include "Fundamentals.h"
 
 #include <volk.h>
