@@ -10,8 +10,9 @@
 - [x] Optimize render passes to better organize frame resources (descriptor sets etc.)
 - [x] Optimize the function for transitioning image layout in VulkanRenderResources to make it more usable
 - [x] Ray traced shadows
-- [ ] More dynamic scenes
-- [ ] Make adding ImGui debug windows easier
-- [ ] Add ImGui controls to tweak material, camera, light and object data in runtime
+- [x] More dynamic scenes
+- [x] Make adding ImGui debug windows easier
+- [x] Add ImGui controls to tweak material, camera, light and object data in runtime
+- [ ] Optimize descriptor sets usage in culling pass (and other passes as well)
 - [ ] Image based lighting
 - [ ] More advanced ray tracing features

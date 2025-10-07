@@ -31,7 +31,7 @@ class CullingPass
     void cleanup();
     void linkDrawData(const AllocatedBuffer& drawCommandBuffer, size_t drawbufferSize,
         const AllocatedBuffer& instObjectBuffer, size_t instBufferSize);
-    void linkMeshData(const AllocatedBuffer& meshDataBuffer, size_t bufferSize);
+    void linkMeshData();
     void linkObjectData(const AllocatedBuffer& objectBuffer, size_t bufferSize);
     void linkCullingData(const AllocatedImage& depthHierarchyImage, VkSampler sampler);
     void setObjectCount(uint32_t objectCount);
@@ -56,6 +56,7 @@ class CullingPass
     std::array<VkDescriptorSet, MAX_FRAMES_IN_FLIGHT> mMeshDataDescSets;
     std::array<VkDescriptorSet, MAX_FRAMES_IN_FLIGHT> mDebugDataDescSets;
     VkDescriptorSetLayout mStorageBufferLayout;
+    VkDescriptorSetLayout mMeshDataLayout;
     VkDescriptorSetLayout mCullDataLayout;
     VkDescriptorSetLayout mDrawDataLayout;
 

@@ -58,6 +58,12 @@ void CullingPass::cleanup()
         mCullDataLayout = nullptr;
     }
 
+    if (mMeshDataLayout != nullptr)
+    {
+        vkDestroyDescriptorSetLayout(mVulkanResources->getDevice(), mMeshDataLayout, nullptr);
+        mMeshDataLayout = nullptr;
+    }
+
     if (mDrawDataLayout != nullptr)
     {
         vkDestroyDescriptorSetLayout(mVulkanResources->getDevice(), mDrawDataLayout, nullptr);
@@ -92,10 +98,13 @@ void CullingPass::linkDrawData(const AllocatedBuffer& drawCommandBuffer, size_t 
     mInstanceObjectBuffer = &instObjectBuffer;
 }
 
-void CullingPass::linkMeshData(const AllocatedBuffer& meshDataBuffer, size_t bufferSize)
+void CullingPass::linkMeshData()
 {
     DescriptorWriter writer;
-    writer.writeBuffer(0, meshDataBuffer.mBuffer, bufferSize, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    writer.writeBuffer(0, mMeshBank->getMeshDataBuffer().mBuffer, mMeshBank->getMeshDataBufferSize(), 0,
+        VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    writer.writeBuffer(1, mMeshBank->getSurfaceDataBuffer().mBuffer, mMeshBank->getSurfaceDataBufferSize(), 0,
+        VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     for (VkDescriptorSet set : mMeshDataDescSets)
     {
         writer.updateSet(mVulkanResources->getDevice(), set);
@@ -231,19 +240,33 @@ void CullingPass::initDescriptorSets()
     VkDescriptorSetLayoutBinding storageBufferBinding{
         0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_COMPUTE_BIT, nullptr};
 
+    //  culling data
     layoutBuilder.addBinding(uniformBufferBinding);
+    //  depth hierarchy images
     layoutBuilder.addBinding(imageBinding);
     mCullDataLayout = layoutBuilder.build(mVulkanResources->getDevice());
 
     layoutBuilder.clear();
+    //  various storage buffers
     layoutBuilder.addBinding(storageBufferBinding);
     mStorageBufferLayout = layoutBuilder.build(mVulkanResources->getDevice());
 
     layoutBuilder.clear();
-    VkDescriptorSetLayoutBinding storageBufferBinding2 = storageBufferBinding;
-    storageBufferBinding2.binding = 1;
+    //  mesh data
+    storageBufferBinding.binding = 0;
     layoutBuilder.addBinding(storageBufferBinding);
-    layoutBuilder.addBinding(storageBufferBinding2);
+    //  surface data
+    storageBufferBinding.binding = 1;
+    layoutBuilder.addBinding(storageBufferBinding);
+    mMeshDataLayout = layoutBuilder.build(mVulkanResources->getDevice());
+
+    layoutBuilder.clear();
+    //  draw commands
+    storageBufferBinding.binding = 0;
+    layoutBuilder.addBinding(storageBufferBinding);
+    //  instance to obj id
+    storageBufferBinding.binding = 1;
+    layoutBuilder.addBinding(storageBufferBinding);
     mDrawDataLayout = layoutBuilder.build(mVulkanResources->getDevice());
 
     //  set up descriptor allocator
@@ -262,7 +285,7 @@ void CullingPass::initDescriptorSets()
         mDescriptorAllocator.allocate(
             mVulkanResources->getDevice(), &mStorageBufferLayout, &mObjectDescSets[idx], 1, nullptr);
         mDescriptorAllocator.allocate(
-            mVulkanResources->getDevice(), &mStorageBufferLayout, &mMeshDataDescSets[idx], 1, nullptr);
+            mVulkanResources->getDevice(), &mMeshDataLayout, &mMeshDataDescSets[idx], 1, nullptr);
         mDescriptorAllocator.allocate(
             mVulkanResources->getDevice(), &mDrawDataLayout, &mDrawCommandDescSets[idx], 1, nullptr);
         mDescriptorAllocator.allocate(
@@ -277,7 +300,7 @@ BunnyResult CullingPass::initPipeline()
 
     //  build pipeline layout
     VkDescriptorSetLayout layouts[] = {
-        mCullDataLayout, mStorageBufferLayout, mStorageBufferLayout, mDrawDataLayout, mStorageBufferLayout};
+        mCullDataLayout, mStorageBufferLayout, mMeshDataLayout, mDrawDataLayout, mStorageBufferLayout};
 
     VkPushConstantRange pushConstRange{
         .stageFlags = VK_SHADER_STAGE_COMPUTE_BIT, .offset = 0, .size = sizeof(uint32_t)};

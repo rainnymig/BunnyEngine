@@ -34,6 +34,7 @@ layout (location = 2) out vec3 outFragPos;
 layout (location = 3) out vec2 outUV;
 layout (location = 4) out uint outMatId;
 layout (location = 5) out mat3 outTbnMat;   //  tangent-bitangent-normal matrix
+                                            //  maybe calculate this in frag shader instead to allow correct interpolation?
 
 void main()
 {

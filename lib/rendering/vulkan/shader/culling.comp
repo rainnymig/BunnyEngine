@@ -39,9 +39,19 @@ layout(std430, set = 1, binding = 0) buffer ObjectDataBuffer
     ObjectData objectData[];
 };
 
-layout(std430, set = 2, binding = 0) buffer Bounds
+// layout(std430, set = 2, binding = 0) buffer Bounds
+// {
+//     BoundingSphere boundingSpheres[];
+// };
+
+layout(std430, set = 2, binding = 0) readonly buffer MeshDataBuffer
 {
-    BoundingSphere boundingSpheres[];
+    MeshData meshData[];
+};
+
+layout(std430, set = 2, binding = 1) readonly buffer SurfaceDataBuffer
+{
+    SurfaceData surfaceData[];
 };
 
 layout(std430, set = 3, binding = 0) buffer DrawCommandBuffer
@@ -129,7 +139,7 @@ bool isObjectInView(ObjectData obj, out vec4 db)
 {
     bool isInView = true;
 
-    BoundingSphere bs = boundingSpheres[obj.meshId];
+    BoundingSphere bs = meshData[obj.meshId].bounds;
     vec3 center = (obj.model * vec4(bs.center, 1.0)).xyz;
     float radius = bs.radius * max(obj.scale.x, max(obj.scale.y, obj.scale.z));
 
@@ -152,8 +162,6 @@ bool isObjectInView(ObjectData obj, out vec4 db)
             aabb = aabb.zyxw;
             aabb = aabb * vec4(0.5, 0.5, 0.5, 0.5) + 0.5;
 
-            // db = aabb;
-
             float width = (aabb.z - aabb.x) * depthImageWidth;
             float height = (aabb.y - aabb.w) * depthImageHeight;
             
@@ -166,8 +174,6 @@ bool isObjectInView(ObjectData obj, out vec4 db)
 			float depthSphere = projected.z/projected.w;
 
             isInView = isInView && depthSphere <= depth;
-
-            db = vec4(level, depth, isInView ? 1.0 : 0.0, obj.meshId);
         }
     }
     
@@ -195,13 +201,22 @@ void main()
 
     if (inView)
     {
-        //  for now for simplicity, we assume only one surface per mesh
-        //  so that we can use mesh id to index into commands array directly
-        uint instCount = atomicAdd(commands[obj.meshId].instanceCount, 1); 
-        uint instanceId = commands[obj.meshId].firstInstance + instCount;
+        //  a mesh can have multiple surfaces
+        //  if a mesh is in view, we need to update the draw commands of all its surfaces
+        //  one surface corresponds to one draw command
+        //  and the idx in the surface array should be the same as the idx in the commands array
+        //  so we can use that to find the draw commands that need to be updated
+        MeshData mesh = meshData[obj.meshId];
+        uint lastSurfacePlusOne = mesh.firstSurface + mesh.surfaceCount;
+        uint instCount = 0;
+        uint instanceId = 0;
+        for (uint surfaceIdx = mesh.firstSurface; surfaceIdx < lastSurfacePlusOne; surfaceIdx++)
+        {
+            //  the instanceCount and firstInstance should be the same for all surfaces of the same mesh
+            instCount = atomicAdd(commands[surfaceIdx].instanceCount, 1);
+            instanceId = commands[surfaceIdx].firstInstance + instCount;
+        }
 
         instToObj[instanceId] = objId;
-        debugData[objId] = vec4(objId, obj.meshId, commands[obj.meshId].firstIndex, instCount);
     }
-    // debugData[objId] = deb;
 }
