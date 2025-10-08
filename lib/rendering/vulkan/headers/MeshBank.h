@@ -23,6 +23,7 @@ namespace Bunny::Render
 
 struct SurfaceLite
 {
+    uint32_t mVertexOffset = 0;
     uint32_t mFirstIndex; //  the idx of the first index in the shared index buffer
     uint32_t mIndexCount; //  the number of indices
     IdType mMaterialId;
@@ -36,7 +37,6 @@ struct MeshLiteT
     std::string mName;
     std::vector<SurfaceLite> mSurfaces;
     BoundType mBounds;
-    uint32_t mVertexOffset = 0;
 };
 
 using MeshLite = MeshLiteT<Base::BoundingSphere>;
@@ -128,22 +128,22 @@ IdType MeshBank<VertexType, IndexType>::addMesh(
     const IdType meshId = mMeshes.size();
     mMeshes.push_back(mesh);
     mMeshes[meshId].mId = meshId;
-    mMeshes[meshId].mVertexOffset = vertexOffset;
     for (SurfaceLite& surface : mMeshes[meshId].mSurfaces)
     {
         surface.mFirstIndex += indexOffset;
+        surface.mVertexOffset += vertexOffset;
     }
     mBoundsData.push_back(mMeshes[meshId].mBounds);
 
     //  create and insert the new surfaces and mesh into the surface and mesh data array
     MeshData& newMeshData = mMeshData.emplace_back();
     newMeshData.mBoundingSphere = mMeshes[meshId].mBounds;
-    newMeshData.mVertexOffset = vertexOffset;
     newMeshData.mFirstSurface = mSurfaceData.size();
     newMeshData.mSurfaceCount = mMeshes[meshId].mSurfaces.size();
     for (const SurfaceLite& surface : mMeshes[meshId].mSurfaces)
     {
         SurfaceData& newSurfaceData = mSurfaceData.emplace_back();
+        newSurfaceData.mVertexOffset = surface.mVertexOffset;
         newSurfaceData.mFirstIndex = surface.mFirstIndex;
         newSurfaceData.mMaterialId = surface.mMaterialId;
     }
@@ -269,7 +269,7 @@ inline AcceStructGeometryData MeshBank<VertexType, IndexType>::buildTriangleBlas
         geometry.geometry.triangles = triangles;
 
         VkAccelerationStructureBuildRangeInfoKHR& offset = blasData.mBuildRanges.emplace_back();
-        offset.firstVertex = mesh.mVertexOffset;
+        offset.firstVertex = surface.mVertexOffset;
         offset.primitiveCount = surface.mIndexCount / indexCountPerTriangle;
         offset.primitiveOffset = surface.mFirstIndex * sizeof(IndexType);
         offset.transformOffset = 0;

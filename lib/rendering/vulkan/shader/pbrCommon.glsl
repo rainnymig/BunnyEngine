@@ -49,6 +49,7 @@ struct BoundingSphere
 
 struct SurfaceData
 {
+    uint vertexOffset;
     uint materialId;
     uint firstIndex;
 };
@@ -58,7 +59,8 @@ struct MeshData
     BoundingSphere bounds;
     uint firstSurface;
     uint surfaceCount;
-    uint vertexOffset;
+    uint padding1;
+    uint padding2;
 };
 
 struct Vertex

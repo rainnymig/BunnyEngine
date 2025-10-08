@@ -168,6 +168,7 @@ void loadMeshFromGltf(MeshBank<NormalVertex>* meshBank, MaterialProvider* materi
             Render::SurfaceLite newSurface;
             newSurface.mFirstIndex = indices.size();
             size_t initialVtx = vertices.size();
+            newSurface.mVertexOffset = initialVtx;
 
             //  load indices
             {

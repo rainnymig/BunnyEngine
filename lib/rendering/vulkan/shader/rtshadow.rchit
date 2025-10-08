@@ -47,9 +47,9 @@ void main()
     const uint firstIdxOfPrimitiveIndex = surface.firstIndex + gl_PrimitiveID * 3;
     //  find the 3 indices of the triangle
     //  need to add the vertex offset to it to get the actual position of the vertices in the vertex buffer
-    const uint i0 = indices.i[firstIdxOfPrimitiveIndex] + mesh.vertexOffset;
-    const uint i1 = indices.i[firstIdxOfPrimitiveIndex + 1] + mesh.vertexOffset;
-    const uint i2 = indices.i[firstIdxOfPrimitiveIndex + 2] + mesh.vertexOffset;
+    const uint i0 = indices.i[firstIdxOfPrimitiveIndex] + surface.vertexOffset;
+    const uint i1 = indices.i[firstIdxOfPrimitiveIndex + 1] + surface.vertexOffset;
+    const uint i2 = indices.i[firstIdxOfPrimitiveIndex + 2] + surface.vertexOffset;
     //  find the 3 vertices of the triangle from the vertex buffer
     Vertex v0 = vertices.v[i0];
     Vertex v1 = vertices.v[i1];

@@ -55,7 +55,7 @@ void PbrForwardPass::buildDrawCommands()
         for (const SurfaceLite& surface : mesh.mSurfaces)
         {
             //  add a draw indirect command for each surface in the mesh
-            mDrawCommandsData.emplace_back(surface.mIndexCount, 0, surface.mFirstIndex, mesh.mVertexOffset, 0);
+            mDrawCommandsData.emplace_back(surface.mIndexCount, 0, surface.mFirstIndex, surface.mVertexOffset, 0);
         }
     }
 
