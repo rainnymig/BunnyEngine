@@ -13,6 +13,7 @@ class Config
     bool mIsFullScreen = false;
     int mWindowWidth = 1280;
     int mWindowHeight = 720;
+    std::string mModelFilePath = "./assets/model/both_smooth.glb";
 };
 
 } // namespace Bunny::Engine

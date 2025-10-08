@@ -193,6 +193,7 @@ BunnyResult PbrMaterialBank::buildDescriptorSetLayouts()
     builder.addBinding(storageBufferBinding);
     //  mesh data array
     storageBufferBinding.binding = 1;
+    storageBufferBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
     builder.addBinding(storageBufferBinding);
     //  surface data array
     storageBufferBinding.binding = 2;

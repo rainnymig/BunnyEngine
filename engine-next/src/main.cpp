@@ -107,8 +107,7 @@ int main(void)
 
     World bunnyWorld;
     WorldLoader worldLoader(&renderResources, &pbrMaterialBank, &meshBank);
-    static constexpr std::string_view gltfFilePath = "./assets/model/both_smooth.glb";
-    worldLoader.loadPbrTestWorldWithGltfMeshes(gltfFilePath, bunnyWorld);
+    worldLoader.loadPbrTestWorldWithGltfMeshes(config.mModelFilePath, bunnyWorld);
 
     AccelerationStructureBuilder acceStructBuilder(&renderResources, &renderer);
     acceStructBuilder.buildBottomLevelAccelerationStructures(

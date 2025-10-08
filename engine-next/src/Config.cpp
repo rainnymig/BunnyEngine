@@ -13,6 +13,7 @@ void Config::loadConfigFile(const std::string& path)
     mIsFullScreen = basicSection["isFullscreen"].as<bool>();
     mWindowHeight = basicSection["windowHeight"].as<int>();
     mWindowWidth = basicSection["windowWidth"].as<int>();
+    mModelFilePath = basicSection["modelFilePath"].as<std::string>();
 }
 
 } // namespace Bunny::Engine
