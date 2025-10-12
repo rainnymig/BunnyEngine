@@ -23,6 +23,7 @@ target_sources(VulkanRenderer
         headers/RaytracingShadowPass.h
         headers/Shader.h
         headers/ShaderData.h
+        headers/SkyPass.h
         headers/SwapChainSupportDetails.h
         headers/TextureBank.h
         headers/Vertex.h
@@ -46,6 +47,7 @@ target_sources(VulkanRenderer
         src/GBufferPass.cpp
         src/GraphicsPipelineBuilder.cpp
         src/Shader.cpp
+        src/SkyPass.cpp
         src/TextureBank.cpp
         src/Vertex.cpp
         src/VulkanGraphicsRenderer.cpp
