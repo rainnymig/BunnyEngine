@@ -2,6 +2,13 @@
 
 namespace Bunny::Render
 {
+
+SkyPass::SkyPass(const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer)
+    : mVulkanResources(vulkanResources),
+      mRenderer(renderer)
+{
+}
+
 void SkyPass::draw() const
 {
 }
