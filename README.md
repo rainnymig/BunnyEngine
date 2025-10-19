@@ -4,13 +4,17 @@
 
 [Vulkan SDK](https://vulkan.lunarg.com/sdk/home) needs to be installed for vulkan renderer to work. Once it's installed, cmake will be able to find the package.
 
-[glfw](https://github.com/glfw/glfw) zlib license.
+[volk](https://github.com/zeux/volk) MIT license
 
-[stb_image](https://github.com/nothings/stb/blob/master/stb_image.h) MIT license.
+[glfw](https://github.com/glfw/glfw) zlib license
 
-[tiny_obj_loader](https://github.com/tinyobjloader/tinyobjloader) MIT license. 
+[stb_image](https://github.com/nothings/stb/blob/master/stb_image.h) MIT license
 
-[vk-bootstrap](https://github.com/charles-lunarg/vk-bootstrap) MIT license.
+[stb_image_write](https://github.com/nothings/stb/blob/master/stb_image_write.h) MIT license
+
+[tiny_obj_loader](https://github.com/tinyobjloader/tinyobjloader) MIT license
+
+[vk-bootstrap](https://github.com/charles-lunarg/vk-bootstrap) MIT license
 
 [vulkan memory allocator](https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator) MIT license
 
@@ -19,6 +23,8 @@
 [inifile-cpp](https://github.com/Rookfighter/inifile-cpp) MIT license
 
 [EnTT](https://github.com/skypjack/entt) MIT license
+
+[FastNoise2](https://github.com/Auburn/FastNoise2) MIT license
 
 ### before build
 

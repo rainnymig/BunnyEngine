@@ -60,6 +60,9 @@ add_subdirectory("./third-party/fastgltf")
 add_subdirectory("./third-party/inifile-cpp")
 # EnTT
 add_subdirectory("./third-party/entt")
+# Fast Noise 2
+set(FASTNOISE2_NOISETOOL OFF CACHE BOOL "Build Noise Tool" FORCE)   # no need to build the noise graph tool as we are using it in code
+add_subdirectory("./third-party/FastNoise2")
 
 # Bunny stuff
 add_subdirectory("./lib/base")
@@ -68,4 +71,5 @@ add_subdirectory("./lib/rendering/vulkan")
 add_subdirectory("./lib/physics")
 add_subdirectory("./lib/task-system")
 add_subdirectory("./engine-next")
+add_subdirectory("./noise-generator")
 add_subdirectory("./playground")

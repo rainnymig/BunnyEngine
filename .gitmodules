@@ -10,3 +10,6 @@
 [submodule "third-party/volk"]
 	path = third-party/volk
 	url = https://github.com/zeux/volk.git
+[submodule "third-party/FastNoise2"]
+	path = third-party/FastNoise2
+	url = https://github.com/Auburn/FastNoise2.git
