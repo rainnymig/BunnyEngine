@@ -85,6 +85,26 @@ BunnyResult TextureBank::addDescriptorSetWrite(uint32_t binding, DescriptorWrite
     return BUNNY_HAPPY;
 }
 
+bool TextureBank::getTexture(IdType id, AllocatedImage& outTexture) const
+{
+    if (!mTextures.empty() && id >= 0 && id < mTextures.size())
+    {
+        outTexture = mTextures.at(id);
+        return true;
+    }
+    return false;
+}
+
+const std::vector<AllocatedImage>& TextureBank::getAllTextures() const
+{
+    return mTextures;
+}
+
+VkSampler TextureBank::getSampler() const
+{
+    return mImageSampler;
+}
+
 void TextureBank::cleanup()
 {
     for (AllocatedImage& texture : mTextures)

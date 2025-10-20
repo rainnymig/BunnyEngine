@@ -6,6 +6,7 @@
 #include "GraphicsPipelineBuilder.h"
 #include "Shader.h"
 #include "Vertex.h"
+#include "Error.h"
 
 #include <imgui.h>
 
@@ -39,6 +40,10 @@ void TexturePreviewPass::showImguiControls()
 
     if (mIsActive)
     {
+        const std::vector<AllocatedImage>& textures = mTextureBank->getAllTextures();
+        if (!textures.empty())
+        {
+        }
     }
 
     ImGui::End();
@@ -69,6 +74,8 @@ BunnyResult TexturePreviewPass::initPipeline()
     pipelineLayoutInfo.pPushConstantRanges = &pushConstRange;
 
     vkCreatePipelineLayout(mVulkanResources->getDevice(), &pipelineLayoutInfo, nullptr, &mPipelineLayout);
+    mDeletionStack.AddFunction(
+        [this]() { vkDestroyPipelineLayout(mVulkanResources->getDevice(), mPipelineLayout, nullptr); });
 
     //  vertex info
     auto bindingDescription = getBindingDescription<ScreenQuadVertex>(0, VertexInputRate::Vertex);
@@ -90,17 +97,111 @@ BunnyResult TexturePreviewPass::initPipeline()
     builder.setPipelineLayout(mPipelineLayout);
 
     mPipeline = builder.build(mVulkanResources->getDevice());
+    mDeletionStack.AddFunction([this]() { vkDestroyPipeline(mVulkanResources->getDevice(), mPipeline, nullptr); });
 
     return BUNNY_HAPPY;
 }
 
 BunnyResult TexturePreviewPass::initDescriptors()
 {
-    return BunnyResult();
+    BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(initDescriptorLayouts())
+
+    VkDevice device = mVulkanResources->getDevice();
+
+    DescriptorAllocator::PoolSize poolSizes[] = {
+        {.mType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .mRatio = 2},
+    };
+    mDescriptorAllocator.init(device, 2, poolSizes);
+
+    VkDescriptorSetLayout descLayouts[] = {mTextureDescSetLayout};
+    for (FrameData& frame : mFrameData)
+    {
+        mDescriptorAllocator.allocate(device, descLayouts, &frame.mTextureDescSet, 1);
+    }
+
+    mDeletionStack.AddFunction([this]() { mDescriptorAllocator.destroyPools(mVulkanResources->getDevice()); });
+
+    return BUNNY_HAPPY;
 }
 
 BunnyResult TexturePreviewPass::initDataAndResources()
 {
-    return BunnyResult();
+    //  build vertex buffer for screen quad
+
+    return BUNNY_HAPPY;
+}
+
+bool TexturePreviewPass::shouldUpdatePreviewTexture() const
+{
+    return mPreviewParams.mIs3d ? mTex3dIdPreviewing != mTex3dIdToPreview : mTex2dIdPreviewing != mTex2dIdToPreview;
+}
+
+void TexturePreviewPass::updateTextureForPreview()
+{
+    //  wait for current rendering to end?
+
+    if (shouldUpdatePreviewTexture())
+    {
+        mTexturePreviewReady = false;
+
+        AllocatedImage texToPreview;
+        IdType texIdToPreview = mPreviewParams.mIs3d ? mTex3dIdToPreview : mTex2dIdToPreview;
+        if (!mTextureBank->getTexture(texIdToPreview, texToPreview))
+        {
+            return;
+        }
+
+        //  if the texture selected to be previewed is not the one being previewed
+        //  recreate the descriptor sets to use the new texture
+        VkDevice device = mVulkanResources->getDevice();
+        mDescriptorAllocator.clearPools(device);
+
+        VkDescriptorSetLayout descLayouts[] = {mTextureDescSetLayout};
+        for (FrameData& frame : mFrameData)
+        {
+            mDescriptorAllocator.allocate(device, descLayouts, &frame.mTextureDescSet, 1);
+        }
+
+        DescriptorWriter writer;
+        constexpr uint32_t tex2dBinding = 0;
+        constexpr uint32_t tex3dBinding = 1;
+        writer.writeImage(mPreviewParams.mIs3d ? tex3dBinding : tex3dBinding, texToPreview.mImageView,
+            mTextureBank->getSampler(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+        for (FrameData& frame : mFrameData)
+        {
+            writer.updateSet(device, frame.mTextureDescSet);
+        }
+
+        if (mPreviewParams.mIs3d)
+        {
+            mTex3dIdPreviewing = texIdToPreview;
+        }
+        else
+        {
+            mTex3dIdPreviewing = texIdToPreview;
+        }
+
+        //  update vertex buffer to fit aspect ratio?
+
+        mTexturePreviewReady = true;
+    }
+}
+
+BunnyResult TexturePreviewPass::initDescriptorLayouts()
+{
+    VkDescriptorSetLayoutBinding imageBinding{
+        0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr};
+
+    DescriptorLayoutBuilder builder;
+    builder.addBinding(imageBinding); //  tex 2D
+    imageBinding.binding = 1;
+    builder.addBinding(imageBinding); //  tex 3D
+
+    mTextureDescSetLayout = builder.build(mVulkanResources->getDevice());
+    mDeletionStack.AddFunction(
+        [this]() { vkDestroyDescriptorSetLayout(mVulkanResources->getDevice(), mTextureDescSetLayout, nullptr); });
+
+    return BUNNY_HAPPY;
 }
 } // namespace Bunny::Render

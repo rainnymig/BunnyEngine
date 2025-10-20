@@ -45,6 +45,11 @@ class TexturePreviewPass : public PbrGraphicsPass
         bool mIs3d = false;
     };
 
+    bool shouldUpdatePreviewTexture() const;
+    void updateTextureForPreview();
+
+    BunnyResult initDescriptorLayouts();
+
     TextureBank* mTextureBank;
 
     std::string_view mVertexShaderPath;
@@ -54,9 +59,14 @@ class TexturePreviewPass : public PbrGraphicsPass
     PreviewParams mPreviewParams;
 
     VkDescriptorSetLayout mTextureDescSetLayout;
+    DescriptorAllocator mDescriptorAllocator;
 
-    uint32_t mCurrentPreviewImageIdx = 0;
+    IdType mTex2dIdPreviewing = 0; //  the texture 2D which the current descriptor is bound to
+    IdType mTex3dIdPreviewing = 0; //  the texture 3D which the current descriptor is bound to
+    IdType mTex2dIdToPreview = 0;  //  the texture 2D to be previewed
+    IdType mTex3dIdToPreview = 0;  //  the texture 3D to be previewed
 
-    bool mIsActive = false;
+    bool mIsActive = false;            //  is texture preview pass active at all
+    bool mTexturePreviewReady = false; //  do we have a valid texture to preview
 };
 } // namespace Bunny::Render

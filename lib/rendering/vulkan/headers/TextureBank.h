@@ -25,6 +25,10 @@ class TextureBank
     BunnyResult initialize();
     BunnyResult addTexture(const char* filePath, VkFormat format, IdType& outId);
     BunnyResult addDescriptorSetWrite(uint32_t binding, DescriptorWriter& outWriter) const;
+    bool getTexture(IdType id, AllocatedImage& outTexture) const; //  return true when success, otherwise false
+    const std::vector<AllocatedImage>& getAllTextures() const;
+    VkSampler getSampler() const;
+
     void cleanup();
 
   private:
