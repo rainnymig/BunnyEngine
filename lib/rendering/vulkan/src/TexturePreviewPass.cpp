@@ -7,11 +7,46 @@
 #include "Shader.h"
 #include "Vertex.h"
 #include "Error.h"
+#include "Helper.h"
 
 #include <imgui.h>
 
 namespace Bunny::Render
 {
+
+//  hack, for imgui list
+static std::array<const char*, 30> textureIdArray{
+    "tex0",
+    "tex1",
+    "tex2",
+    "tex3",
+    "tex4",
+    "tex5",
+    "tex6",
+    "tex7",
+    "tex8",
+    "tex9",
+    "tex10",
+    "tex11",
+    "tex12",
+    "tex13",
+    "tex14",
+    "tex15",
+    "tex16",
+    "tex17",
+    "tex18",
+    "tex19",
+    "tex20",
+    "tex21",
+    "tex22",
+    "tex23",
+    "tex24",
+    "tex25",
+    "tex26",
+    "tex27",
+    "tex28",
+    "tex29",
+};
 
 TexturePreviewPass::TexturePreviewPass(const VulkanRenderResources* vulkanResources,
     const VulkanGraphicsRenderer* renderer, const PbrMaterialBank* materialBank, const MeshBank<NormalVertex>* meshBank,
@@ -25,10 +60,34 @@ TexturePreviewPass::TexturePreviewPass(const VulkanRenderResources* vulkanResour
 
 void TexturePreviewPass::draw() const
 {
-    if (!mIsActive)
+    if (!mIsActive || !mTexturePreviewReady)
     {
         return;
     }
+
+    VkCommandBuffer cmd = mRenderer->getCurrentCommandBuffer();
+    uint32_t currentFrameIdx = mRenderer->getCurrentFrameIdx();
+
+    mRenderer->beginRender(false);
+
+    //  bind pipeline and resources
+    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipeline);
+
+    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout, 0, 1,
+        &mFrameData[currentFrameIdx].mTextureDescSet, 0, nullptr);
+
+    //  bind vertex and index buffers
+    VkBuffer vertexBuffers[] = {mVertexBuffer.mBuffer};
+    VkDeviceSize offsets[] = {0};
+    vkCmdBindVertexBuffers(cmd, 0, 1, vertexBuffers, offsets);
+    vkCmdBindIndexBuffer(cmd, mIndexBuffer.mBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+    vkCmdPushConstants(cmd, mPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PreviewParams), &mPreviewParams);
+
+    //  draw
+    vkCmdDrawIndexed(cmd, 6, 1, 0, 0, 0);
+
+    mRenderer->finishRender();
 }
 
 void TexturePreviewPass::showImguiControls()
@@ -43,6 +102,11 @@ void TexturePreviewPass::showImguiControls()
         const std::vector<AllocatedImage>& textures = mTextureBank->getAllTextures();
         if (!textures.empty())
         {
+            //  hack: currently only limited number in the list due to id array size
+            //  can be fixed once we have actual names for textures
+            int numberOfOptions = std::min(textures.size(), textureIdArray.size());
+            ImGui::ListBox(
+                "Select texture 2D to preview", &mTex2dIdToPreview, textureIdArray.data(), numberOfOptions, 5);
         }
     }
 
@@ -126,7 +190,15 @@ BunnyResult TexturePreviewPass::initDescriptors()
 
 BunnyResult TexturePreviewPass::initDataAndResources()
 {
-    //  build vertex buffer for screen quad
+    const VkDeviceSize vertexSize = getContainerDataSize(mVertexData);
+    const VkDeviceSize indexSize = getContainerDataSize(mIndexData);
+
+    mVulkanResources->createBufferWithData(mVertexData.data(), vertexSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+        VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+        VMA_MEMORY_USAGE_AUTO,
+        mVertexBuffer); //  use mapped and sequential bit for easier update via memcpy, might optimize later
+    mVulkanResources->createBufferWithData(mIndexData.data(), indexSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+        VMA_ALLOCATION_CREATE_MAPPED_BIT, VMA_MEMORY_USAGE_AUTO, mIndexBuffer);
 
     return BUNNY_HAPPY;
 }
@@ -183,9 +255,46 @@ void TexturePreviewPass::updateTextureForPreview()
         }
 
         //  update vertex buffer to fit aspect ratio?
+        updateScreenQuad(
+            static_cast<float>(texToPreview.mExtent.width) / static_cast<float>(texToPreview.mExtent.height));
 
         mTexturePreviewReady = true;
     }
+}
+
+void TexturePreviewPass::updateScreenQuad(float aspectRatio)
+{
+    assert(aspectRatio > 0);
+
+    if (aspectRatio == mCurrentTexAspectRatio && mVertexBuffer.mBuffer != nullptr && mIndexBuffer.mBuffer != nullptr)
+    {
+        //  if the current vertex and index buffer can be reused than just skip
+        return;
+    }
+
+    constexpr float fillRate =
+        0.8f; // the ratio of the longer edge of the image and the corresponding edge of the viewport
+    float vertX;
+    float vertY;
+    if (aspectRatio < 1)
+    {
+        vertX = fillRate;
+        vertY = vertX * aspectRatio;
+    }
+    else
+    {
+        vertY = fillRate;
+        vertX = vertY / aspectRatio;
+    }
+    //  TL, BL, BR, TR
+    mVertexData[0].pos = {-vertX, vertY, 0.5f};
+    mVertexData[1].pos = {-vertX, -vertY, 0.5f};
+    mVertexData[2].pos = {vertX, -vertY, 0.5f};
+    mVertexData[3].pos = {vertX, vertY, 0.5f};
+
+    const VkDeviceSize vertexDataSize = getContainerDataSize(mVertexData);
+    void* mappedData = mVertexBuffer.mAllocationInfo.pMappedData;
+    memcpy(mappedData, mVertexData.data(), vertexDataSize);
 }
 
 BunnyResult TexturePreviewPass::initDescriptorLayouts()

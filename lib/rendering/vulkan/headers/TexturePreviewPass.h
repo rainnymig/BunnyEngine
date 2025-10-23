@@ -47,6 +47,7 @@ class TexturePreviewPass : public PbrGraphicsPass
 
     bool shouldUpdatePreviewTexture() const;
     void updateTextureForPreview();
+    void updateScreenQuad(float aspectRatio); //  aspectRatio = width/height
 
     BunnyResult initDescriptorLayouts();
 
@@ -55,16 +56,30 @@ class TexturePreviewPass : public PbrGraphicsPass
     std::string_view mVertexShaderPath;
     std::string_view mFragmentShaderPath;
 
+    AllocatedBuffer mVertexBuffer;
+    AllocatedBuffer mIndexBuffer;
+    //  vertices
+    //  TL, BL, BR, TR
+    std::array<ScreenQuadVertex, 4> mVertexData{
+        ScreenQuadVertex{{-1, 1, 0.5},  {0, 1}},
+        ScreenQuadVertex{{-1, -1, 0.5}, {0, 0}},
+        ScreenQuadVertex{{1, -1, 0.5},  {1, 0}},
+        ScreenQuadVertex{{1, 1, 0.5},   {1, 1}}
+    };
+    std::array<uint32_t, 6> mIndexData{0, 3, 1, 1, 3, 2};
+
     std::array<FrameData, MAX_FRAMES_IN_FLIGHT> mFrameData;
     PreviewParams mPreviewParams;
 
     VkDescriptorSetLayout mTextureDescSetLayout;
     DescriptorAllocator mDescriptorAllocator;
 
-    IdType mTex2dIdPreviewing = 0; //  the texture 2D which the current descriptor is bound to
-    IdType mTex3dIdPreviewing = 0; //  the texture 3D which the current descriptor is bound to
-    IdType mTex2dIdToPreview = 0;  //  the texture 2D to be previewed
-    IdType mTex3dIdToPreview = 0;  //  the texture 3D to be previewed
+    int mTex2dIdPreviewing = 0; //  the texture 2D which the current descriptor is bound to
+    int mTex3dIdPreviewing = 0; //  the texture 3D which the current descriptor is bound to
+    int mTex2dIdToPreview = 0;  //  the texture 2D to be previewed
+    int mTex3dIdToPreview = 0;  //  the texture 3D to be previewed
+
+    float mCurrentTexAspectRatio = 0;
 
     bool mIsActive = false;            //  is texture preview pass active at all
     bool mTexturePreviewReady = false; //  do we have a valid texture to preview

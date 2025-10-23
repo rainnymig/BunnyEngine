@@ -238,8 +238,8 @@ void DeferredShadingPass::buildScreenQuad()
 
     mIndexData = std::array<uint32_t, 6>{0, 3, 1, 1, 3, 2};
 
-    const VkDeviceSize vertexSize = mVertexData.size() * sizeof(ScreenQuadVertex);
-    const VkDeviceSize indexSize = mIndexData.size() * sizeof(uint32_t);
+    const VkDeviceSize vertexSize = getContainerDataSize(mVertexData);
+    const VkDeviceSize indexSize = getContainerDataSize(mIndexData);
 
     mVulkanResources->createBufferWithData(mVertexData.data(), vertexSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
         VMA_ALLOCATION_CREATE_MAPPED_BIT, VMA_MEMORY_USAGE_GPU_ONLY, mVertexBuffer);
