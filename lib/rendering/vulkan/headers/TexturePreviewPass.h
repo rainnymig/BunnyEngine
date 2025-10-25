@@ -19,12 +19,12 @@ class TexturePreviewPass : public PbrGraphicsPass
   public:
     TexturePreviewPass(const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer,
         const PbrMaterialBank* materialBank, const MeshBank<NormalVertex>* meshBank, TextureBank* textureBank,
-        std::string_view vertShader = "screen_quad_vert.spv", std::string_view fragShader = "texture_display_frag.spv");
+        std::string_view vertShader = "screen_quad_vert.spv", std::string_view fragShader = "texture_preview_frag.spv");
 
     void draw() const override;
     void showImguiControls();
-
     void setIsActive(bool isActive);
+    void updateTextureForPreview();
 
   protected:
     virtual BunnyResult initPipeline();
@@ -42,11 +42,10 @@ class TexturePreviewPass : public PbrGraphicsPass
     struct PreviewParams
     {
         float mUvZ = 0; //  the z value when previewing a 3D texture
-        bool mIs3d = false;
+        uint32_t mIs3d = 0;
     };
 
     bool shouldUpdatePreviewTexture() const;
-    void updateTextureForPreview();
     void updateScreenQuad(float aspectRatio); //  aspectRatio = width/height
 
     BunnyResult initDescriptorLayouts();
@@ -74,10 +73,10 @@ class TexturePreviewPass : public PbrGraphicsPass
     VkDescriptorSetLayout mTextureDescSetLayout;
     DescriptorAllocator mDescriptorAllocator;
 
-    int mTex2dIdPreviewing = 0; //  the texture 2D which the current descriptor is bound to
-    int mTex3dIdPreviewing = 0; //  the texture 3D which the current descriptor is bound to
-    int mTex2dIdToPreview = 0;  //  the texture 2D to be previewed
-    int mTex3dIdToPreview = 0;  //  the texture 3D to be previewed
+    int mTex2dIdPreviewing = -1; //  the texture 2D which the current descriptor is bound to
+    int mTex3dIdPreviewing = -1; //  the texture 3D which the current descriptor is bound to
+    int mTex2dIdToPreview = 0;   //  the texture 2D to be previewed
+    int mTex3dIdToPreview = 0;   //  the texture 3D to be previewed
 
     float mCurrentTexAspectRatio = 0;
 

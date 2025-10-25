@@ -14,7 +14,7 @@
 #include <map>
 
 //  uncomment this line if want to use Nvidia Nsight Graphics to debug
-//  #define USE_NSIGHT_DEBUG
+#define USE_NSIGHT_DEBUG
 
 namespace Bunny::Base
 {

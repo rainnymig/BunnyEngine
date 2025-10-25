@@ -238,7 +238,7 @@ BunnyResult VulkanRenderResources::createImageWithData(void* data, VkDeviceSize 
     AllocatedImage& outImage) const
 {
     //  create image
-    outImage = createImage(imageExtent, format, usage, aspectFlags);
+    outImage = createImage(imageExtent, format, usage | VK_IMAGE_USAGE_TRANSFER_DST_BIT, aspectFlags);
 
     //  create staging buffer
     AllocatedBuffer stagingBuffer = createBuffer(dataSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,

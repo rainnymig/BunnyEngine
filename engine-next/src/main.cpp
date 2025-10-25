@@ -23,6 +23,7 @@
 #include "PbrForwardPass.h"
 #include "AccelerationStructureBuilder.h"
 #include "RaytracingShadowPass.h"
+#include "TexturePreviewPass.h"
 #include "ImguiHelper.h"
 
 #include <imgui.h>
@@ -83,6 +84,14 @@ int main(void)
     pbrMaterialBank.initialize();
 
     {
+        IdType texId;
+        textureBank.addTexture("./assets/texture/huaji.jpg", VK_FORMAT_R8G8B8A8_UNORM, texId);
+        textureBank.addTexture("./assets/texture/test_simplex.png", VK_FORMAT_R8G8B8A8_UNORM, texId);
+        textureBank.addTexture("./assets/texture/gaz/gltf_embedded_1.jpeg", VK_FORMAT_R8G8B8A8_UNORM, texId);
+        textureBank.addTexture("./assets/texture/j12.jpg", VK_FORMAT_R8G8B8A8_UNORM, texId);
+    }
+
+    {
         IdType matInstId;
         pbrMaterialBank.addMaterialInstance(
             PbrMaterialLoadParams{
@@ -118,11 +127,13 @@ int main(void)
         "pbr_culled_instanced_vert.spv", "pbr_forward_frag.spv");
     CullingPass cullingPass(&renderResources, &renderer, &meshBank);
     DepthReducePass depthReducePass(&renderResources, &renderer);
+    TexturePreviewPass texturePreviewPass(&renderResources, &renderer, &pbrMaterialBank, &meshBank, &textureBank);
 
     rtShadowPass.initializePass();
     pbrForwardPass.initializePass();
     cullingPass.initializePass();
     depthReducePass.initializePass();
+    texturePreviewPass.initializePass();
 
     pbrForwardPass.buildDrawCommands();
 
@@ -175,6 +186,8 @@ int main(void)
         worldTranslator.showImguiControlPanel(&bunnyWorld);
     };
     ImguiHelper::get().registerCommand(showCamAndLightControl);
+    auto showTexturePreviewControl = [&texturePreviewPass]() { texturePreviewPass.showImguiControls(); };
+    ImguiHelper::get().registerCommand(showTexturePreviewControl);
 
     timer.start();
     while (true)
@@ -217,6 +230,8 @@ int main(void)
             cullingPass.updateCullingData(cam.mCamera);
         }
 
+        texturePreviewPass.updateTextureForPreview();
+
         renderer.beginRenderFrame();
 
         pbrForwardPass.prepareDrawCommandsForFrame();
@@ -225,6 +240,7 @@ int main(void)
         rtShadowPass.draw();
         pbrForwardPass.draw();
         depthReducePass.dispatch();
+        texturePreviewPass.draw();
 
         renderer.beginImguiFrame();
         ImguiHelper::get().render();
@@ -241,6 +257,7 @@ int main(void)
     rtShadowPass.cleanup();
     acceStructBuilder.cleanup();
     worldTranslator.cleanup();
+    texturePreviewPass.cleanup();
 
     meshBank.cleanup();
     pbrMaterialBank.cleanup();

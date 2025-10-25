@@ -118,6 +118,59 @@ void TexturePreviewPass::setIsActive(bool isActive)
     mIsActive = isActive;
 }
 
+void TexturePreviewPass::updateTextureForPreview()
+{
+    //  wait for current rendering to end?
+
+    if (mIsActive && shouldUpdatePreviewTexture())
+    {
+        mTexturePreviewReady = false;
+
+        AllocatedImage texToPreview;
+        IdType texIdToPreview = mPreviewParams.mIs3d ? mTex3dIdToPreview : mTex2dIdToPreview;
+        if (!mTextureBank->getTexture(texIdToPreview, texToPreview))
+        {
+            return;
+        }
+
+        //  if the texture selected to be previewed is not the one being previewed
+        //  recreate the descriptor sets to use the new texture
+        VkDevice device = mVulkanResources->getDevice();
+        mDescriptorAllocator.clearPools(device);
+
+        VkDescriptorSetLayout descLayouts[] = {mTextureDescSetLayout};
+        for (FrameData& frame : mFrameData)
+        {
+            mDescriptorAllocator.allocate(device, descLayouts, &frame.mTextureDescSet, 1);
+        }
+
+        DescriptorWriter writer;
+        constexpr uint32_t tex2dBinding = 0;
+        constexpr uint32_t tex3dBinding = 1;
+        writer.writeImage(mPreviewParams.mIs3d ? tex3dBinding : tex2dBinding, texToPreview.mImageView,
+            mTextureBank->getSampler(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+        for (FrameData& frame : mFrameData)
+        {
+            writer.updateSet(device, frame.mTextureDescSet);
+        }
+
+        if (mPreviewParams.mIs3d)
+        {
+            mTex3dIdPreviewing = texIdToPreview;
+        }
+        else
+        {
+            mTex2dIdPreviewing = texIdToPreview;
+        }
+
+        updateScreenQuad(
+            static_cast<float>(texToPreview.mExtent.height) / static_cast<float>(texToPreview.mExtent.width));
+
+        mTexturePreviewReady = true;
+    }
+}
+
 BunnyResult TexturePreviewPass::initPipeline()
 {
     //  load shader
@@ -198,7 +251,12 @@ BunnyResult TexturePreviewPass::initDataAndResources()
         VMA_MEMORY_USAGE_AUTO,
         mVertexBuffer); //  use mapped and sequential bit for easier update via memcpy, might optimize later
     mVulkanResources->createBufferWithData(mIndexData.data(), indexSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-        VMA_ALLOCATION_CREATE_MAPPED_BIT, VMA_MEMORY_USAGE_AUTO, mIndexBuffer);
+        VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, VMA_MEMORY_USAGE_AUTO, mIndexBuffer);
+
+    mDeletionStack.AddFunction([this]() {
+        mVulkanResources->destroyBuffer(mIndexBuffer);
+        mVulkanResources->destroyBuffer(mVertexBuffer);
+    });
 
     return BUNNY_HAPPY;
 }
@@ -206,60 +264,6 @@ BunnyResult TexturePreviewPass::initDataAndResources()
 bool TexturePreviewPass::shouldUpdatePreviewTexture() const
 {
     return mPreviewParams.mIs3d ? mTex3dIdPreviewing != mTex3dIdToPreview : mTex2dIdPreviewing != mTex2dIdToPreview;
-}
-
-void TexturePreviewPass::updateTextureForPreview()
-{
-    //  wait for current rendering to end?
-
-    if (shouldUpdatePreviewTexture())
-    {
-        mTexturePreviewReady = false;
-
-        AllocatedImage texToPreview;
-        IdType texIdToPreview = mPreviewParams.mIs3d ? mTex3dIdToPreview : mTex2dIdToPreview;
-        if (!mTextureBank->getTexture(texIdToPreview, texToPreview))
-        {
-            return;
-        }
-
-        //  if the texture selected to be previewed is not the one being previewed
-        //  recreate the descriptor sets to use the new texture
-        VkDevice device = mVulkanResources->getDevice();
-        mDescriptorAllocator.clearPools(device);
-
-        VkDescriptorSetLayout descLayouts[] = {mTextureDescSetLayout};
-        for (FrameData& frame : mFrameData)
-        {
-            mDescriptorAllocator.allocate(device, descLayouts, &frame.mTextureDescSet, 1);
-        }
-
-        DescriptorWriter writer;
-        constexpr uint32_t tex2dBinding = 0;
-        constexpr uint32_t tex3dBinding = 1;
-        writer.writeImage(mPreviewParams.mIs3d ? tex3dBinding : tex3dBinding, texToPreview.mImageView,
-            mTextureBank->getSampler(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-        for (FrameData& frame : mFrameData)
-        {
-            writer.updateSet(device, frame.mTextureDescSet);
-        }
-
-        if (mPreviewParams.mIs3d)
-        {
-            mTex3dIdPreviewing = texIdToPreview;
-        }
-        else
-        {
-            mTex3dIdPreviewing = texIdToPreview;
-        }
-
-        //  update vertex buffer to fit aspect ratio?
-        updateScreenQuad(
-            static_cast<float>(texToPreview.mExtent.width) / static_cast<float>(texToPreview.mExtent.height));
-
-        mTexturePreviewReady = true;
-    }
 }
 
 void TexturePreviewPass::updateScreenQuad(float aspectRatio)
@@ -274,17 +278,19 @@ void TexturePreviewPass::updateScreenQuad(float aspectRatio)
 
     constexpr float fillRate =
         0.8f; // the ratio of the longer edge of the image and the corresponding edge of the viewport
+    VkExtent2D viewportExtent = mRenderer->getSwapChainExtent();
+    float viewportAspectRatio = static_cast<float>(viewportExtent.height) / static_cast<float>(viewportExtent.width);
     float vertX;
     float vertY;
-    if (aspectRatio < 1)
+    if (aspectRatio < 1) //  landscape - wide image
     {
         vertX = fillRate;
-        vertY = vertX * aspectRatio;
+        vertY = vertX * aspectRatio / viewportAspectRatio;
     }
-    else
+    else //  portrait - tall image
     {
         vertY = fillRate;
-        vertX = vertY / aspectRatio;
+        vertX = vertY / aspectRatio * viewportAspectRatio;
     }
     //  TL, BL, BR, TR
     mVertexData[0].pos = {-vertX, vertY, 0.5f};

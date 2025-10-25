@@ -42,7 +42,7 @@ BunnyResult TextureBank::addTexture(const char* filePath, VkFormat format, IdTyp
     int texWidth;
     int texHeight;
     int texChannels;
-    const int desiredChannels = STBI_default;
+    const int desiredChannels = STBI_rgb_alpha;
     stbi_uc* texData = stbi_load(filePath, &texWidth, &texHeight, &texChannels, desiredChannels);
     if (texData == nullptr)
     {
@@ -52,7 +52,7 @@ BunnyResult TextureBank::addTexture(const char* filePath, VkFormat format, IdTyp
     }
 
     AllocatedImage texture;
-    VkDeviceSize dataSize = texWidth * texHeight * texChannels;
+    VkDeviceSize dataSize = texWidth * texHeight * desiredChannels;
     BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(mVulkanResources->createImageWithData(static_cast<void*>(texData), dataSize,
         VkExtent3D{static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1}, format,
         VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, texture))
