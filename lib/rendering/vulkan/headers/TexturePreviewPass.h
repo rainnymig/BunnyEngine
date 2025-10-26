@@ -68,7 +68,9 @@ class TexturePreviewPass : public PbrGraphicsPass
     std::array<uint32_t, 6> mIndexData{0, 3, 1, 1, 3, 2};
 
     std::array<FrameData, MAX_FRAMES_IN_FLIGHT> mFrameData;
-    PreviewParams mPreviewParams;
+    mutable PreviewParams mPreviewParams;
+    bool mPrevIsPreview3d = false;
+    bool mIsPreview3d = false;
 
     VkDescriptorSetLayout mTextureDescSetLayout;
     DescriptorAllocator mDescriptorAllocator;
@@ -77,6 +79,9 @@ class TexturePreviewPass : public PbrGraphicsPass
     int mTex3dIdPreviewing = -1; //  the texture 3D which the current descriptor is bound to
     int mTex2dIdToPreview = 0;   //  the texture 2D to be previewed
     int mTex3dIdToPreview = 0;   //  the texture 3D to be previewed
+
+    AllocatedImage mDummyTex2d;
+    AllocatedImage mDummyTex3d;
 
     float mCurrentTexAspectRatio = 0;
 

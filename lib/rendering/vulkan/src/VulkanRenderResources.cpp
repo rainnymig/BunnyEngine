@@ -235,10 +235,10 @@ BunnyResult VulkanRenderResources::createBufferWithData(const void* data, VkDevi
 
 BunnyResult VulkanRenderResources::createImageWithData(void* data, VkDeviceSize dataSize, VkExtent3D imageExtent,
     VkFormat format, VkImageUsageFlags usage, VkImageAspectFlags aspectFlags, VkImageLayout layout,
-    AllocatedImage& outImage) const
+    AllocatedImage& outImage, bool is3d) const
 {
     //  create image
-    outImage = createImage(imageExtent, format, usage | VK_IMAGE_USAGE_TRANSFER_DST_BIT, aspectFlags);
+    outImage = createImage(imageExtent, format, usage | VK_IMAGE_USAGE_TRANSFER_DST_BIT, aspectFlags, is3d);
 
     //  create staging buffer
     AllocatedBuffer stagingBuffer = createBuffer(dataSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
@@ -316,14 +316,14 @@ AllocatedBuffer VulkanRenderResources::createBuffer(VkDeviceSize size, VkBufferU
 }
 
 AllocatedImage VulkanRenderResources::createImage(VkExtent3D size, VkFormat format, VkImageUsageFlags usage,
-    VkImageAspectFlags aspectFlags, VkImageLayout layout, uint32_t mipCount) const
+    VkImageAspectFlags aspectFlags, bool is3d, VkImageLayout layout, uint32_t mipCount) const
 {
     AllocatedImage newImage;
     newImage.mFormat = format;
     newImage.mExtent = size;
 
     VkImageCreateInfo imgCreateInfo = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
-    imgCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+    imgCreateInfo.imageType = is3d ? VK_IMAGE_TYPE_3D : VK_IMAGE_TYPE_2D;
     imgCreateInfo.extent = size;
     imgCreateInfo.mipLevels = mipCount;
     imgCreateInfo.arrayLayers = 1;
@@ -344,7 +344,7 @@ AllocatedImage VulkanRenderResources::createImage(VkExtent3D size, VkFormat form
 
     VkImageViewCreateInfo viewCreateInfo = {.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
     viewCreateInfo.pNext = nullptr;
-    viewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    viewCreateInfo.viewType = is3d ? VK_IMAGE_VIEW_TYPE_3D : VK_IMAGE_VIEW_TYPE_2D;
     viewCreateInfo.image = newImage.mImage;
     viewCreateInfo.format = format;
     viewCreateInfo.subresourceRange.baseMipLevel = 0;

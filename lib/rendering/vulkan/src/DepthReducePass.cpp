@@ -135,7 +135,7 @@ void DepthReducePass::createDepthHierarchy()
     //  build the depth hierarchy image
     mdepthHierarchyImage = mVulkanResources->createImage(hierarchyImageExtent, VK_FORMAT_R32_SFLOAT,
         VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-        VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_UNDEFINED, mDepthHierarchyLevels);
+        VK_IMAGE_ASPECT_COLOR_BIT, false, VK_IMAGE_LAYOUT_UNDEFINED, mDepthHierarchyLevels);
 
     BunnyResult result = mVulkanResources->immediateTransitionImageLayout(mdepthHierarchyImage.mImage,
         mdepthHierarchyImage.mFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, mDepthHierarchyLevels);

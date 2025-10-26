@@ -300,14 +300,11 @@ void GBufferPass::createImages()
         VkExtent2D swapChainExtent = mRenderer->getSwapChainExtent();
         VkExtent3D imageExtent{.width = swapChainExtent.width, .height = swapChainExtent.height, .depth = 1};
         mColorMaps[i] = mVulkanResources->createImage(imageExtent, VK_FORMAT_R8G8B8A8_UNORM,
-            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT,
-            VK_IMAGE_LAYOUT_UNDEFINED);
+            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
         mFragPosMaps[i] = mVulkanResources->createImage(imageExtent, VK_FORMAT_R16G16B16A16_SFLOAT,
-            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT,
-            VK_IMAGE_LAYOUT_UNDEFINED);
+            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
         mNormalTexCoordMaps[i] = mVulkanResources->createImage(imageExtent, VK_FORMAT_R16G16B16A16_SFLOAT,
-            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT,
-            VK_IMAGE_LAYOUT_UNDEFINED);
+            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
     }
 }
 

@@ -24,9 +24,13 @@ class TextureBank
 
     BunnyResult initialize();
     BunnyResult addTexture(const char* filePath, VkFormat format, IdType& outId);
+    BunnyResult addTexture3d(
+        const char* filePath, VkFormat format, uint32_t width, uint32_t height, uint32_t depth, IdType& outId);
     BunnyResult addDescriptorSetWrite(uint32_t binding, DescriptorWriter& outWriter) const;
     bool getTexture(IdType id, AllocatedImage& outTexture) const; //  return true when success, otherwise false
     const std::vector<AllocatedImage>& getAllTextures() const;
+    bool getTexture3d(IdType id, AllocatedImage& outTexture) const; //  return true when success, otherwise false
+    const std::vector<AllocatedImage>& getAllTextures3d() const;
     VkSampler getSampler() const;
 
     void cleanup();
@@ -38,6 +42,7 @@ class TextureBank
     const VulkanGraphicsRenderer* mRenderer;
 
     std::vector<AllocatedImage> mTextures;
+    std::vector<AllocatedImage> mTextures3d;
     std::unordered_map<std::string_view, IdType> mTexturePathToIds;
     VkSampler mImageSampler;
 };

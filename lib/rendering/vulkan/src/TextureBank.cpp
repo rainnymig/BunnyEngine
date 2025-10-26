@@ -48,7 +48,7 @@ BunnyResult TextureBank::addTexture(const char* filePath, VkFormat format, IdTyp
     {
         std::string errMsg =
             fmt::format("Can not load image from {} because of stbi error {}", filePath, stbi_failure_reason());
-        PRINT_AND_RETURN_VALUE(errMsg, BUNNY_SAD);
+        PRINT_AND_RETURN_VALUE(errMsg, BUNNY_SAD)
     }
 
     AllocatedImage texture;
@@ -59,6 +59,57 @@ BunnyResult TextureBank::addTexture(const char* filePath, VkFormat format, IdTyp
 
     outId = mTextures.size();
     mTextures.push_back(texture);
+    mTexturePathToIds[filePath] = outId;
+
+    stbi_image_free(texData);
+    return BUNNY_HAPPY;
+}
+
+BunnyResult TextureBank::addTexture3d(
+    const char* filePath, VkFormat format, uint32_t width, uint32_t height, uint32_t depth, IdType& outId)
+{
+    //  the image should be saved as normal 2D image
+    //  but each row is one "slice" of the 3D image spreaded
+
+    outId = BUNNY_INVALID_ID;
+
+    //  if the texture is already loaded, return directly
+    auto iter = mTexturePathToIds.find(filePath);
+    if (iter != mTexturePathToIds.end())
+    {
+        outId = iter->second;
+        return BUNNY_HAPPY;
+    }
+
+    int texWidth;
+    int texHeight;
+    int texChannels;
+    const int desiredChannels = STBI_rgb_alpha;
+    stbi_uc* texData = stbi_load(filePath, &texWidth, &texHeight, &texChannels, desiredChannels);
+    if (texData == nullptr)
+    {
+        std::string errMsg =
+            fmt::format("Can not load image from {} because of stbi error {}", filePath, stbi_failure_reason());
+        PRINT_AND_RETURN_VALUE(errMsg, BUNNY_SAD)
+    }
+
+    if (width * height != texWidth || depth != texHeight)
+    {
+        std::string errMsg =
+            fmt::format("The texture loaded does not have correct dimension. Expected 3D dimensions: width {} height "
+                        "{} (w x h {}) depth {}, Actual dimensions: width {} height {}",
+                width, height, width * height, depth, texWidth, texHeight);
+        PRINT_AND_RETURN_VALUE(errMsg, BUNNY_SAD)
+    }
+
+    AllocatedImage texture;
+    VkDeviceSize dataSize = texWidth * texHeight * desiredChannels;
+    BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(mVulkanResources->createImageWithData(static_cast<void*>(texData), dataSize,
+        VkExtent3D{width, height, depth}, format, VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT,
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, texture, true))
+
+    outId = mTextures3d.size();
+    mTextures3d.push_back(texture);
     mTexturePathToIds[filePath] = outId;
 
     stbi_image_free(texData);
@@ -100,6 +151,21 @@ const std::vector<AllocatedImage>& TextureBank::getAllTextures() const
     return mTextures;
 }
 
+bool TextureBank::getTexture3d(IdType id, AllocatedImage& outTexture) const
+{
+    if (!mTextures3d.empty() && id >= 0 && id < mTextures3d.size())
+    {
+        outTexture = mTextures3d.at(id);
+        return true;
+    }
+    return false;
+}
+
+const std::vector<AllocatedImage>& TextureBank::getAllTextures3d() const
+{
+    return mTextures3d;
+}
+
 VkSampler TextureBank::getSampler() const
 {
     return mImageSampler;
@@ -108,6 +174,11 @@ VkSampler TextureBank::getSampler() const
 void TextureBank::cleanup()
 {
     for (AllocatedImage& texture : mTextures)
+    {
+        mVulkanResources->destroyImage(texture);
+    }
+
+    for (AllocatedImage& texture : mTextures3d)
     {
         mVulkanResources->destroyImage(texture);
     }

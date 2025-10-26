@@ -89,6 +89,8 @@ int main(void)
         textureBank.addTexture("./assets/texture/test_simplex.png", VK_FORMAT_R8G8B8A8_UNORM, texId);
         textureBank.addTexture("./assets/texture/gaz/gltf_embedded_1.jpeg", VK_FORMAT_R8G8B8A8_UNORM, texId);
         textureBank.addTexture("./assets/texture/j12.jpg", VK_FORMAT_R8G8B8A8_UNORM, texId);
+        textureBank.addTexture3d(
+            "./assets/texture/test_simplex_3d.png", VK_FORMAT_R8G8B8A8_UNORM, 128, 128, 128, texId);
     }
 
     {

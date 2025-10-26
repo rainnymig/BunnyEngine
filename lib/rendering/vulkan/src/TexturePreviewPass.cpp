@@ -82,6 +82,7 @@ void TexturePreviewPass::draw() const
     vkCmdBindVertexBuffers(cmd, 0, 1, vertexBuffers, offsets);
     vkCmdBindIndexBuffer(cmd, mIndexBuffer.mBuffer, 0, VK_INDEX_TYPE_UINT32);
 
+    mPreviewParams.mIs3d = mIsPreview3d ? 1 : 0;
     vkCmdPushConstants(cmd, mPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PreviewParams), &mPreviewParams);
 
     //  draw
@@ -99,14 +100,30 @@ void TexturePreviewPass::showImguiControls()
 
     if (mIsActive)
     {
-        const std::vector<AllocatedImage>& textures = mTextureBank->getAllTextures();
+        const std::vector<AllocatedImage>& textures =
+            mIsPreview3d ? mTextureBank->getAllTextures3d() : mTextureBank->getAllTextures();
         if (!textures.empty())
         {
             //  hack: currently only limited number in the list due to id array size
             //  can be fixed once we have actual names for textures
             int numberOfOptions = std::min(textures.size(), textureIdArray.size());
-            ImGui::ListBox(
-                "Select texture 2D to preview", &mTex2dIdToPreview, textureIdArray.data(), numberOfOptions, 5);
+            if (mIsPreview3d)
+            {
+                ImGui::ListBox(
+                    "Select texture 3D to preview", &mTex3dIdToPreview, textureIdArray.data(), numberOfOptions, 5);
+            }
+            else
+            {
+                ImGui::ListBox(
+                    "Select texture 2D to preview", &mTex2dIdToPreview, textureIdArray.data(), numberOfOptions, 5);
+            }
+        }
+
+        mPrevIsPreview3d = mIsPreview3d;
+        ImGui::Checkbox("3D", &mIsPreview3d);
+        if (mIsPreview3d)
+        {
+            ImGui::SliderFloat("UV Z", &mPreviewParams.mUvZ, 0, 1);
         }
     }
 
@@ -127,10 +144,20 @@ void TexturePreviewPass::updateTextureForPreview()
         mTexturePreviewReady = false;
 
         AllocatedImage texToPreview;
-        IdType texIdToPreview = mPreviewParams.mIs3d ? mTex3dIdToPreview : mTex2dIdToPreview;
-        if (!mTextureBank->getTexture(texIdToPreview, texToPreview))
+        IdType texIdToPreview = mIsPreview3d ? mTex3dIdToPreview : mTex2dIdToPreview;
+        if (mIsPreview3d)
         {
-            return;
+            if (!mTextureBank->getTexture3d(texIdToPreview, texToPreview))
+            {
+                return;
+            }
+        }
+        else
+        {
+            if (!mTextureBank->getTexture(texIdToPreview, texToPreview))
+            {
+                return;
+            }
         }
 
         //  if the texture selected to be previewed is not the one being previewed
@@ -147,15 +174,27 @@ void TexturePreviewPass::updateTextureForPreview()
         DescriptorWriter writer;
         constexpr uint32_t tex2dBinding = 0;
         constexpr uint32_t tex3dBinding = 1;
-        writer.writeImage(mPreviewParams.mIs3d ? tex3dBinding : tex2dBinding, texToPreview.mImageView,
-            mTextureBank->getSampler(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+        if (mIsPreview3d)
+        {
+            writer.writeImage(tex2dBinding, mDummyTex2d.mImageView, mTextureBank->getSampler(),
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+            writer.writeImage(tex3dBinding, texToPreview.mImageView, mTextureBank->getSampler(),
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+        }
+        else
+        {
+            writer.writeImage(tex2dBinding, texToPreview.mImageView, mTextureBank->getSampler(),
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+            writer.writeImage(tex3dBinding, mDummyTex3d.mImageView, mTextureBank->getSampler(),
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+        }
+
         for (FrameData& frame : mFrameData)
         {
             writer.updateSet(device, frame.mTextureDescSet);
         }
 
-        if (mPreviewParams.mIs3d)
+        if (mIsPreview3d)
         {
             mTex3dIdPreviewing = texIdToPreview;
         }
@@ -258,12 +297,26 @@ BunnyResult TexturePreviewPass::initDataAndResources()
         mVulkanResources->destroyBuffer(mVertexBuffer);
     });
 
+    std::vector<uint8_t> dummyImageData(4 * 2 * 2 * 2);
+    mVulkanResources->createImageWithData(dummyImageData.data(), sizeof(uint8_t) * 4 * 2 * 2, VkExtent3D{2, 2, 1},
+        VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT,
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, mDummyTex2d, false);
+    mVulkanResources->createImageWithData(dummyImageData.data(), sizeof(uint8_t) * 4 * 2 * 2 * 2, VkExtent3D{2, 2, 2},
+        VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT,
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, mDummyTex3d, true);
+
+    mDeletionStack.AddFunction([this]() {
+        mVulkanResources->destroyImage(mDummyTex2d);
+        mVulkanResources->destroyImage(mDummyTex3d);
+    });
+
     return BUNNY_HAPPY;
 }
 
 bool TexturePreviewPass::shouldUpdatePreviewTexture() const
 {
-    return mPreviewParams.mIs3d ? mTex3dIdPreviewing != mTex3dIdToPreview : mTex2dIdPreviewing != mTex2dIdToPreview;
+    return (mPrevIsPreview3d != mIsPreview3d) ||
+           (mIsPreview3d ? mTex3dIdPreviewing != mTex3dIdToPreview : mTex2dIdPreviewing != mTex2dIdToPreview);
 }
 
 void TexturePreviewPass::updateScreenQuad(float aspectRatio)
@@ -301,6 +354,8 @@ void TexturePreviewPass::updateScreenQuad(float aspectRatio)
     const VkDeviceSize vertexDataSize = getContainerDataSize(mVertexData);
     void* mappedData = mVertexBuffer.mAllocationInfo.pMappedData;
     memcpy(mappedData, mVertexData.data(), vertexDataSize);
+
+    mCurrentTexAspectRatio = aspectRatio;
 }
 
 BunnyResult TexturePreviewPass::initDescriptorLayouts()

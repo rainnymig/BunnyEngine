@@ -14,7 +14,7 @@
 #include <map>
 
 //  uncomment this line if want to use Nvidia Nsight Graphics to debug
-#define USE_NSIGHT_DEBUG
+// #define USE_NSIGHT_DEBUG
 
 namespace Bunny::Base
 {
@@ -61,12 +61,14 @@ class VulkanRenderResources
         VmaAllocationCreateFlags vmaCreateFlags, VmaMemoryUsage vmaUsage, AllocatedBuffer& outBuffer,
         VkDeviceSize minAlignment = 0) const;
     BunnyResult createImageWithData(void* data, VkDeviceSize dataSize, VkExtent3D imageExtent, VkFormat format,
-        VkImageUsageFlags usage, VkImageAspectFlags aspectFlags, VkImageLayout layout, AllocatedImage& outImage) const;
+        VkImageUsageFlags usage, VkImageAspectFlags aspectFlags, VkImageLayout layout, AllocatedImage& outImage,
+        bool is3d = false) const;
 
     AllocatedBuffer createBuffer(VkDeviceSize size, VkBufferUsageFlags bufferUsage,
         VmaAllocationCreateFlags vmaCreateFlags, VmaMemoryUsage vmaUsage, VkDeviceSize minAlignment = 0) const;
     AllocatedImage createImage(VkExtent3D size, VkFormat format, VkImageUsageFlags usage,
-        VkImageAspectFlags aspectFlags, VkImageLayout layout = VK_IMAGE_LAYOUT_UNDEFINED, uint32_t mipCount = 1) const;
+        VkImageAspectFlags aspectFlags, bool is3d = false, VkImageLayout layout = VK_IMAGE_LAYOUT_UNDEFINED,
+        uint32_t mipCount = 1) const;
     void destroyBuffer(AllocatedBuffer& buffer) const;
     void destroyImage(AllocatedImage& image) const;
     void copyBuffer(VkCommandBuffer cmd, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) const;

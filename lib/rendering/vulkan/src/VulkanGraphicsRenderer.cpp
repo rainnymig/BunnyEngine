@@ -387,8 +387,7 @@ BunnyResult VulkanGraphicsRenderer::createDepthResource()
 
     //  add usage sampled for depth image for creating hierarchical-z map for occlusion culling
     mDepthImage = mRenderResources->createImage({mSwapChainExtent.width, mSwapChainExtent.height, 1}, depthFormat,
-        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_DEPTH_BIT,
-        VK_IMAGE_LAYOUT_UNDEFINED);
+        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_DEPTH_BIT);
 
     //  transition the depth image layout
     BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(mRenderResources->immediateTransitionImageLayout(mDepthImage.mImage,

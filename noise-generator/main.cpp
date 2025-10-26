@@ -25,16 +25,31 @@ int main()
     fnFractal->SetLacunarity(2);
     fnFractal->SetWeightedStrength(0.5);
 
-    constexpr unsigned int noiseDimension = 1024;
+    //  test 2D
+    {
+        constexpr unsigned int noiseDimension = 1024;
+        std::vector<float> noiseOutput(noiseDimension * noiseDimension);
+        std::vector<uint8_t> imageData(noiseDimension * noiseDimension);
+        fnFractal->GenUniformGrid2D(noiseOutput.data(), 0, 0, noiseDimension, noiseDimension, 0.02f, 1994);
+        std::transform(noiseOutput.begin(), noiseOutput.end(), imageData.begin(),
+            [](const float noise) { return remapImage(noise); });
 
-    std::vector<float> noiseOutput(noiseDimension * noiseDimension);
+        stbi_write_png(
+            "test_simplex.png", noiseDimension, noiseDimension, 1, imageData.data(), sizeof(uint8_t) * noiseDimension);
+    }
 
-    fnFractal->GenUniformGrid2D(noiseOutput.data(), 0, 0, noiseDimension, noiseDimension, 0.02f, 1994);
-
-    std::vector<uint8_t> imageData(noiseDimension * noiseDimension);
-    std::transform(
-        noiseOutput.begin(), noiseOutput.end(), imageData.begin(), [](const float noise) { return remapImage(noise); });
-
-    stbi_write_png(
-        "test_simplex.png", noiseDimension, noiseDimension, 1, imageData.data(), sizeof(uint8_t) * noiseDimension);
+    //  test 3D
+    //  generate 3D grid and save as 2D png
+    //  every row is a layer of 2D image
+    {
+        constexpr unsigned int noiseDimension3D = 128;
+        std::vector<float> noiseOutput(noiseDimension3D * noiseDimension3D * noiseDimension3D);
+        std::vector<uint8_t> imageData(noiseDimension3D * noiseDimension3D * noiseDimension3D);
+        fnFractal->GenUniformGrid3D(
+            noiseOutput.data(), 0, 0, 0, noiseDimension3D, noiseDimension3D, noiseDimension3D, 0.02, 114514);
+        std::transform(noiseOutput.begin(), noiseOutput.end(), imageData.begin(),
+            [](const float noise) { return remapImage(noise); });
+        stbi_write_png("test_simplex_3d.png", noiseDimension3D * noiseDimension3D, noiseDimension3D, 1,
+            imageData.data(), sizeof(uint8_t) * noiseDimension3D * noiseDimension3D);
+    }
 }
