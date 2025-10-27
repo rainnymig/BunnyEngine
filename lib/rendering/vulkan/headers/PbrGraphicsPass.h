@@ -41,6 +41,5 @@ class PbrGraphicsPass
     VkPipeline mPipeline;
 
     Base::FunctionStack<> mDeletionStack;
-    bool mIsInitialized = false;
 };
 } // namespace Bunny::Render

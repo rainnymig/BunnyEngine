@@ -2,6 +2,7 @@
 
 #include "Descriptor.h"
 #include "Fundamentals.h"
+#include "PbrGraphicsPass.h"
 
 #include <glm/matrix.hpp>
 #include <glm/vec4.hpp>
@@ -9,6 +10,7 @@
 #include <glm/vec2.hpp>
 
 #include <array>
+#include <string_view>
 
 namespace Bunny::Render
 {
@@ -16,7 +18,7 @@ namespace Bunny::Render
 class VulkanRenderResources;
 class VulkanGraphicsRenderer;
 
-class SkyPass
+class SkyPass : public PbrGraphicsPass
 {
   public:
     struct CloudData
@@ -60,24 +62,36 @@ class SkyPass
         uint32_t mDitherIdx;
     };
 
-    SkyPass(const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer);
+    SkyPass(const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer,
+        std::string_view cloudShaderPath = "sky_comp.spv");
 
-    void draw() const;
+    void draw() const override;
+
+  protected:
+    BunnyResult initPipeline() override;
+    BunnyResult initDescriptors() override;
+    BunnyResult initDataAndResources() override;
 
   private:
+    using super = PbrGraphicsPass;
+
     struct FrameData
     {
         VkDescriptorSet mCloudDescSet;   //  contains cloud rendering data
         VkDescriptorSet mTextureDescSet; //  contains texture images for render and render results
 
-        AllocatedImage mRenderedCloudTexture;
+        AllocatedImage mCloudRenderTargetTexture;
         AllocatedImage mFogShadowTexture;
         AllocatedImage mDepthTexture;
         AllocatedImage mLastCloudTexture;
     };
 
+    BunnyResult initDescriptorLayouts();
+
     const VulkanRenderResources* mVulkanResources;
     const VulkanGraphicsRenderer* mRenderer;
+
+    std::string_view mCloudShaderPath;
 
     std::array<FrameData, MAX_FRAMES_IN_FLIGHT> mFrameData;
 
@@ -90,5 +104,10 @@ class SkyPass
     AllocatedImage mDetailNoiseTexture;
     AllocatedImage mBlueNoiseTexture;
     AllocatedImage mWeatherNoiseTexture;
+
+    VkDescriptorSetLayout mCloudDescSetLayout;
+    VkDescriptorSetLayout mTextureDescSetLayout;
+    DescriptorAllocator mDescriptorAllocator;
 };
+
 } // namespace Bunny::Render
