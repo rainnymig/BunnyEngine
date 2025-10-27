@@ -1,6 +1,8 @@
 #include "SkyPass.h"
 
 #include "Error.h"
+#include "VulkanRenderResources.h"
+#include "VulkanGraphicsRenderer.h"
 
 namespace Bunny::Render
 {
@@ -46,6 +48,16 @@ BunnyResult SkyPass::initDescriptors()
 
 BunnyResult SkyPass::initDataAndResources()
 {
+    VkExtent2D swapchainExtent = mRenderer->getSwapChainExtent();
+
+    //  create output textures
+
+    //  load noise and other textures to texture bank
+
+    //  init and create cloud and render parameter buffers
+
+    //  use the created resources to update the frame descriptor sets
+
     return BUNNY_HAPPY;
 }
 

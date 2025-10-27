@@ -88,18 +88,15 @@ class SkyPass : public PbrGraphicsPass
 
     BunnyResult initDescriptorLayouts();
 
-    const VulkanRenderResources* mVulkanResources;
-    const VulkanGraphicsRenderer* mRenderer;
-
     std::string_view mCloudShaderPath;
 
     std::array<FrameData, MAX_FRAMES_IN_FLIGHT> mFrameData;
 
     CloudData mCloudData;
     CloudRenderParams mCloudRenderParams;
-
     AllocatedBuffer mCloudDataBuffer;
     AllocatedBuffer mCloudRenderParamsBuffer;
+
     AllocatedImage mMainNoiseTexture;
     AllocatedImage mDetailNoiseTexture;
     AllocatedImage mBlueNoiseTexture;
