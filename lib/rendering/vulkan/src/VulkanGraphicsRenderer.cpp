@@ -91,14 +91,17 @@ void VulkanGraphicsRenderer::beginRenderFrame()
     VkClearValue colorClearValue = {
         .color = {0.0f, 0.0f, 0.0f, 1.0f}
     };
+    VkClearValue depthStencilClearValue = {
+        .depthStencil = {.depth = 1.0f, .stencil = 0}
+    };
     VkRenderingAttachmentInfo colorAttachment =
         makeColorAttachmentInfo(mSwapChainImageViews[mSwapchainImageIndex], &colorClearValue);
-    VkRenderingInfo renderInfo = makeRenderingInfo(mSwapChainExtent, 1, &colorAttachment, nullptr);
+    VkRenderingAttachmentInfo depthAttachment =
+        makeDepthAttachmentInfo(mDepthImage.mImageView, &depthStencilClearValue);
+    VkRenderingInfo renderInfo = makeRenderingInfo(mSwapChainExtent, 1, &colorAttachment, &depthAttachment);
 
     vkCmdBeginRendering(cmdBuf, &renderInfo);
     vkCmdEndRendering(cmdBuf);
-
-    // beginImguiFrame();
 }
 
 void VulkanGraphicsRenderer::finishRenderFrame()
@@ -106,8 +109,6 @@ void VulkanGraphicsRenderer::finishRenderFrame()
     VkDevice device = mRenderResources->getDevice();
     FrameRenderObject& currentFrame = mFrameResources[mCurrentFrameId];
     VkCommandBuffer cmdBuf = currentFrame.mCommandBuffer;
-
-    // finishImguiFrame(cmdBuf, mSwapChainImageViews[mSwapchainImageIndex]);
 
     mRenderResources->transitionImageLayout(cmdBuf, mSwapChainImages[mSwapchainImageIndex], mSwapChainImageFormat,
         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
@@ -163,7 +164,7 @@ void VulkanGraphicsRenderer::beginRender(bool updateDepth) const
 {
     VkRenderingAttachmentInfo colorAttachment =
         makeColorAttachmentInfo(mSwapChainImageViews[mSwapchainImageIndex], nullptr);
-    VkRenderingAttachmentInfo depthAttachment = makeDepthAttachmentInfo(mDepthImage.mImageView);
+    VkRenderingAttachmentInfo depthAttachment = makeDepthAttachmentInfo(mDepthImage.mImageView, nullptr);
     VkRenderingInfo renderInfo =
         makeRenderingInfo(mSwapChainExtent, 1, &colorAttachment, updateDepth ? &depthAttachment : nullptr);
     vkCmdBeginRendering(getCurrentCommandBuffer(), &renderInfo);
@@ -181,7 +182,7 @@ void VulkanGraphicsRenderer::beginRender(const std::vector<VkImageView>& colorAt
     colorAttachments.reserve(colorAttachmentViews.size());
     std::transform(colorAttachmentViews.begin(), colorAttachmentViews.end(), std::back_inserter(colorAttachments),
         [](VkImageView imageView) { return makeColorAttachmentInfo(imageView, nullptr); });
-    VkRenderingAttachmentInfo depthAttachment = makeDepthAttachmentInfo(mDepthImage.mImageView);
+    VkRenderingAttachmentInfo depthAttachment = makeDepthAttachmentInfo(mDepthImage.mImageView, nullptr);
     VkRenderingInfo renderInfo = makeRenderingInfo(
         mSwapChainExtent, colorAttachments.size(), colorAttachments.data(), updateDepth ? &depthAttachment : nullptr);
     vkCmdBeginRendering(getCurrentCommandBuffer(), &renderInfo);
