@@ -17,6 +17,7 @@ namespace Bunny::Render
 
 class VulkanRenderResources;
 class VulkanGraphicsRenderer;
+class TextureBank;
 
 class SkyPass : public PbrGraphicsPass
 {
@@ -63,9 +64,11 @@ class SkyPass : public PbrGraphicsPass
     };
 
     SkyPass(const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer,
-        std::string_view cloudShaderPath = "sky_comp.spv");
+        TextureBank* textureBank, std::string_view cloudShaderPath = "sky_comp.spv");
 
     void draw() const override;
+
+    void updateFrameData();
 
   protected:
     BunnyResult initPipeline() override;
@@ -77,17 +80,19 @@ class SkyPass : public PbrGraphicsPass
 
     struct FrameData
     {
+        //  maybe 2 texture sets, each with alternate this and prev cloud image, so no need toi recreate sets per frame
         VkDescriptorSet mCloudDescSet;   //  contains cloud rendering data
         VkDescriptorSet mTextureDescSet; //  contains texture images for render and render results
 
         AllocatedImage mCloudRenderTargetTexture;
         AllocatedImage mFogShadowTexture;
-        AllocatedImage mDepthTexture;
         AllocatedImage mLastCloudTexture;
+        const AllocatedImage* mDepthTexture = nullptr; //  depth image created in renderer
     };
 
     BunnyResult initDescriptorLayouts();
 
+    TextureBank* mTextureBank;
     std::string_view mCloudShaderPath;
 
     std::array<FrameData, MAX_FRAMES_IN_FLIGHT> mFrameData;
@@ -105,6 +110,13 @@ class SkyPass : public PbrGraphicsPass
     VkDescriptorSetLayout mCloudDescSetLayout;
     VkDescriptorSetLayout mTextureDescSetLayout;
     DescriptorAllocator mDescriptorAllocator;
+
+    static constexpr uint32_t MAIN_CLOUD_NOISE_RESOLUTION = 128;
+    static constexpr uint32_t DETAIL_CLOUD_NOISE_RESOLUTION = 32;
+    static constexpr uint32_t WEATHER_RESOLUTION = 1024;
+    static constexpr uint32_t BLUE_NOISE_RESOLUTION = 256;
+    static constexpr uint32_t TEXTURE_2D_COUNT = 4;
+    static constexpr uint32_t TEXTURE_3D_COUNT = 2;
 };
 
 } // namespace Bunny::Render
