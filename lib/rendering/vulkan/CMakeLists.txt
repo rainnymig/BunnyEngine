@@ -10,6 +10,7 @@ target_sources(VulkanRenderer
         headers/DepthReducePass.h
         headers/Descriptor.h
         headers/ErrorCheck.h
+        headers/FinalOutputPass.h
         headers/Fundamentals.h
         headers/GBufferPass.h
         headers/GraphicsPipelineBuilder.h
@@ -37,6 +38,7 @@ target_sources(VulkanRenderer
         src/DeferredShadingPass.cpp
         src/DepthReducePass.cpp
         src/Descriptor.cpp
+        src/FinalOutputPass.cpp
         src/Helper.cpp
         src/Material.cpp
         src/MaterialBank.cpp
