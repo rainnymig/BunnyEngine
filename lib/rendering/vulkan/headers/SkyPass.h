@@ -18,6 +18,7 @@ namespace Bunny::Render
 class VulkanRenderResources;
 class VulkanGraphicsRenderer;
 class TextureBank;
+class Camera;
 
 class SkyPass : public PbrGraphicsPass
 {
@@ -67,8 +68,9 @@ class SkyPass : public PbrGraphicsPass
         TextureBank* textureBank, std::string_view cloudShaderPath = "sky_comp.spv");
 
     void draw() const override;
-
     void updateFrameData();
+    void updateRenderParams(const Camera& camera, float elapsedTime);
+    void linkLightData(const AllocatedBuffer& lightData);
 
   protected:
     BunnyResult initPipeline() override;

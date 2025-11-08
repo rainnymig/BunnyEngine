@@ -4,6 +4,10 @@
 #include "VulkanRenderResources.h"
 #include "VulkanGraphicsRenderer.h"
 #include "TextureBank.h"
+#include "Shader.h"
+#include "Camera.h"
+#include "ErrorCheck.h"
+#include "ComputePipelineBuilder.h"
 
 namespace Bunny::Render
 {
@@ -56,8 +60,39 @@ void SkyPass::updateFrameData()
     //  wait for the prev frame cloud texture write finish (maybe not needed because it should be done by this point?)
 }
 
+void SkyPass::updateRenderParams(const Camera& camera, float elapsedTime)
+{
+}
+
+void SkyPass::linkLightData(const AllocatedBuffer& lightData)
+{
+}
+
 BunnyResult SkyPass::initPipeline()
 {
+    VkDevice device = mVulkanResources->getDevice();
+
+    //  load shader
+    Shader cloudShader(mCloudShaderPath, device);
+
+    //  build pipeline layout
+    VkDescriptorSetLayout layouts[] = {mCloudDescSetLayout, mTextureDescSetLayout};
+    VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    pipelineLayoutInfo.setLayoutCount = 2;
+    pipelineLayoutInfo.pSetLayouts = layouts;
+    pipelineLayoutInfo.pushConstantRangeCount = 0;
+    pipelineLayoutInfo.pPushConstantRanges = nullptr;
+
+    VK_CHECK_OR_RETURN_BUNNY_SAD(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &mPipelineLayout))
+    mDeletionStack.AddFunction(
+        [this]() { vkDestroyPipelineLayout(mVulkanResources->getDevice(), mPipelineLayout, nullptr); });
+
+    ComputePipelineBuilder pipelineBuilder;
+    pipelineBuilder.setShader(cloudShader.getShaderModule());
+    pipelineBuilder.setPipelineLayout(mPipelineLayout);
+    mPipeline = pipelineBuilder.build(device);
+
     return BUNNY_HAPPY;
 }
 
