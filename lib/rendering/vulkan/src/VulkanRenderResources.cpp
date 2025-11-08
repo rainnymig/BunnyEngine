@@ -329,7 +329,7 @@ AllocatedImage VulkanRenderResources::createImage(VkExtent3D size, VkFormat form
     imgCreateInfo.arrayLayers = 1;
     imgCreateInfo.format = format;
     imgCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-    imgCreateInfo.initialLayout = layout;
+    imgCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     imgCreateInfo.usage = usage;
     imgCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
     imgCreateInfo.pNext = nullptr;
@@ -354,6 +354,13 @@ AllocatedImage VulkanRenderResources::createImage(VkExtent3D size, VkFormat form
     viewCreateInfo.subresourceRange.aspectMask = aspectFlags;
 
     VK_HARD_CHECK(vkCreateImageView(mDevice, &viewCreateInfo, nullptr, &newImage.mImageView));
+
+    //  image must be created in undefined layout
+    //  if the desired layout is not undefined, transition now
+    if (layout != VK_IMAGE_LAYOUT_UNDEFINED)
+    {
+        immediateTransitionImageLayout(newImage.mImage, newImage.mFormat, VK_IMAGE_LAYOUT_UNDEFINED, layout, mipCount);
+    }
 
     return newImage;
 }

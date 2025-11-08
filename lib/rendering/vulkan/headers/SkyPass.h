@@ -80,14 +80,29 @@ class SkyPass : public PbrGraphicsPass
 
     struct FrameData
     {
-        //  maybe 2 texture sets, each with alternate this and prev cloud image, so no need toi recreate sets per frame
-        VkDescriptorSet mCloudDescSet;   //  contains cloud rendering data
-        VkDescriptorSet mTextureDescSet; //  contains texture images for render and render results
+        //  because we want to have last frame cloud texture
+        //  we create two sets of descriptor sets
+        //  so they can bind there render target and last frame cloud texture
+        //  to different allocated images
+        //  this is not the same as multi frames in flight
+        //  because each frame in flight has two sets of desc sets
+        static constexpr int frameSequenceCount = 2;
 
-        AllocatedImage mCloudRenderTargetTexture;
+        struct DescSets
+        {
+            VkDescriptorSet mCloudDescSet;   //  contains cloud rendering data
+            VkDescriptorSet mTextureDescSet; //  contains texture images for render and render results
+        };
+        std::array<DescSets, frameSequenceCount> mDescriptors;
+
+        AllocatedImage mCloudTexture1;
+        AllocatedImage mCloudTexture2;
         AllocatedImage mFogShadowTexture;
-        AllocatedImage mLastCloudTexture;
         const AllocatedImage* mDepthTexture = nullptr; //  depth image created in renderer
+        int mCurrentFrameSeqId = 0;
+
+        void advanceFrameInSequence() { mCurrentFrameSeqId = (mCurrentFrameSeqId + 1) % frameSequenceCount; }
+        const VkDescriptorSet* getCurrentDescSets() const { return &mDescriptors[mCurrentFrameSeqId].mCloudDescSet; }
     };
 
     BunnyResult initDescriptorLayouts();
@@ -115,7 +130,7 @@ class SkyPass : public PbrGraphicsPass
     static constexpr uint32_t DETAIL_CLOUD_NOISE_RESOLUTION = 32;
     static constexpr uint32_t WEATHER_RESOLUTION = 1024;
     static constexpr uint32_t BLUE_NOISE_RESOLUTION = 256;
-    static constexpr uint32_t TEXTURE_2D_COUNT = 4;
+    static constexpr uint32_t TEXTURE_2D_COUNT = 2;
     static constexpr uint32_t TEXTURE_3D_COUNT = 2;
 };
 

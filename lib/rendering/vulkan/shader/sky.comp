@@ -6,8 +6,8 @@
 #define CLOUD_DETAIL_NOISE_TEX_ID 1
 #define BLUE_NOISE_TEX_ID 0
 #define WEATHER_NOISE_TEX_ID 1
-#define DEPTH_IMAGE_TEX_ID 2    //  depth of the already rendered scene
-#define LAST_CLOUD_TEX_ID 3
+// #define DEPTH_IMAGE_TEX_ID 2    //  depth of the already rendered scene
+// #define LAST_CLOUD_TEX_ID 3
 
 layout (local_size_x = 64, local_size_y = 32, local_size_z = 1) in;
 
@@ -60,11 +60,18 @@ layout(set = 0, binding = 2) uniform RenderData
 
 layout(set = 1, binding = 0) uniform sampler3D textures3D[];
 layout(set = 1, binding = 1) uniform sampler2D textures2D[];
-layout(set = 1, binding = 2, rgba32f) uniform writeonly image2D renderedCloudTexture;
-layout(set = 1, binding = 3, rg32f) uniform writeonly image2D fogShadowTexture;
+layout(set = 1, binding = 2) uniform sampler2D sceneDepthTexture;
+layout(set = 1, binding = 3) uniform sampler2D lastCloudTexture;
+layout(set = 1, binding = 4, rgba32f) uniform writeonly image2D renderedCloudTexture;
+layout(set = 1, binding = 5, rg32f) uniform writeonly image2D fogShadowTexture;
 
 shared vec4 gs_activePixels[32][2];
 shared float gs_firstContactDist[32][2];
+
+float saturate(float val)
+{
+	return clamp(val, 0, 1);
+}
 
 bool isPointInsideSphere(vec3 posWorld, vec3 C, bool insideAboveCloud)
 {
@@ -247,11 +254,11 @@ vec2 sampleCloudDensityLOD2(vec3 posWorld, vec3 cloudTexCoord, vec2 weatherMapCo
 		
 
 		float heightNormalCoef = 0
-			+ clamp(remap(normalizedHeight, 0.0f, lowLevel, 1.0f, 0.0f), 0, 1)
-			* clamp(remap(normalizedHeight, 0.0f, bottomLevel, 0.0f, 1.0f), 0, 1)
+			+ saturate(remap(normalizedHeight, 0.0f, lowLevel, 1.0f, 0.0f))
+			* saturate(remap(normalizedHeight, 0.0f, bottomLevel, 0.0f, 1.0f))
 			;
 
-		float heightModCoef = clamp(heightNormalCoef, 0, 1) * remap(normalizedHeight, 0.0f, 1.0f, 0.2f, 1.0f);
+		float heightModCoef = saturate(heightNormalCoef) * remap(normalizedHeight, 0.0f, 1.0f, 0.2f, 1.0f);
 
 		float coverageModCoef = 1 - (1 - weatherTex) * (1 - weatherTex);
 		float result1 = heightModCoef * coverageModCoef * shapeFBM;
@@ -337,7 +344,7 @@ void main()
 		texCoord.x * (cameraFrameWorldTR.xyz - cameraFrameWorldTL.xyz) + 
 		texCoord.y * (cameraFrameWorldBL.xyz - cameraFrameWorldTL.xyz);
 
-	float renderedSceneDepth = textureLod(textures2D[DEPTH_IMAGE_TEX_ID], texCoord, 0).x;
+	float renderedSceneDepth = textureLod(sceneDepthTexture, texCoord, 0).x;
 	renderedSceneDepth = recoverLinearDepth(renderedSceneDepth);
 
 	vec3 rayOrigin = cameraPosition.xyz;
@@ -455,12 +462,20 @@ void main()
 			//actualStepSize = minRayMarchStepSize * (0.9 + blueNoise * 0.2)
 			//	+ (emptyStep > 2) * minRayMarchStepSize * 0.1
 			//	+ viewDistanceBonus * minRayMarchStepSize*0.5;
-			actualStepSize = (minRayMarchStepSize)
-				+ (emptyStep > 2) * minRayMarchStepSize*0.5
-				+ viewDistanceBonus * minRayMarchStepSize*0.5;
-			actualStepSize -= 0.6 * (idx < 10) * actualStepSize;
+			actualStepSize = (minRayMarchStepSize) + viewDistanceBonus * minRayMarchStepSize*0.5;
+			if (emptyStep > 2)
+			{
+				actualStepSize += minRayMarchStepSize * 0.5;
+			}
+			if (idx < 10)
+			{
+				actualStepSize -= 0.6 * actualStepSize;
+			}
 
-			firstContact += (firstContact == 0.0f) * (currentDensity > 0) * totalViewDistance;
+			if (firstContact == 0.0f && currentDensity > 0)
+			{
+				firstContact += totalViewDistance;
+			}
 
 			rayPos += rayDir * actualStepSize;
 
@@ -477,7 +492,7 @@ void main()
 			weatherTexCoord = computeWeatherTexCoordSphere(rayPos);
 			normalizedHeight = getNormalizedHeightSphere(rayPos, C, cloudRegionR1, cloudRegionR2);
 
-			sampledDensity = sampleCloudDensityLOD2(rayPos, cloudTexCoord, weatherTexCoord, totalViewDistance, normalizedHeight, C, insideAboveCloud).x;
+			sampledDensity = sampleCloudDensityLOD2(rayPos, cloudTexCoord, weatherTexCoord, totalViewDistance, normalizedHeight, C, insideAboveCloud);
 			currentDensity = sampledDensity.x;
 
 			//	if one of the densities is larger than 0 then calculate lighting
@@ -507,8 +522,10 @@ void main()
 					break;
 				}
 			}
-			emptyStep += (currentDensity < 0.0001);
-
+			if (currentDensity < 0.0001)
+			{
+				emptyStep++;
+			}
 		}
 
 		sun = mix(0, sun, transmittance);
@@ -525,28 +542,28 @@ void main()
 			col = mix(sky, col, saturate((horzHeight+500)/1500.0f));
 		}
 
-        imageStore(renderedCloudTexture, DTid.xy, vec4(col, transmittance));
+        imageStore(renderedCloudTexture, ivec2(DTid.xy), vec4(col, transmittance));
 		gs_activePixels[Tid.x/2][Tid.y/2] = vec4(col, transmittance);
 		gs_firstContactDist[Tid.x / 2][Tid.y / 2] = firstContact;
 	}
 
 	barrier();
 
-    imageStore(fogShadowTexture, DTid.xy, vec2(dstFog, shadow));
+    imageStore(fogShadowTexture, ivec2(DTid.xy), vec4(dstFog, shadow, 0, 0));
 
 	if ((DTid.x % 2 + DTid.y % 2 * 2) != ditherIdx)
 	{
 		//	compute the coordinate in clip space in previous frame
-		vec4 prevProjected = mul(prevViewProj, vec4(rayOrigin + max(5000, gs_firstContactDist[Tid.x / 2][Tid.y / 2]) * rayDir, 1.0f));
+		vec4 prevProjected = prevViewProj * vec4(rayOrigin + max(5000, gs_firstContactDist[Tid.x / 2][Tid.y / 2]) * rayDir, 1.0f);
 		vec3 prevNDC = prevProjected.xyz / prevProjected.w;
 		if (abs(prevNDC.x) < 1.0 && abs(prevNDC.y) < 1.0)
 		{
-			vec4 lastCol = textureLod(textures2D[LAST_CLOUD_TEX_ID], vec2((prevNDC.x + 1) / 2.0f, 1 - (prevNDC.y + 1) / 2.0f), 0);
-            imageStore(renderedCloudTexture, DTid.xy, gs_activePixels[Tid.x / 2][Tid.y / 2] * 0.2 + lastCol * 0.8);
+			vec4 lastCol = textureLod(lastCloudTexture, vec2((prevNDC.x + 1) / 2.0f, 1 - (prevNDC.y + 1) / 2.0f), 0);
+            imageStore(renderedCloudTexture, ivec2(DTid.xy), gs_activePixels[Tid.x / 2][Tid.y / 2] * 0.2 + lastCol * 0.8);
 		}
 		else
 		{
-            imageStore(renderedCloudTexture, DTid.xy, gs_activePixels[Tid.x / 2][Tid.y / 2]);
+            imageStore(renderedCloudTexture, ivec2(DTid.xy), gs_activePixels[Tid.x / 2][Tid.y / 2]);
 		}
 	}
 }

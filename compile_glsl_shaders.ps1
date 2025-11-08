@@ -20,7 +20,7 @@ glslc.exe --target-env=vulkan1.3 ./lib/rendering/vulkan/shader/rtbasic.rmiss    
 glslc.exe --target-env=vulkan1.3 ./lib/rendering/vulkan/shader/rtshadow.rmiss           -o ./build/engine-next/Debug/rtshadow_rmiss.spv
 glslc.exe --target-env=vulkan1.3 ./lib/rendering/vulkan/shader/rtshadow.rchit           -o ./build/engine-next/Debug/rtshadow_rchit.spv
 
-# glslc.exe --target-env=vulkan1.3 ./lib/rendering/vulkan/shader/sky.comp                 -o ./build/engine-next/Debug/sky_comp.spv
+glslc.exe --target-env=vulkan1.3 ./lib/rendering/vulkan/shader/sky.comp                 -o ./build/engine-next/Debug/sky_comp.spv
 
 glslc.exe --target-env=vulkan1.3 ./lib/rendering/vulkan/shader/texturePreview.frag      -o ./build/engine-next/Debug/texture_preview_frag.spv
 
