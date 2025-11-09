@@ -11,6 +11,30 @@
 
 namespace Bunny::Render
 {
+static constexpr SkyPass::CloudData defaultCloudData{
+    //  .mCloudNoiseDimension
+    .mCloudCoverage = 0.995f,
+    //  .mDetailNoiseDimension
+    .mLightMarchStepSize = 50.0f,
+    //  .mRenderResolution
+    .mCloudRegionMinXZ = glm::vec2(-10240, -10240),
+    .mCloudRegionMaxXZ = glm::vec2(10240, 10240),
+    .mG1 = 0.75f,
+    .mG2 = -0.2f,
+    .mExtinctionCoef = 1.8f,
+    .mScatteringCoef = 1.79f,
+    .mDensityModifier = 0.2f,
+    .mMinRayMarchStepSize = 60.0f,
+    // .mZNear
+    // .mZFar
+    .mDetailErodeModCoef = 0.15f,
+    .mLodStartDistance = 6000.0f,
+    .mLodStageLength = 3000.0f,
+    .mCloudRegionR1 = 130050,
+    .mCloudRegionR2 = 132050,
+    .mCloudRegionCy = 129250,
+};
+
 SkyPass::SkyPass(const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer,
     TextureBank* textureBank, std::string_view cloudShaderPath)
     : super(vulkanResources, renderer, nullptr, nullptr),
@@ -24,6 +48,10 @@ void SkyPass::draw() const
     VkCommandBuffer cmd = mRenderer->getCurrentCommandBuffer();
     uint32_t currentFrameIdx = mRenderer->getCurrentFrameIdx();
     const FrameData& frame = mFrameData.at(currentFrameIdx);
+
+    //  should wait for cloud texture read by final output pass is finished
+    //  but probably not needed
+    //  check back later
 
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, mPipeline);
     vkCmdBindDescriptorSets(
@@ -62,10 +90,51 @@ void SkyPass::updateFrameData()
 
 void SkyPass::updateRenderParams(const Camera& camera, float elapsedTime)
 {
+    //  update camera and time information
+    mCloudRenderParams.mPrevViewProj = camera.getPrevViewProjMatrix();
+    mCloudRenderParams.mCameraPosition = camera.getPosition();
+
+    constexpr static float frameToCamera = 1.0f;
+    glm::vec3 frameCenter = camera.getPosition() + camera.getForward() * frameToCamera;
+
+    float heightToDist = glm::tan(camera.getFov() / 2);
+    float frameHalfHeight = heightToDist * frameToCamera;
+    float frameHalfWidth = frameHalfHeight * camera.getAspectRatio();
+
+    glm::vec3 camUp = camera.getUp();
+    glm::vec3 camRight = camera.getRight();
+    mCloudRenderParams.mCameraFrameWorldTL =
+        glm::vec4(frameCenter + camUp * frameHalfHeight - camRight * frameHalfWidth, 1.0f);
+    mCloudRenderParams.mCameraFrameWorldTR =
+        glm::vec4(frameCenter + camUp * frameHalfHeight + camRight * frameHalfWidth, 1.0f);
+    mCloudRenderParams.mCameraFrameWorldBL =
+        glm::vec4(frameCenter - camUp * frameHalfHeight - camRight * frameHalfWidth, 1.0f);
+    mCloudRenderParams.mCameraFrameWorldBR =
+        glm::vec4(frameCenter - camUp * frameHalfHeight + camRight * frameHalfWidth, 1.0f);
+
+    mCloudRenderParams.mDitherIdx = (mCloudRenderParams.mDitherIdx + 1) % CloudRenderParams::MAX_DITHER_COUNT;
+
+    mCloudRenderParams.mElapsedTime = elapsedTime;
+
+    //  use the new data to update the render params buffer
+    {
+        void* data = mCloudRenderParamsBuffer.mAllocationInfo.pMappedData;
+        memcpy(data, &mCloudRenderParams, sizeof(CloudRenderParams));
+    }
 }
 
 void SkyPass::linkLightData(const AllocatedBuffer& lightData)
 {
+    VkDevice device = mVulkanResources->getDevice();
+    DescriptorWriter writer;
+    writer.writeBuffer(0, lightData.mBuffer, sizeof(LightData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+    for (FrameData& frame : mFrameData)
+    {
+        for (FrameData::DescSets& descSets : frame.mDescriptors)
+        {
+            writer.updateSet(device, descSets.mCloudDescSet);
+        }
+    }
 }
 
 BunnyResult SkyPass::initPipeline()
@@ -181,14 +250,23 @@ BunnyResult SkyPass::initDataAndResources()
 
     //  init and create cloud and render parameter buffers
     //  init data...
+    //  init cloud data
+    mCloudData = defaultCloudData;
+    mCloudData.mCloudNoiseDimension =
+        glm::vec3(mMainNoiseTexture.mExtent.width, mMainNoiseTexture.mExtent.height, mMainNoiseTexture.mExtent.depth);
+    mCloudData.mDetailNoiseDimension = glm::vec3(
+        mDetailNoiseTexture.mExtent.width, mDetailNoiseTexture.mExtent.height, mDetailNoiseTexture.mExtent.depth);
+    mCloudData.mRenderResolution = glm::vec2(swapchainExtent.width, swapchainExtent.height);
+    mCloudData.mZNear = Camera::NearPlaneDistance;
+    mCloudData.mZFar = Camera::FarPlaneDistance;
+    //  cloud render params will be updated from camera every frame
     //  create buffers
     mVulkanResources->createBufferWithData(&mCloudData, sizeof(CloudData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
         VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
         VMA_MEMORY_USAGE_AUTO, mCloudDataBuffer);
-    mVulkanResources->createBufferWithData(&mCloudRenderParams, sizeof(CloudRenderParams),
-        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+    mVulkanResources->createBuffer(sizeof(CloudRenderParams), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
         VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
-        VMA_MEMORY_USAGE_AUTO, mCloudRenderParamsBuffer);
+        VMA_MEMORY_USAGE_AUTO);
 
     mDeletionStack.AddFunction([this]() {
         mVulkanResources->destroyBuffer(mCloudDataBuffer);

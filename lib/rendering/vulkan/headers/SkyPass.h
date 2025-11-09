@@ -25,12 +25,11 @@ class SkyPass : public PbrGraphicsPass
   public:
     struct CloudData
     {
-        glm::vec4 mCloudNoiseDimension;
-        glm::vec3 mDetailNoiseDimension;
+        glm::vec3 mCloudNoiseDimension;
         float mCloudCoverage;
-        glm::vec3 mWeatherMapDimension;
+        glm::vec3 mDetailNoiseDimension;
         float mLightMarchStepSize;
-        glm::uvec2 mRenderResolution;
+        glm::vec2 mRenderResolution;
         glm::vec2 mCloudRegionMinXZ;
         glm::vec2 mCloudRegionMaxXZ;
         float mG1; //  henyey greestein coefficient
@@ -62,6 +61,7 @@ class SkyPass : public PbrGraphicsPass
 
         float mElapsedTime;
         uint32_t mDitherIdx;
+        constexpr static uint32_t MAX_DITHER_COUNT = 4;
     };
 
     SkyPass(const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer,

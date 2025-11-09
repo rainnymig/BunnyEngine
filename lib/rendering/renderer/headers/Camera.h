@@ -43,26 +43,37 @@ class Camera
 
     void setAspectRatio(float ratio);
 
+    //  record the current view and projection matrix as previous view proj matrix
+    //  so that the next frame can use it
+    void recordPrevViewProjMatrix();
+
     glm::mat4 getViewMatrix() const { return mViewMatrix; }
     glm::mat4 getProjMatrix() const { return mProjMatrix; }
+    glm::mat4 getPrevViewProjMatrix() const { return mPrevViewProjMatrix; }
     [[nodiscard]] glm::mat4 getViewProjMatrix() const { return mProjMatrix * mViewMatrix; }
     [[nodiscard]] glm::mat4 getInverseViewMatrix() const { return glm::inverse(mViewMatrix); }
     [[nodiscard]] glm::mat4 getInverseProjMatrix() const { return glm::inverse(mProjMatrix); }
     glm::vec3 getPosition() const { return mPosition; }
     glm::vec3 getRotation() const { return mPitchYawRoll; }
     void getViewFrustum(ViewFrustum& outFrustum) const;
+    glm::vec3 getForward() const { return mForwardVec; }
+    glm::vec3 getRight() const { return mRightVec; }
+    glm::vec3 getUp() const { return mUpVec; }
+    float getFov() const { return mFov; }
+    float getAspectRatio() const { return mAspectRatio; }
+    static constexpr float NearPlaneDistance = 1.0f;
+    static constexpr float FarPlaneDistance = 10000.0f;
 
   protected:
     void updateMatrices();
 
-    static constexpr float NearPlaneDistance = 0.1f;
-    static constexpr float FarPlaneDistance = 100.0f;
     static constexpr glm::vec4 StaticForward{0, 0, -1, 0};
     static constexpr glm::vec4 StaticUp{0, 1, 0, 0};
     static constexpr glm::vec4 StaticRight{1, 0, 0, 0};
 
     glm::mat4 mViewMatrix;
     glm::mat4 mProjMatrix;
+    glm::mat4 mPrevViewProjMatrix;
     glm::vec3 mPosition;
     glm::vec3 mPitchYawRoll;
     glm::vec3 mForwardVec = StaticForward;

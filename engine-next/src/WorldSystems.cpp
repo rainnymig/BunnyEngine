@@ -22,6 +22,8 @@ void Engine::CameraSystem::update(World* world, float deltaTime)
     {
         auto& cam = world->mEntityRegistry.get<PbrCameraComponent>(camComps.front());
         Render::Camera& camera = cam.mCamera;
+        camera.recordPrevViewProjMatrix();
+
         // camera.setDeltaRotation(glm::vec3(0, deltaTime * glm::pi<double>() / 16, 0));
         camera.setDeltaPosition(mMoveVector * mMoveVelocity * deltaTime);
     }

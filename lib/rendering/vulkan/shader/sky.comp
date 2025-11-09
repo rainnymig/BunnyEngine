@@ -19,12 +19,11 @@ layout(set = 0, binding = 0) uniform LightData
 
 layout(set = 0, binding = 1) uniform CloudData
 {
-	vec4 cloudNoiseDimension;
-	vec3 detailNoiseDimension;
+	vec3 cloudNoiseDimension;
     float cloudCoverage;
-	vec3 weatherMapDimension;
+	vec3 detailNoiseDimension;
 	float lightMarchStepSize;
-	uvec2 renderResolution;
+	vec2 renderResolution;
     vec2 cloudRegionMinXZ;
     vec2 cloudRegionMaxXZ;
 	float g1;   //  henyey greestein coefficient
@@ -65,8 +64,8 @@ layout(set = 1, binding = 3) uniform sampler2D lastCloudTexture;
 layout(set = 1, binding = 4, rgba32f) uniform writeonly image2D renderedCloudTexture;
 layout(set = 1, binding = 5, rg32f) uniform writeonly image2D fogShadowTexture;
 
-shared vec4 gs_activePixels[32][2];
-shared float gs_firstContactDist[32][2];
+shared vec4 gs_activePixels[32][16];
+shared float gs_firstContactDist[32][16];
 
 float saturate(float val)
 {
@@ -337,7 +336,7 @@ void main()
 
 	bool insideAboveCloud = cameraPosition.y > cloudRegionR1 - cloudRegionCy;
 
-	vec2 texCoord = DTid.xy / vec2(renderResolution);
+	vec2 texCoord = DTid.xy / renderResolution;
 	
     //  need to translate from DIRECT X to VULKAN?
 	vec3 posWorld = cameraFrameWorldTL.xyz + 

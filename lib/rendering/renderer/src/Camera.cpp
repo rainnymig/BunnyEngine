@@ -45,6 +45,11 @@ void Camera::setAspectRatio(float ratio)
     updateMatrices();
 }
 
+void Camera::recordPrevViewProjMatrix()
+{
+    mPrevViewProjMatrix = getViewProjMatrix();
+}
+
 void Camera::getViewFrustum(ViewFrustum& outFrustum) const
 {
     //  calculate the 6 planes of the camera view frustum
