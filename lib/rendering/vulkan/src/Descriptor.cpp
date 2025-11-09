@@ -92,6 +92,7 @@ void DescriptorAllocator::clearPools(VkDevice device)
     for (auto p : mFullPools)
     {
         vkResetDescriptorPool(device, p, 0);
+        mReadyPools.push_back(p);
     }
     mFullPools.clear();
 }

@@ -27,9 +27,9 @@ class TexturePreviewPass : public PbrGraphicsPass
     void updateTextureForPreview();
 
   protected:
-    virtual BunnyResult initPipeline();
-    virtual BunnyResult initDescriptors();
-    virtual BunnyResult initDataAndResources();
+    BunnyResult initPipeline() override;
+    BunnyResult initDescriptors() override;
+    BunnyResult initDataAndResources() override;
 
   private:
     using super = PbrGraphicsPass;

@@ -10,5 +10,12 @@ layout (location = 0) out vec4 outColor;
 
 void main()
 {
-    outColor = texture(renderedSceneTexture, uv);
+    vec3 sceneTex = texture(renderedSceneTexture, uv).xyz;
+    vec4 cloudTex = texture(cloudTexture, uv);
+    vec2 fogShadowTex = texture(fogShadowTexture, uv).xy;
+    sceneTex *= fogShadowTex.y;
+    vec3 col = sceneTex * (cloudTex.w) * (1 - fogShadowTex.x) + cloudTex.xyz;
+
+    // outColor = texture(renderedSceneTexture, uv);
+    outColor = vec4(col/(col+1.0), 1.0);
 }
