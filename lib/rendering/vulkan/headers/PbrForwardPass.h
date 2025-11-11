@@ -40,10 +40,13 @@ class PbrForwardPass : public PbrGraphicsPass
         VkDescriptorSet mObjectDescSet;
         VkDescriptorSet mMaterialDescSet;
         VkDescriptorSet mEffectDescSet; // for shadows
+
+        AllocatedImage mSceneRenderTarget;
     };
 
-    virtual BunnyResult initPipeline() override;
-    virtual BunnyResult initDescriptors() override;
+    BunnyResult initPipeline() override;
+    BunnyResult initDescriptors() override;
+    BunnyResult initDataAndResources() override;
 
   private:
     using super = PbrGraphicsPass;

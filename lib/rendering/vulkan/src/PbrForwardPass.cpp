@@ -232,4 +232,24 @@ BunnyResult PbrForwardPass::initDescriptors()
     mDeletionStack.AddFunction([this]() { mDescriptorAllocator.destroyPools(mVulkanResources->getDevice()); });
     return BUNNY_HAPPY;
 }
+
+BunnyResult PbrForwardPass::initDataAndResources()
+{
+    VkExtent2D swapchainExtent = mRenderer->getSwapChainExtent();
+    //  create render target texture for frames
+    for (FrameData& frame : mFrameData)
+    {
+        frame.mSceneRenderTarget =
+            mVulkanResources->createImage(VkExtent3D{swapchainExtent.width, swapchainExtent.height, 1},
+                mRenderer->getSwapChainImageFormat(), VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                VK_IMAGE_ASPECT_COLOR_BIT, false, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    }
+
+    mDeletionStack.AddFunction([this]() {
+        for (FrameData& frame : mFrameData)
+        {
+            mVulkanResources->destroyImage(frame.mSceneRenderTarget);
+        }
+    });
+}
 } // namespace Bunny::Render
