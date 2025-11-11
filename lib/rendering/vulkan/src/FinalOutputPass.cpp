@@ -170,6 +170,8 @@ BunnyResult FinalOutputPass::initDataAndResources()
         mVulkanResources->destroyBuffer(mIndexBuffer);
         mVulkanResources->destroyBuffer(mVertexBuffer);
     });
+
+    return BUNNY_HAPPY;
 }
 
 BunnyResult FinalOutputPass::initDescriptorLayouts()

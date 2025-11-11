@@ -24,6 +24,8 @@
 #include "AccelerationStructureBuilder.h"
 #include "RaytracingShadowPass.h"
 #include "TexturePreviewPass.h"
+#include "SkyPass.h"
+#include "FinalOutputPass.h"
 #include "ImguiHelper.h"
 
 #include <imgui.h>
@@ -128,12 +130,16 @@ int main(void)
     PbrForwardPass pbrForwardPass(&renderResources, &renderer, &pbrMaterialBank, &meshBank,
         "pbr_culled_instanced_vert.spv", "pbr_forward_frag.spv");
     CullingPass cullingPass(&renderResources, &renderer, &meshBank);
+    SkyPass skyPass(&renderResources, &renderer, &textureBank);
+    FinalOutputPass finalOutputPass(&renderResources, &renderer, &textureBank);
     DepthReducePass depthReducePass(&renderResources, &renderer);
     TexturePreviewPass texturePreviewPass(&renderResources, &renderer, &pbrMaterialBank, &meshBank, &textureBank);
 
     rtShadowPass.initializePass();
     pbrForwardPass.initializePass();
     cullingPass.initializePass();
+    skyPass.initializePass();
+    finalOutputPass.initializePass();
     depthReducePass.initializePass();
     texturePreviewPass.initializePass();
 
@@ -166,6 +172,8 @@ int main(void)
     cullingPass.setObjectCount(worldTranslator.getObjectCount());
     cullingPass.setDepthImageSizes(depthReducePass.getDepthImageWidth(), depthReducePass.getDepthImageHeight(),
         depthReducePass.getDepthHierarchyLevels());
+
+    skyPass.linkLightData(worldTranslator.getPbrLightBuffer());
 
     CameraSystem cameraSystem(&inputManager);
     ObjectRandomMovementSystem objRandMovSystem;
@@ -230,10 +238,12 @@ int main(void)
         {
             const auto& cam = bunnyWorld.mEntityRegistry.get<PbrCameraComponent>(camComps.front());
             cullingPass.updateCullingData(cam.mCamera);
+            skyPass.updateRenderParams(cam.mCamera, timer.getTime());
         }
 
         texturePreviewPass.updateTextureForPreview();
 
+        //  the drawings begin
         renderer.beginRenderFrame();
 
         pbrForwardPass.prepareDrawCommandsForFrame();
@@ -241,6 +251,14 @@ int main(void)
         cullingPass.dispatch();
         rtShadowPass.draw();
         pbrForwardPass.draw();
+
+        skyPass.updateFrameData();
+        skyPass.draw();
+
+        finalOutputPass.updateInputTextures(&skyPass.getCurrentCloudTexture(), &skyPass.getCurrentFogShadowTexture(),
+            &pbrForwardPass.getCurrentRenderTarget());
+        finalOutputPass.draw();
+
         depthReducePass.dispatch();
         texturePreviewPass.draw();
 
@@ -255,6 +273,8 @@ int main(void)
 
     cullingPass.cleanup();
     depthReducePass.cleanup();
+    finalOutputPass.cleanup();
+    skyPass.cleanup();
     pbrForwardPass.cleanup();
     rtShadowPass.cleanup();
     acceStructBuilder.cleanup();

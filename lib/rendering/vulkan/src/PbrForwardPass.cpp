@@ -25,8 +25,18 @@ void PbrForwardPass::draw() const
     static constexpr bool updateDepth = true;
 
     VkCommandBuffer cmd = mRenderer->getCurrentCommandBuffer();
+    const FrameData& frame = mFrameData[mRenderer->getCurrentFrameIdx()];
 
-    mRenderer->beginRender(updateDepth);
+    //  transition the render target image layout back to color attachment optimal
+    VkImageMemoryBarrier renderTargetBarrier = makeImageMemoryBarrier(frame.mSceneRenderTarget.mImage,
+        VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_ASPECT_COLOR_BIT);
+    vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+        VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 1, &renderTargetBarrier);
+
+    std::vector<VkImageView> colorAttachmentViews;
+    colorAttachmentViews.push_back(frame.mSceneRenderTarget.mImageView);
+    mRenderer->beginRender(colorAttachmentViews, updateDepth);
 
     //  bind mesh vertex and index buffers
     mMeshBank->bindMeshBuffers(cmd);
@@ -169,6 +179,11 @@ const size_t PbrForwardPass::getDrawCommandBufferSize() const
     return getContainerDataSize(mDrawCommandsData);
 }
 
+const AllocatedImage& PbrForwardPass::getCurrentRenderTarget() const
+{
+    return mFrameData[mRenderer->getCurrentFrameIdx()].mSceneRenderTarget;
+}
+
 BunnyResult PbrForwardPass::initPipeline()
 {
     VkDevice device = mVulkanResources->getDevice();
@@ -251,5 +266,7 @@ BunnyResult PbrForwardPass::initDataAndResources()
             mVulkanResources->destroyImage(frame.mSceneRenderTarget);
         }
     });
+
+    return BUNNY_HAPPY;
 }
 } // namespace Bunny::Render

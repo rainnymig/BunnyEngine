@@ -32,6 +32,7 @@ class PbrForwardPass : public PbrGraphicsPass
     const size_t getDrawCommandBufferSize() const;
     const AllocatedBuffer& getInstanceObjectBuffer() const { return mInstanceObjectBuffer; }
     const size_t getInstanceObjectBufferSize() const { return mInstanceObjectBufferSize; }
+    const AllocatedImage& getCurrentRenderTarget() const;
 
   protected:
     struct FrameData

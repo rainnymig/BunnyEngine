@@ -9,6 +9,8 @@
 #include "ErrorCheck.h"
 #include "ComputePipelineBuilder.h"
 
+#include <cassert>
+
 namespace Bunny::Render
 {
 static constexpr SkyPass::CloudData defaultCloudData{
@@ -135,6 +137,16 @@ void SkyPass::linkLightData(const AllocatedBuffer& lightData)
             writer.updateSet(device, descSets.mCloudDescSet);
         }
     }
+}
+
+const AllocatedImage& SkyPass::getCurrentCloudTexture() const
+{
+    return mFrameData[mRenderer->getCurrentFrameIdx()].getCloudTexture();
+}
+
+const AllocatedImage& SkyPass::getCurrentFogShadowTexture() const
+{
+    return mFrameData[mRenderer->getCurrentFrameIdx()].mFogShadowTexture;
 }
 
 BunnyResult SkyPass::initPipeline()
@@ -378,6 +390,11 @@ BunnyResult SkyPass::initDescriptorLayouts()
     });
 
     return BUNNY_HAPPY;
+}
+
+const AllocatedImage& SkyPass::FrameData::getCloudTexture() const
+{
+    return mCurrentFrameSeqId == 0 ? mCloudTexture1 : mCloudTexture2;
 }
 
 } // namespace Bunny::Render

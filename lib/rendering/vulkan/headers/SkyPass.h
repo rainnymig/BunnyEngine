@@ -72,6 +72,9 @@ class SkyPass : public PbrGraphicsPass
     void updateRenderParams(const Camera& camera, float elapsedTime);
     void linkLightData(const AllocatedBuffer& lightData);
 
+    const AllocatedImage& getCurrentCloudTexture() const;
+    const AllocatedImage& getCurrentFogShadowTexture() const;
+
   protected:
     BunnyResult initPipeline() override;
     BunnyResult initDescriptors() override;
@@ -105,6 +108,7 @@ class SkyPass : public PbrGraphicsPass
 
         void advanceFrameInSequence() { mCurrentFrameSeqId = (mCurrentFrameSeqId + 1) % frameSequenceCount; }
         const VkDescriptorSet* getCurrentDescSets() const { return &mDescriptors[mCurrentFrameSeqId].mCloudDescSet; }
+        const AllocatedImage& getCloudTexture() const;
     };
 
     BunnyResult initDescriptorLayouts();
