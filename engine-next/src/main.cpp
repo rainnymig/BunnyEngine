@@ -93,6 +93,12 @@ int main(void)
         textureBank.addTexture("./assets/texture/j12.jpg", VK_FORMAT_R8G8B8A8_UNORM, texId);
         textureBank.addTexture3d(
             "./assets/texture/test_simplex_3d.png", VK_FORMAT_R8G8B8A8_UNORM, 128, 128, 128, texId);
+        textureBank.addTexture3d(
+            "./assets/texture/main_cloud_noise.png", VK_FORMAT_R8G8B8A8_UNORM, 128, 128, 128, texId);
+        textureBank.addTexture3d(
+            "./assets/texture/detail_cloud_noise.png", VK_FORMAT_R8G8B8A8_UNORM, 32, 32, 32, texId);
+        textureBank.addTexture(
+            "./assets/texture/weather.png", VK_FORMAT_R8G8B8A8_UNORM, texId);
     }
 
     {
@@ -130,7 +136,7 @@ int main(void)
     PbrForwardPass pbrForwardPass(&renderResources, &renderer, &pbrMaterialBank, &meshBank,
         "pbr_culled_instanced_vert.spv", "pbr_forward_frag.spv");
     CullingPass cullingPass(&renderResources, &renderer, &meshBank);
-    SkyPass skyPass(&renderResources, &renderer, &textureBank);
+    // SkyPass skyPass(&renderResources, &renderer, &textureBank);
     FinalOutputPass finalOutputPass(&renderResources, &renderer, &textureBank);
     DepthReducePass depthReducePass(&renderResources, &renderer);
     TexturePreviewPass texturePreviewPass(&renderResources, &renderer, &pbrMaterialBank, &meshBank, &textureBank);
@@ -138,7 +144,7 @@ int main(void)
     rtShadowPass.initializePass();
     pbrForwardPass.initializePass();
     cullingPass.initializePass();
-    skyPass.initializePass();
+    // skyPass.initializePass();
     finalOutputPass.initializePass();
     depthReducePass.initializePass();
     texturePreviewPass.initializePass();
@@ -173,7 +179,7 @@ int main(void)
     cullingPass.setDepthImageSizes(depthReducePass.getDepthImageWidth(), depthReducePass.getDepthImageHeight(),
         depthReducePass.getDepthHierarchyLevels());
 
-    skyPass.linkLightData(worldTranslator.getPbrLightBuffer());
+    // skyPass.linkLightData(worldTranslator.getPbrLightBuffer());
 
     CameraSystem cameraSystem(&inputManager);
     ObjectRandomMovementSystem objRandMovSystem;
@@ -238,7 +244,7 @@ int main(void)
         {
             const auto& cam = bunnyWorld.mEntityRegistry.get<PbrCameraComponent>(camComps.front());
             cullingPass.updateCullingData(cam.mCamera);
-            skyPass.updateRenderParams(cam.mCamera, timer.getTime());
+            // skyPass.updateRenderParams(cam.mCamera, timer.getTime());
         }
 
         texturePreviewPass.updateTextureForPreview();
@@ -252,11 +258,12 @@ int main(void)
         rtShadowPass.draw();
         pbrForwardPass.draw();
 
-        skyPass.updateFrameData();
-        skyPass.draw();
+        // skyPass.updateFrameData();
+        // skyPass.draw();
 
-        finalOutputPass.updateInputTextures(&skyPass.getCurrentCloudTexture(), &skyPass.getCurrentFogShadowTexture(),
-            &pbrForwardPass.getCurrentRenderTarget());
+        // finalOutputPass.updateInputTextures(&skyPass.getCurrentCloudTexture(), &skyPass.getCurrentFogShadowTexture(),
+        //     &pbrForwardPass.getCurrentRenderTarget());
+        finalOutputPass.updateInputTextures(nullptr, nullptr, &pbrForwardPass.getCurrentRenderTarget());
         finalOutputPass.draw();
 
         depthReducePass.dispatch();
@@ -274,7 +281,7 @@ int main(void)
     cullingPass.cleanup();
     depthReducePass.cleanup();
     finalOutputPass.cleanup();
-    skyPass.cleanup();
+    // skyPass.cleanup();
     pbrForwardPass.cleanup();
     rtShadowPass.cleanup();
     acceStructBuilder.cleanup();

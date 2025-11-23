@@ -134,7 +134,7 @@ class SkyPass : public PbrGraphicsPass
 
     static constexpr uint32_t MAIN_CLOUD_NOISE_RESOLUTION = 128;
     static constexpr uint32_t DETAIL_CLOUD_NOISE_RESOLUTION = 32;
-    static constexpr uint32_t WEATHER_RESOLUTION = 1024;
+    static constexpr uint32_t WEATHER_RESOLUTION = 256;
     static constexpr uint32_t BLUE_NOISE_RESOLUTION = 256;
     static constexpr uint32_t TEXTURE_2D_COUNT = 2;
     static constexpr uint32_t TEXTURE_3D_COUNT = 2;

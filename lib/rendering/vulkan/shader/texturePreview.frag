@@ -18,6 +18,10 @@ void main()
     if (is3d > 0)
     {
         outColor = texture(tex3D, vec3(uv.x, uv.y, uvZ));
+        // outColor.x = outColor.w;
+        // outColor.y = outColor.w;
+        // outColor.z = outColor.w;
+        // outColor.w = 1;
         // outColor = vec4(1, 1, 1, 1);
     }
     else

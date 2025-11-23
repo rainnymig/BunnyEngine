@@ -242,7 +242,8 @@ vec2 sampleCloudDensityLOD2(vec3 posWorld, vec3 cloudTexCoord, vec2 weatherMapCo
 		return vec2(0, 0);
 	}
 	float lodLevel = max((viewDistance - lodStartDistance), 0) / lodStageLength;
-    vec2 shape = textureLod(textures3D[CLOUD_MAIN_NOISE_TEX_ID], cloudTexCoord, lodLevel).xy;
+	//	due to texture export issue the useful information are in x and w channels instead of x and y
+    vec2 shape = textureLod(textures3D[CLOUD_MAIN_NOISE_TEX_ID], cloudTexCoord, lodLevel).xw;
 	float shapeFBM = mix(shape.x, shape.y, remap(normalizedHeight, 0, 0.5, 0.4, 1.0));
 
 	if (shapeFBM > 0)
