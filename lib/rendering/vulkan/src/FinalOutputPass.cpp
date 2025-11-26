@@ -29,18 +29,17 @@ void FinalOutputPass::draw() const
     VkImageMemoryBarrier sceneRenderBarrier = makeImageMemoryBarrier(frame.mRenderedSceneTexture->mImage,
         VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_ASPECT_COLOR_BIT);
-    // VkImageMemoryBarrier cloudRenderBarrier =
-    //     makeImageMemoryBarrier(frame.mCloudTexture->mImage, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
-    //         VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_ASPECT_COLOR_BIT);
-    // VkImageMemoryBarrier fogShadowRenderBarrier =
-    //     makeImageMemoryBarrier(frame.mFogShadowTexture->mImage, VK_ACCESS_SHADER_WRITE_BIT,
-    //     VK_ACCESS_SHADER_READ_BIT,
-    //         VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_ASPECT_COLOR_BIT);
+    VkImageMemoryBarrier cloudRenderBarrier =
+        makeImageMemoryBarrier(frame.mCloudTexture->mImage, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+            VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_ASPECT_COLOR_BIT);
+    VkImageMemoryBarrier fogShadowRenderBarrier =
+        makeImageMemoryBarrier(frame.mFogShadowTexture->mImage, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+            VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_ASPECT_COLOR_BIT);
 
-    // VkImageMemoryBarrier barriers[] = {cloudRenderBarrier, fogShadowRenderBarrier};
+    VkImageMemoryBarrier barriers[] = {cloudRenderBarrier, fogShadowRenderBarrier};
 
-    // vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-    //     VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 2, barriers);
+    vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+        VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 2, barriers);
 
     VkImageMemoryBarrier sceneBarriers[] = {sceneRenderBarrier};
 
@@ -83,10 +82,10 @@ void FinalOutputPass::updateInputTextures(const AllocatedImage* cloudTexture, co
     DescriptorWriter writer;
     writer.writeImage(0, frame.mRenderedSceneTexture->mImageView, mTextureBank->getSampler(),
         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-    // writer.writeImage(1, frame.mCloudTexture->mImageView, mTextureBank->getSampler(), VK_IMAGE_LAYOUT_GENERAL,
-    //     VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-    // writer.writeImage(2, frame.mFogShadowTexture->mImageView, mTextureBank->getSampler(), VK_IMAGE_LAYOUT_GENERAL,
-    //     VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+    writer.writeImage(1, frame.mCloudTexture->mImageView, mTextureBank->getSampler(), VK_IMAGE_LAYOUT_GENERAL,
+        VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+    writer.writeImage(2, frame.mFogShadowTexture->mImageView, mTextureBank->getSampler(), VK_IMAGE_LAYOUT_GENERAL,
+        VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
     writer.updateSet(device, frame.mTextureDescSet);
 }
 

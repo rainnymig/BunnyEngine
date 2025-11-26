@@ -9,7 +9,7 @@
 // #define DEPTH_IMAGE_TEX_ID 2    //  depth of the already rendered scene
 // #define LAST_CLOUD_TEX_ID 3
 
-layout (local_size_x = 64, local_size_y = 32, local_size_z = 1) in;
+layout (local_size_x = 32, local_size_y = 16, local_size_z = 1) in;
 
 layout(set = 0, binding = 0) uniform LightData
 {
@@ -64,8 +64,8 @@ layout(set = 1, binding = 3) uniform sampler2D lastCloudTexture;
 layout(set = 1, binding = 4, rgba32f) uniform writeonly image2D renderedCloudTexture;
 layout(set = 1, binding = 5, rg32f) uniform writeonly image2D fogShadowTexture;
 
-shared vec4 gs_activePixels[32][16];
-shared float gs_firstContactDist[32][16];
+shared vec4 gs_activePixels[16][8];
+shared float gs_firstContactDist[16][8];
 
 float saturate(float val)
 {
@@ -221,12 +221,14 @@ vec3 computeCloudTexCoordSphere(vec3 posWorld, vec3 C, float r1, float r2)
 
 vec3 computeDetailTexCoordSphere(vec3 posWorld)
 {
-	return 0.1 * posWorld / detailNoiseDimension.xyz + elapsedTime * 0.05f;
+	return 0.1 * posWorld / detailNoiseDimension.xyz;
+	// return 0.1 * posWorld / detailNoiseDimension.xyz + elapsedTime * 0.05f;
 }
 
 vec2 computeWeatherTexCoordSphere(vec3 posWorld)
 {
-	return posWorld.xz / (cloudRegionMaxXZ - cloudRegionMinXZ) + elapsedTime * 0.005f;
+	return posWorld.xz / (cloudRegionMaxXZ - cloudRegionMinXZ);
+	// return posWorld.xz / (cloudRegionMaxXZ - cloudRegionMinXZ) + elapsedTime * 0.005f;
 }
 
 float recoverLinearDepth(float nonLinearDepth)
@@ -375,6 +377,7 @@ void main()
 
 	//	compute shadow
 	float shadow = 1.0f;
+
 	if (renderedSceneDepth < zFar-100)
 	{
 		vec3 scenePoint = rayOrigin + renderedSceneDepth * rayDir;
@@ -408,17 +411,34 @@ void main()
 	focusedHorizon = pow(focusedHorizon, 10);
 	focusedHorizon *= max(cosTheta, 0);
 
-
+	float lightIntensity = lights[0].intensity / 1000;
+	
 	vec3 skyColor1 = vec3(0.6915094f, 0.7448655f, 0.8f);
 	vec3 skyColor2 = vec3(0.18039f, 0.49412f, 1.0f);
 	vec3 skyCol = mix(skyColor1, skyColor2, smoothstep(0, 1, (rayDir.y + 1) / 2.0f));
 	skyCol = mix(skyCol, lights[0].color, focusedHorizon);
 	float dstFog = 1 - exp(-max(0, renderedSceneDepth) * .00005);
-	vec3 sky = dstFog * skyCol * lights[0].intensity * 0.03f;
+	vec3 sky = dstFog * skyCol * lightIntensity * 0.03f;
 
 	float focusedCosTheta = pow(clamp(cosTheta, 0, 1), 2.0f);
 	float sun = henyey(focusedCosTheta, 0.995f);
 	float sunBlend = max(0, sign(renderedSceneDepth - zFar + 100));
+
+	// renderedSceneDepth = saturate(renderedSceneDepth / 20);
+	// imageStore(fogShadowTexture, ivec2(DTid.xy), vec4(0, 1, 0, 0));
+	// imageStore(renderedCloudTexture, ivec2(DTid.xy), vec4(renderedSceneDepth, renderedSceneDepth, renderedSceneDepth, 1));
+	// if (renderedSceneDepth < zFar-100)
+	// {
+	// 	imageStore(fogShadowTexture, ivec2(DTid.xy), vec4(0, 1, 0, 0));
+	// 	imageStore(renderedCloudTexture, ivec2(DTid.xy), vec4(0, 0, 0, 1));
+	// }
+	// else
+	// {
+	// 	imageStore(fogShadowTexture, ivec2(DTid.xy), vec4(0, 1, 0, 0));
+	// 	imageStore(renderedCloudTexture, ivec2(DTid.xy), vec4(sky, 1));
+	// }
+	// return;
+
 
 	if ((DTid.x % 2 + DTid.y % 2 * 2) == ditherIdx)
 	{
@@ -529,9 +549,9 @@ void main()
 		}
 
 		sun = mix(0, sun, transmittance);
-		sky = sunBlend * (sky + sun * lights[0].color * lights[0].intensity/150) + (1 - sunBlend) * sky;
+		sky = sunBlend * (sky + sun * lights[0].color * lightIntensity/100) + (1 - sunBlend) * sky;
 
-		vec3 cloudColor = collectedLight * lights[0].intensity;
+		vec3 cloudColor = collectedLight * lightIntensity;
 
 		vec3 col = transmittance * sky + cloudColor;
 

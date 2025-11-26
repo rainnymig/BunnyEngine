@@ -59,8 +59,8 @@ void SkyPass::draw() const
     vkCmdBindDescriptorSets(
         cmd, VK_PIPELINE_BIND_POINT_COMPUTE, mPipelineLayout, 0, 2, frame.getCurrentDescSets(), 0, nullptr);
 
-    constexpr static uint32_t computeSizeX = 64;
-    constexpr static uint32_t computeSizeY = 32;
+    constexpr static uint32_t computeSizeX = 32;
+    constexpr static uint32_t computeSizeY = 16;
     VkExtent3D renderImageExtent = frame.mCloudTexture1.mExtent;
     vkCmdDispatch(cmd, renderImageExtent.width / computeSizeX, renderImageExtent.height / computeSizeY, 1);
 
@@ -217,10 +217,10 @@ BunnyResult SkyPass::initDataAndResources()
             VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT, false,
             VK_IMAGE_LAYOUT_GENERAL);
         frame.mCloudTexture2 = mVulkanResources->createImage(renderImageExtent, VK_FORMAT_R32G32B32A32_SFLOAT,
-            VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT,
+            VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT, false,
             VK_IMAGE_LAYOUT_GENERAL);
         frame.mFogShadowTexture = mVulkanResources->createImage(renderImageExtent, VK_FORMAT_R32G32B32A32_SFLOAT,
-            VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT,
+            VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT, false,
             VK_IMAGE_LAYOUT_GENERAL);
         frame.mDepthTexture = &mRenderer->getDepthImage();
     }
@@ -238,24 +238,24 @@ BunnyResult SkyPass::initDataAndResources()
     //  load noise and other textures to texture bank
     IdType texId;
     //  main cloud noise
-    if (BUNNY_SUCCESS(mTextureBank->addTexture3d("main_cloud_noise.png", VK_FORMAT_R8G8B8A8_UNORM,
+    if (BUNNY_SUCCESS(mTextureBank->addTexture3d("./assets/texture/main_cloud_noise.png", VK_FORMAT_R8G8B8A8_UNORM,
             MAIN_CLOUD_NOISE_RESOLUTION, MAIN_CLOUD_NOISE_RESOLUTION, MAIN_CLOUD_NOISE_RESOLUTION, texId)))
     {
         mTextureBank->getTexture3d(texId, mMainNoiseTexture);
     }
     //  detail cloud noise
-    if (BUNNY_SUCCESS(mTextureBank->addTexture3d("detail_cloud_noise.png", VK_FORMAT_R8G8B8A8_UNORM,
+    if (BUNNY_SUCCESS(mTextureBank->addTexture3d("./assets/texture/detail_cloud_noise.png", VK_FORMAT_R8G8B8A8_UNORM,
             DETAIL_CLOUD_NOISE_RESOLUTION, DETAIL_CLOUD_NOISE_RESOLUTION, DETAIL_CLOUD_NOISE_RESOLUTION, texId)))
     {
         mTextureBank->getTexture3d(texId, mDetailNoiseTexture);
     }
     //  weather
-    if (BUNNY_SUCCESS(mTextureBank->addTexture("weather.png", VK_FORMAT_R8G8B8A8_UNORM, texId)))
+    if (BUNNY_SUCCESS(mTextureBank->addTexture("./assets/texture/weather.png", VK_FORMAT_R8G8B8A8_UNORM, texId)))
     {
         mTextureBank->getTexture(texId, mWeatherNoiseTexture);
     }
     //  blue noise
-    if (BUNNY_SUCCESS(mTextureBank->addTexture("blue_noise.png", VK_FORMAT_R8G8B8A8_UNORM, texId)))
+    if (BUNNY_SUCCESS(mTextureBank->addTexture("./assets/texture/blue_noise.png", VK_FORMAT_R8G8B8A8_UNORM, texId)))
     {
         mTextureBank->getTexture(texId, mBlueNoiseTexture);
     }
@@ -276,9 +276,10 @@ BunnyResult SkyPass::initDataAndResources()
     mVulkanResources->createBufferWithData(&mCloudData, sizeof(CloudData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
         VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
         VMA_MEMORY_USAGE_AUTO, mCloudDataBuffer);
-    mVulkanResources->createBuffer(sizeof(CloudRenderParams), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-        VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
-        VMA_MEMORY_USAGE_AUTO);
+    mCloudRenderParamsBuffer =
+        mVulkanResources->createBuffer(sizeof(CloudRenderParams), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+            VMA_MEMORY_USAGE_AUTO);
 
     mDeletionStack.AddFunction([this]() {
         mVulkanResources->destroyBuffer(mCloudDataBuffer);

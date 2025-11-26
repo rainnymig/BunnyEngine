@@ -65,10 +65,9 @@ void DepthReducePass::dispatch()
     const AllocatedImage& depthImage = mRenderer->getDepthImage();
 
     //  wait for the previous pass to finish writing to the depth image
-    VkImageMemoryBarrier depthWriteFinishBarrier =
-        makeImageMemoryBarrier(depthImage.mImage, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-            VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_ASPECT_DEPTH_BIT);
+    VkImageMemoryBarrier depthWriteFinishBarrier = makeImageMemoryBarrier(depthImage.mImage,
+        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_ASPECT_DEPTH_BIT);
 
     vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
         VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 1, &depthWriteFinishBarrier);
