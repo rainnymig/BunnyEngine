@@ -20,6 +20,8 @@ void main()
     // outColor = vec4(col, 1.0);
     // outColor = cloudTex;
 
+    // outColor = cloudTex;
+
     // outColor = texture(renderedSceneTexture, uv);
 
 }

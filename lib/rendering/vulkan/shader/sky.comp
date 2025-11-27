@@ -216,7 +216,8 @@ vec3 computeCloudTexCoordSphere(vec3 posWorld, vec3 C, float r1, float r2)
 {
 	float textureScale = cloudNoiseDimension.y / (r2 - r1);
 	float normalizedHeight = getNormalizedHeightSphere(posWorld, C, r1, r2);
-	return vec3(posWorld.x / cloudNoiseDimension.x * textureScale, normalizedHeight, posWorld.z / cloudNoiseDimension.z * textureScale) + elapsedTime * 0.01;
+	// return vec3(posWorld.x / cloudNoiseDimension.x * textureScale, normalizedHeight, posWorld.z / cloudNoiseDimension.z * textureScale) + elapsedTime * 0.01;
+	return vec3(posWorld.x / cloudNoiseDimension.x * textureScale, normalizedHeight, posWorld.z / cloudNoiseDimension.z * textureScale);
 }
 
 vec3 computeDetailTexCoordSphere(vec3 posWorld)
@@ -439,9 +440,8 @@ void main()
 	// }
 	// return;
 
-
-	if ((DTid.x % 2 + DTid.y % 2 * 2) == ditherIdx)
-	{
+	// if ((DTid.x % 2 + DTid.y % 2 * 2) == ditherIdx)
+	// {
 		int idx = 0;
 		//	move the current ray position to entry point
 		float blueNoise = textureLod(textures2D[BLUE_NOISE_TEX_ID], texCoord * 32, 0).x;
@@ -565,25 +565,25 @@ void main()
         imageStore(renderedCloudTexture, ivec2(DTid.xy), vec4(col, transmittance));
 		gs_activePixels[Tid.x/2][Tid.y/2] = vec4(col, transmittance);
 		gs_firstContactDist[Tid.x / 2][Tid.y / 2] = firstContact;
-	}
+	// }
 
-	barrier();
+	// barrier();
 
     imageStore(fogShadowTexture, ivec2(DTid.xy), vec4(dstFog, shadow, 0, 0));
 
-	if ((DTid.x % 2 + DTid.y % 2 * 2) != ditherIdx)
-	{
-		//	compute the coordinate in clip space in previous frame
-		vec4 prevProjected = prevViewProj * vec4(rayOrigin + max(5000, gs_firstContactDist[Tid.x / 2][Tid.y / 2]) * rayDir, 1.0f);
-		vec3 prevNDC = prevProjected.xyz / prevProjected.w;
-		if (abs(prevNDC.x) < 1.0 && abs(prevNDC.y) < 1.0)
-		{
-			vec4 lastCol = textureLod(lastCloudTexture, vec2((prevNDC.x + 1) / 2.0f, 1 - (prevNDC.y + 1) / 2.0f), 0);
-            imageStore(renderedCloudTexture, ivec2(DTid.xy), gs_activePixels[Tid.x / 2][Tid.y / 2] * 0.2 + lastCol * 0.8);
-		}
-		else
-		{
-            imageStore(renderedCloudTexture, ivec2(DTid.xy), gs_activePixels[Tid.x / 2][Tid.y / 2]);
-		}
-	}
+	// if ((DTid.x % 2 + DTid.y % 2 * 2) != ditherIdx)
+	// {
+	// 	//	compute the coordinate in clip space in previous frame
+	// 	vec4 prevProjected = prevViewProj * vec4(rayOrigin + max(zFar, gs_firstContactDist[Tid.x / 2][Tid.y / 2]) * rayDir, 1.0f);
+	// 	vec3 prevNDC = prevProjected.xyz / prevProjected.w;
+	// 	if (abs(prevNDC.x) < 1.0 && abs(prevNDC.y) < 1.0)
+	// 	{
+	// 		vec4 lastCol = textureLod(lastCloudTexture, vec2((prevNDC.x + 1) / 2.0f, (prevNDC.y + 1) / 2.0f), 0);
+    //         imageStore(renderedCloudTexture, ivec2(DTid.xy), gs_activePixels[Tid.x / 2][Tid.y / 2] * 0.2 + lastCol * 0.8);
+	// 	}
+	// 	else
+	// 	{
+    //         imageStore(renderedCloudTexture, ivec2(DTid.xy), gs_activePixels[Tid.x / 2][Tid.y / 2]);
+	// 	}
+	// }
 }
