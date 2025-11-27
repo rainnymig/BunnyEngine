@@ -216,20 +216,20 @@ vec3 computeCloudTexCoordSphere(vec3 posWorld, vec3 C, float r1, float r2)
 {
 	float textureScale = cloudNoiseDimension.y / (r2 - r1);
 	float normalizedHeight = getNormalizedHeightSphere(posWorld, C, r1, r2);
-	// return vec3(posWorld.x / cloudNoiseDimension.x * textureScale, normalizedHeight, posWorld.z / cloudNoiseDimension.z * textureScale) + elapsedTime * 0.01;
-	return vec3(posWorld.x / cloudNoiseDimension.x * textureScale, normalizedHeight, posWorld.z / cloudNoiseDimension.z * textureScale);
+	return vec3(posWorld.x / cloudNoiseDimension.x * textureScale, normalizedHeight, posWorld.z / cloudNoiseDimension.z * textureScale) + elapsedTime * 0.01;
+	// return vec3(posWorld.x / cloudNoiseDimension.x * textureScale, normalizedHeight, posWorld.z / cloudNoiseDimension.z * textureScale);
 }
 
 vec3 computeDetailTexCoordSphere(vec3 posWorld)
 {
-	return 0.1 * posWorld / detailNoiseDimension.xyz;
-	// return 0.1 * posWorld / detailNoiseDimension.xyz + elapsedTime * 0.05f;
+	// return 0.1 * posWorld / detailNoiseDimension.xyz;
+	return 0.1 * posWorld / detailNoiseDimension.xyz + elapsedTime * 0.05f;
 }
 
 vec2 computeWeatherTexCoordSphere(vec3 posWorld)
 {
-	return posWorld.xz / (cloudRegionMaxXZ - cloudRegionMinXZ);
-	// return posWorld.xz / (cloudRegionMaxXZ - cloudRegionMinXZ) + elapsedTime * 0.005f;
+	// return posWorld.xz / (cloudRegionMaxXZ - cloudRegionMinXZ);
+	return posWorld.xz / (cloudRegionMaxXZ - cloudRegionMinXZ) + elapsedTime * 0.005f;
 }
 
 float recoverLinearDepth(float nonLinearDepth)
