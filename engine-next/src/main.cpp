@@ -39,7 +39,7 @@ using namespace Bunny::Render;
 using Bunny::Base::ImguiHelper;
 using Bunny::Base::BasicTimer;
 
-using PbrMaterialLoadParams = Bunny::Render::PbrMaterialBank::PbrMaterialLoadParams;
+using PbrMaterialParameters = Bunny::Render::PbrMaterialParameters;
 
 int main(void)
 {
@@ -103,7 +103,7 @@ int main(void)
     {
         IdType matInstId;
         pbrMaterialBank.addMaterialInstance(
-            PbrMaterialLoadParams{
+            PbrMaterialParameters{
                 .mBaseColor = glm::vec4(0.8f, 0.8f, 0.5f, 1.0f),
                 .mEmissiveColor = glm::vec4(0, 0, 0, 0),
                 .mMetallic = 0.05f,
@@ -112,7 +112,7 @@ int main(void)
             },
             matInstId);
         pbrMaterialBank.addMaterialInstance(
-            PbrMaterialLoadParams{
+            PbrMaterialParameters{
                 .mBaseColor = glm::vec4(0.5f, 0.8f, 0.9f, 1.0f),
                 .mEmissiveColor = glm::vec4(0, 0, 0, 0),
                 .mMetallic = 0.05f,
@@ -121,11 +121,12 @@ int main(void)
             },
             matInstId);
     }
-    pbrMaterialBank.recreateMaterialBuffer();
 
     World bunnyWorld;
-    WorldLoader worldLoader(&renderResources, &pbrMaterialBank, &meshBank);
+    WorldLoader worldLoader(&renderResources, &pbrMaterialBank, &meshBank, &textureBank);
     worldLoader.loadPbrTestWorldWithGltfMeshes(config.mModelFilePath, bunnyWorld);
+
+    pbrMaterialBank.recreateMaterialBuffer();
 
     AccelerationStructureBuilder acceStructBuilder(&renderResources, &renderer);
     acceStructBuilder.buildBottomLevelAccelerationStructures(
@@ -225,7 +226,7 @@ int main(void)
 
         cameraSystem.update(&bunnyWorld, timer.getDeltaTime());
         //  update object transforms
-        // objRandMovSystem.update(&bunnyWorld, timer.getDeltaTime(), timer.getTime());
+        objRandMovSystem.update(&bunnyWorld, timer.getDeltaTime(), timer.getTime());
 
         //  update object data buffer
         worldTranslator.updateObjectData(&bunnyWorld);

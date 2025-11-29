@@ -5,6 +5,7 @@
 #include "Transform.h"
 #include "WorldComponents.h"
 #include "WorldLoaderHelper.h"
+#include "TextureBank.h"
 
 #include <glm/mat4x4.hpp>
 #include <glm/ext/matrix_transform.hpp>
@@ -22,10 +23,11 @@ namespace Bunny::Engine
 {
 
 WorldLoader::WorldLoader(const Render::VulkanRenderResources* vulkanResources, Render::PbrMaterialBank* pbrMaterialBank,
-    Render::MeshBank<Render::NormalVertex>* meshBank)
+    Render::MeshBank<Render::NormalVertex>* meshBank, Render::TextureBank* textureBank)
     : mVulkanResources(vulkanResources),
       mPbrMaterialBank(pbrMaterialBank),
-      mMeshBank(meshBank)
+      mMeshBank(meshBank),
+      mTextureBank(textureBank)
 {
 }
 
@@ -52,7 +54,7 @@ BunnyResult WorldLoader::loadPbrTestWorldWithGltfMeshes(std::string_view filePat
     fastgltf::Asset& gltf = parseResult.get();
 
     //  load meshes
-    loadMeshFromGltf(mMeshBank, mPbrMaterialBank, gltf);
+    loadMeshFromGltf(mMeshBank, mPbrMaterialBank, mTextureBank, gltf);
     mMeshBank->buildMeshBuffers();
 
     static constexpr float spawnAreaXMax = 10;
@@ -65,22 +67,29 @@ BunnyResult WorldLoader::loadPbrTestWorldWithGltfMeshes(std::string_view filePat
     static constexpr float intervalX = 3;
     static constexpr float startX = -static_cast<float>(objectCount - 1) / 2 * intervalX;
 
-    for (uint32_t i = 0; i < objectCount; i++)
-    {
-        float offsetX = startX + i * intervalX;
-        Base::Transform nodeTransform({offsetX, 0, 0}, {0, 0, 0}, {1, 1, 1});
+    // for (uint32_t i = 0; i < objectCount; i++)
+    // {
+    //     float offsetX = startX + i * intervalX;
+    //     Base::Transform nodeTransform({offsetX, 0, 0}, {0, 0, 0}, {1, 1, 1});
 
-        const auto nodeEntity = outWorld.mEntityRegistry.create();
-        outWorld.mEntityRegistry.emplace<TransformComponent>(nodeEntity, nodeTransform);
-        //  assign a random material instance from the pbr material bank instead of using the one from the mesh
-        outWorld.mEntityRegistry.emplace<MeshComponent>(
-            nodeEntity, mMeshBank->getRandomMeshId(), mPbrMaterialBank->giveMeAMaterialInstance());
-    }
+    //     const auto nodeEntity = outWorld.mEntityRegistry.create();
+    //     outWorld.mEntityRegistry.emplace<TransformComponent>(nodeEntity, nodeTransform);
+    //     //  assign a random material instance from the pbr material bank instead of using the one from the mesh
+    //     outWorld.mEntityRegistry.emplace<MeshComponent>(
+    //         nodeEntity, mMeshBank->getRandomMeshId(), mPbrMaterialBank->giveMeAMaterialInstance());
+    // }
+
+    const auto nodeEntity = outWorld.mEntityRegistry.create();
+    Base::Transform nodeTransform({0, 0, 0}, {0, 0, 0}, {1, 1, 1});
+    outWorld.mEntityRegistry.emplace<TransformComponent>(nodeEntity, nodeTransform);
+    //  assign a random material instance from the pbr material bank instead of using the one from the mesh
+    outWorld.mEntityRegistry.emplace<MeshComponent>(
+        nodeEntity, mMeshBank->getRandomMeshId(), mPbrMaterialBank->giveMeAMaterialInstance());
 
     //  camera
     {
         const auto cameraEntity = outWorld.mEntityRegistry.create();
-        Render::PhysicalCamera camera(glm::vec3{0, 5, 10}, glm::vec3{-glm::pi<float>() / 16, 0, 0});
+        Render::PhysicalCamera camera(glm::vec3{0, 15, 80}, glm::vec3{-glm::pi<float>() / 16, 0, 0});
         camera.setAperture(4);
         camera.setShutterTime(1.0f / 1600);
         outWorld.mEntityRegistry.emplace<PbrCameraComponent>(cameraEntity, camera);

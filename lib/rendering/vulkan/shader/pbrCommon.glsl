@@ -4,6 +4,8 @@
 
 #define PI 3.14159265359
 
+#define INVALID_ID 114514
+
 struct Light 
 {
     vec3 dirOrPos;
@@ -27,7 +29,7 @@ struct PbrMaterial
     uint colorTexId;
     uint normalTexId;
     uint emissiveTexId;
-    uint metRouRflAmbTexId;
+    uint metalRoughnessTexId;
 };
 
 struct ObjectData

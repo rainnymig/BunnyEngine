@@ -17,31 +17,9 @@ class VulkanRenderResources;
 class VulkanGraphicsRenderer;
 class TextureBank;
 
-//  for debug
-class MaterialProvider
+class PbrMaterialBank
 {
   public:
-    virtual IdType giveMeAMaterial() const = 0;
-    virtual IdType giveMeAMaterialInstance() const = 0;
-};
-
-class PbrMaterialBank : public MaterialProvider
-{
-  public:
-    struct PbrMaterialLoadParams
-    {
-        glm::vec4 mBaseColor;
-        glm::vec4 mEmissiveColor;
-        float mMetallic;
-        float mRoughness;
-        float mReflectance;
-        float mAmbientOcclusion;
-        std::string mColorTexPath;
-        std::string mNormalTexPath;
-        std::string mEmissiveTexPath;
-        std::string mMetRouRflAmbTexPath;
-    };
-
     //  Size of the array containing all textures in the shader
     //  This value is needed when creating the descriptor set
     //  For now this is fixed, try to make it growable when necessary
@@ -54,12 +32,12 @@ class PbrMaterialBank : public MaterialProvider
     BunnyResult initialize();
     void cleanup();
 
-    virtual IdType giveMeAMaterial() const override;
-    virtual IdType giveMeAMaterialInstance() const override;
+    IdType giveMeAMaterial() const;
+    IdType giveMeAMaterialInstance() const;
 
     PbrMaterialParameters getMaterialInstance(IdType id) const;
     IdType getRandomMaterialInstanceId() const;
-    BunnyResult addMaterialInstance(const PbrMaterialLoadParams& materialParams, IdType& outId);
+    BunnyResult addMaterialInstance(const PbrMaterialParameters& materialParams, IdType& outId);
     //  temp solution, include mesh bank as parameter
     //  maybe order the descriptors better to avoid this
     void updateMaterialDescriptorSet(VkDescriptorSet descriptorSet, const MeshBank<NormalVertex>* meshBank) const;

@@ -129,28 +129,57 @@ vec3 calculateLighting(PbrMaterial material, Light light, vec3 fragPos, vec3 vie
     float reflectance;
     float ambientOcclusion;
 
-    //  decide whether to use values from texture
-    //  the metallic value is set to less than 0 if want to use texture
-    if (material.metallic < 0)
+    // //  decide whether to use values from texture
+    // //  the metallic value is set to less than 0 if want to use texture
+    // if (material.metallic < 0)
+    // {
+    //     baseColor = texture(textures[material.colorTexId], texCoord);
+    //     emissiveColor = texture(textures[material.emissiveTexId], texCoord);
+    //     normal = normalize(tbnMatrix * texture(textures[material.normalTexId], texCoord).xyz);
+    //     vec4 mrra = texture(textures[material.metalRoughnessTexId], texCoord);
+    //     metallic = mrra.x;
+    //     roughness = mrra.y;
+    //     reflectance = mrra.z;
+    //     ambientOcclusion = mrra.w;
+    // }
+    // else
+    // {
+    //     baseColor = material.baseColor;
+    //     emissiveColor = material.emissiveColor;
+    //     normal = normalFromVtx;
+    //     metallic = material.metallic;
+    //     roughness = material.roughness;
+    //     reflectance = material.reflectance;
+    //     ambientOcclusion = material.ambientOcclusion;
+    // }
+
+    baseColor = material.baseColor;
+    emissiveColor = material.emissiveColor;
+    normal = normalFromVtx;
+    metallic = material.metallic;
+    roughness = material.roughness;
+    reflectance = material.reflectance;
+    ambientOcclusion = material.ambientOcclusion;
+    if (material.normalTexId != INVALID_ID)
     {
-        baseColor = texture(textures[material.colorTexId], texCoord);
-        emissiveColor = texture(textures[material.emissiveTexId], texCoord);
-        normal = normalize(tbnMatrix * texture(textures[material.normalTexId], texCoord).xyz);
-        vec4 mrra = texture(textures[material.metRouRflAmbTexId], texCoord);
-        metallic = mrra.x;
-        roughness = mrra.y;
-        reflectance = mrra.z;
-        ambientOcclusion = mrra.w;
+        vec3 normalFromTex = texture(textures[material.normalTexId], texCoord).xyz;
+        //  transform from 0~1 to -1~1 ? 
+        normalFromTex = normalFromTex * 2 - 1;
+        normal = normalize(tbnMatrix * normalFromTex);
     }
-    else
+    if (material.colorTexId != INVALID_ID)
     {
-        baseColor = material.baseColor;
-        emissiveColor = material.emissiveColor;
-        normal = normalFromVtx;
-        metallic = material.metallic;
-        roughness = material.roughness;
-        reflectance = material.reflectance;
-        ambientOcclusion = material.ambientOcclusion;
+        baseColor = baseColor * texture(textures[material.colorTexId], texCoord);
+    }
+    if (material.emissiveTexId != INVALID_ID)
+    {
+        emissiveColor = emissiveColor * texture(textures[material.emissiveTexId], texCoord);
+    }
+    if (material.metalRoughnessTexId != INVALID_ID)
+    {
+        vec4 metalRoughness = texture(textures[material.metalRoughnessTexId], texCoord);
+        metallic = metallic * metalRoughness.x;
+        roughness = roughness * metalRoughness.w;
     }
 
     vec3 lightDir = light.type == DIRECTIONAL ? -light.dirOrPos : normalize(light.dirOrPos - fragPos);

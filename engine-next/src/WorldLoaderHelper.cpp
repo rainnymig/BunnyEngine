@@ -5,6 +5,7 @@
 #include <fastgltf/util.hpp>
 
 #include <algorithm>
+#include <variant>
 
 using namespace Bunny::Render;
 
@@ -144,10 +145,13 @@ const IdType createCubeMeshToBank(MeshBank<NormalVertex>* meshBank, IdType mater
     return meshBank->addMesh(vertices, indices, newMesh);
 }
 
-void loadMeshFromGltf(MeshBank<NormalVertex>* meshBank, MaterialProvider* materialBank, fastgltf::Asset& gltfAsset)
+void loadMeshFromGltf(MeshBank<NormalVertex>* meshBank, PbrMaterialBank* materialBank, TextureBank* textureBank,
+    fastgltf::Asset& gltfAsset)
 {
     std::vector<uint32_t> indices;
     std::vector<Render::NormalVertex> vertices;
+    std::unordered_map<size_t, IdType> loadedMaterials; // if the material is loaded we don't load again
+                                                        //  this is only valid for the current gltf file
     for (fastgltf::Mesh& mesh : gltfAsset.meshes)
     {
         Render::MeshLite newMesh;
@@ -247,11 +251,55 @@ void loadMeshFromGltf(MeshBank<NormalVertex>* meshBank, MaterialProvider* materi
             }
 
             //  load material
-            //  for now all use default material
-            newSurface.mMaterialId = materialBank->giveMeAMaterial();
-            newSurface.mMaterialInstanceId =
-                newSurface.mMaterialId; //  now we only have 1 material (i.e. 1 pipeline) and the material id is
-                                        //  actually material instance id
+
+            // //  for now all use default material
+            // newSurface.mMaterialId = materialBank->giveMeAMaterial();
+            // newSurface.mMaterialInstanceId =
+            //     newSurface.mMaterialId; //  now we only have 1 material (i.e. 1 pipeline) and the material id is
+            //                             //  actually material instance id
+
+            //  the real thing - load material from gltf
+            //  load material params
+            //  if there is texture, load them to texture bank and use them
+            auto materialIdx = primitive.materialIndex;
+            if (materialIdx.has_value())
+            {
+                auto iter = loadedMaterials.find(materialIdx.value());
+                if (iter != loadedMaterials.end())
+                {
+                    //  this material is loaded
+                    newSurface.mMaterialId = iter->second;
+                    newSurface.mMaterialInstanceId = iter->second;
+                }
+                else
+                {
+                    const fastgltf::Material& gltfMaterial = gltfAsset.materials[materialIdx.value()];
+
+                    PbrMaterialParameters newPbrMaterial;
+                    const fastgltf::PBRData& pbrData = gltfMaterial.pbrData;
+                    newPbrMaterial.mBaseColor = glm::vec4{
+                        pbrData.baseColorFactor.x(),
+                        pbrData.baseColorFactor.y(),
+                        pbrData.baseColorFactor.z(),
+                        pbrData.baseColorFactor.w(),
+                    };
+                    newPbrMaterial.mMetallic = pbrData.metallicFactor;
+                    newPbrMaterial.mRoughness = pbrData.roughnessFactor;
+                    newPbrMaterial.mColorTexId =
+                        loadTextureFromGltf<fastgltf::TextureInfo>(pbrData.baseColorTexture, gltfAsset, textureBank);
+                    newPbrMaterial.mMetalRoughnessTexId = loadTextureFromGltf<fastgltf::TextureInfo>(
+                        pbrData.metallicRoughnessTexture, gltfAsset, textureBank);
+                    newPbrMaterial.mNormalTexId = loadTextureFromGltf<fastgltf::NormalTextureInfo>(
+                        gltfMaterial.normalTexture, gltfAsset, textureBank);
+
+                    IdType newMatId;
+                    materialBank->addMaterialInstance(newPbrMaterial, newMatId);
+                    loadedMaterials[materialIdx.value()] = newMatId;
+
+                    newSurface.mMaterialId = newMatId;
+                    newSurface.mMaterialInstanceId = newMatId;
+                }
+            }
 
             newMesh.mSurfaces.push_back(newSurface);
             primitiveIdx++;

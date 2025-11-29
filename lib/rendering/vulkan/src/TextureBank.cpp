@@ -65,6 +65,29 @@ BunnyResult TextureBank::addTexture(const char* filePath, VkFormat format, IdTyp
     return BUNNY_HAPPY;
 }
 
+BunnyResult TextureBank::addTextureFromMemory(unsigned char* data, int dataLength, VkFormat format, IdType& outId)
+{
+    //  can not check duplicated, omit for now
+
+    int texWidth;
+    int texHeight;
+    int texChannels;
+    const int desiredChannels = STBI_rgb_alpha;
+    stbi_uc* texData = stbi_load_from_memory(data, dataLength, &texWidth, &texHeight, &texChannels, desiredChannels);
+
+    AllocatedImage texture;
+    VkDeviceSize dataSize = texWidth * texHeight * desiredChannels;
+    BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(mVulkanResources->createImageWithData(static_cast<void*>(texData), dataSize,
+        VkExtent3D{static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1}, format,
+        VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, texture))
+
+    outId = mTextures.size();
+    mTextures.push_back(texture);
+
+    stbi_image_free(texData); //  is this still needed when load from memory?
+    return BUNNY_HAPPY;
+}
+
 BunnyResult TextureBank::addTexture3d(
     const char* filePath, VkFormat format, uint32_t width, uint32_t height, uint32_t depth, IdType& outId)
 {

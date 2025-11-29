@@ -82,9 +82,12 @@ void Engine::ObjectRandomMovementSystem::update(World* world, float deltaTime, f
     auto meshComps = world->mEntityRegistry.view<TransformComponent>();
     for (auto [entity, transform] : meshComps.each())
     {
-        float phaseOffset = transform.mTransform.mMatrix[3][0] * phaseInteval;
-        transform.mTransform.mMatrix = glm::translate(
-            transform.mTransform.mMatrix, maxTranslateVelocity * glm::sin(time + phaseOffset) * deltaTime);
+        // float phaseOffset = transform.mTransform.mMatrix[3][0] * phaseInteval;
+        // transform.mTransform.mMatrix = glm::translate(
+        //     transform.mTransform.mMatrix, maxTranslateVelocity * glm::sin(time + phaseOffset) * deltaTime);
+        glm::mat4 rotMat =
+            glm::rotate(glm::mat4(1.0f), glm::pi<float>() / 16.0f * deltaTime, glm::vec3(0.0f, 1.0f, 0.0f));
+        transform.mTransform.mMatrix = transform.mTransform.mMatrix * rotMat;
     }
 }
 

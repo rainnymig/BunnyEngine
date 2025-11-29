@@ -24,6 +24,7 @@ class TextureBank
 
     BunnyResult initialize();
     BunnyResult addTexture(const char* filePath, VkFormat format, IdType& outId);
+    BunnyResult addTextureFromMemory(unsigned char* data, int dataLength, VkFormat, IdType& outId);
     BunnyResult addTexture3d(
         const char* filePath, VkFormat format, uint32_t width, uint32_t height, uint32_t depth, IdType& outId);
     BunnyResult addDescriptorSetWrite(uint32_t binding, DescriptorWriter& outWriter) const;
