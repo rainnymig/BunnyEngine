@@ -18,10 +18,12 @@ add_compile_definitions(VK_NO_PROTOTYPES)
 set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_WIN32_KHR)
 add_subdirectory("./third-party/volk")
 # GLFW
-add_subdirectory("./third-party/glfw")
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "GLFW lib only")
 set(GLFW_INSTALL OFF CACHE BOOL "GLFW lib only")
+add_subdirectory("./third-party/glfw")
 # GLM
+set(GLM_ENABLE_CXX_20 ON CACHE BOOL "Enable C++ 20")
+add_compile_definitions(GLM_ENABLE_EXPERIMENTAL)
 add_subdirectory("./third-party/glm")
 # Stb Image
 add_subdirectory("./third-party/stb_image")

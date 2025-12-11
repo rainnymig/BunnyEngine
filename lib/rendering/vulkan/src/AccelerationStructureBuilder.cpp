@@ -43,8 +43,7 @@ void AccelerationStructureBuilder::buildBottomLevelAccelerationStructures(
     std::vector<AcceStructBuildData> acceStructBuildData;
     acceStructBuildData.reserve(blasCount);
     std::transform(blasData.begin(), blasData.end(), std::back_inserter(acceStructBuildData),
-        [this, &blasData, flags](
-            const AcceStructGeometryData& blasData) { return makeBottomLevelAcceStructBuildData(blasData, flags); });
+        [this, flags](const AcceStructGeometryData& data) { return makeBottomLevelAcceStructBuildData(data, flags); });
 
     uint32_t minScratchBufAlignment = mAcceStructProperties.minAccelerationStructureScratchOffsetAlignment;
 
