@@ -1,0 +1,42 @@
+#version 460
+
+#include "complex.glsl"
+
+layout (local_size_x = 256) in;
+
+//  image
+//  ---------> x
+//  |
+//  |
+//  |
+//  V
+//  y
+
+//  image should be N x N, N must be multiples of 2 
+layout(set = 0, binding = 0, rg32f) uniform readonly image2D inImage;
+layout(set = 0, binding = 1, rg32f) uniform image2D outImage;
+
+layout(push_constant) uniform FftParams
+{
+    uint N;             //  size of the seque
+    uint isInverse;     //  0: forward fft, 1: inversed fft
+    uint direction;     //  0: fft in x, 1: fft in y
+};
+
+//  return the bit reverse of x of b bits
+uint bitReverse(uint x, uint b)
+{
+    return x;
+}
+
+void main()
+{
+	uvec2 pos = gl_GlobalInvocationID.xy;
+
+    //  we do in-place DIT FFT/IFFT (input is reordered)
+    uint n = direction == 0 ? pos.x : pos.y;             //  the index in the data to do fft/ifft
+    uint dataLine = direction == 0 ? pos.y : pos.x;      //  the index of the line - if direction is x, this is the idx of row; otherwise it's column
+
+    //  reorder input first and save to output
+    
+}

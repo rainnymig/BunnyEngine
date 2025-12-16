@@ -25,3 +25,5 @@ glslc.exe --target-env=vulkan1.3 ./lib/rendering/vulkan/shader/sky.comp         
 glslc.exe --target-env=vulkan1.3 ./lib/rendering/vulkan/shader/texturePreview.frag      -o ./build/engine-next/Debug/texture_preview_frag.spv
 
 glslc.exe --target-env=vulkan1.3 ./lib/rendering/vulkan/shader/finalOutput.frag         -o ./build/engine-next/Debug/final_output_frag.spv
+
+glslc.exe --target-env=vulkan1.3 ./lib/rendering/vulkan/shader/fft.comp                 -o ./build/engine-next/Debug/fft.spv
