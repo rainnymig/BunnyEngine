@@ -4,9 +4,19 @@ struct Complex
     float imaginary;
 };
 
+Complex conjugate(Complex c)
+{
+    return Complex(c.real, -c.imaginary);
+}
+
 Complex add(Complex c1, Complex c2)
 {
     return Complex(c1.real + c2.real, c1.imaginary + c2.imaginary);
+}
+
+Complex subtract(Complex c1, Complex c2)
+{
+    return Complex(c1.real - c2.real, c1.imaginary - c2.imaginary);
 }
 
 Complex multiply(Complex c1, Complex c2)

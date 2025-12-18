@@ -49,8 +49,21 @@ Complex calcFFTWm(uint m, uint x)
 
 Complex calcIFFTWm(uint m, uint x)
 {
-    return expi( 2*PI*float(x)/float(m));
+    return expi(2*PI*float(x)/float(m));
 };
+
+Complex imageLoadToComplex(ivec2 coord)
+{
+    //  hard coded to use outImage here because can't use Image2D as function parameter
+    vec2 item = imageLoad(outImage, coord).xy;
+    return Complex(item.x, item.y);
+}
+
+void imageStoreFromComplex(ivec2 coord, Complex c)
+{
+    vec4 item = vec4(c.real, c.imaginary, 0, 0);
+    imageStore(outImage, coord, item);
+}
 
 void main()
 {
@@ -82,5 +95,29 @@ void main()
         uint j = n % m % (m/2);
         uint k = n / m;
         Complex Wm = isFFT ? calcFFTWm(m, j) : calcIFFTWm(m, j);
+        
+        //  use a simpler but inefficient algo here
+        //  only half of the compute thread will do the following butterfly operation
+        //  so that we don't need to save the intermediate u and t at a shared memory and do synchronization
+        if (n == k+j)
+        {
+            ivec2 slot1 = fftOnRow ? ivec2(k+j+m/2, dataLine) : ivec2(dataLine, k+j+m/2);
+            ivec2 slot2 = fftOnRow ? ivec2(k+j, dataLine) : ivec2(dataLine, k+j);
+            Complex t = multiply(Wm, imageLoadToComplex(slot1));
+            Complex u = imageLoadToComplex(slot2);
+            imageStoreFromComplex(slot2, add(u, t));
+            imageStoreFromComplex(slot1, subtract(u, t));
+        }
+    }
+
+    //  maybe not needed
+    barrier();
+
+    if (!isFFT)
+    {
+        //  here we just want to multiply the final result with 1/N in case of IFFT
+        //  so we can just use pos as the coordinate, no need to check direction
+        vec4 val = imageLoad(outImage, ivec2(pos));
+        imageStore(outImage, ivec2(pos), val/float(N));
     }
 }

@@ -1,0 +1,56 @@
+#version 460
+
+#include "complex.glsl"
+
+#define PI 3.14159265359
+#define GRAVITY 9.8
+
+layout (local_size_x = 16, local_Size_y = 16) in;
+
+layout(set = 0, binding = 0, rg32f) uniform image2D outImage;
+
+Complex imageLoadToComplex(ivec2 coord)
+{
+    //  hard coded to use outImage here because can't use Image2D as function parameter
+    vec2 item = imageLoad(outImage, coord).xy;
+    return Complex(item.x, item.y);
+}
+
+void imageStoreFromComplex(ivec2 coord, Complex c)
+{
+    vec4 item = vec4(c.real, c.imaginary, 0, 0);
+    imageStore(outImage, coord, item);
+}
+
+layout(set = 0, binding = 1) uniform WaveSpectrumData
+{
+float width;                //  the horizontal dimension of the whole wave grid area, in meters
+    float ksiR;         //  a random value from a standard normal distribution (mean 0, standard deviation 1)
+    float ksiI;         //  another random value from a standard normal distribution (mean 0, standard deviation 1)
+    int N;                  //  size of the spectrum (in one dimension)
+    vec2 wind;              //  wind vector
+    float A;                //  Phillips spectrum magnitude coefficient
+};
+
+void main()
+{
+	uvec2 pos = gl_GlobalInvocationID.xy;
+    float kx = 2*PI*pos.x/width;
+    float kz = 2*PI*pos.y/width;
+
+    vec2 kvec = vec2(kx, kz);
+    float k = length(kvec);
+    float windSpeed = length(wind);
+    float kdotw = dot(kvec/k, wind/windSpeed);
+    float windFactor = kdotw * kdotw;   //  the higher the exponent is, the stronger the wind effect
+
+    float L = windSpeed * windSpeed / GRAVITY;
+    float l = L / 1000;     //  small wave threshold
+
+    float k2 = k * k;
+    
+    //  Phillips spectrum
+    float Ph = A * exp(-1 / (k2 * L * L) - (k2 * l * l)) / (k2 * k2) * windFactor;
+    float hc = 1/sqrt(2);
+    Complex h0 = multiply(Complex(ksiR, ksiI), hc * sqrt(Ph));
+}
