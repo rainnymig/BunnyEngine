@@ -2,6 +2,8 @@
 
 #include "complex.glsl"
 
+#define PI 3.14159265359
+
 layout (local_size_x = 256) in;
 
 //  image
@@ -18,25 +20,67 @@ layout(set = 0, binding = 1, rg32f) uniform image2D outImage;
 
 layout(push_constant) uniform FftParams
 {
-    uint N;             //  size of the seque
+    uint N;             //  size of the sequence
     uint isInverse;     //  0: forward fft, 1: inversed fft
-    uint direction;     //  0: fft in x, 1: fft in y
+    uint direction;     //  0: fft on row, 1: fft on column
 };
 
-//  return the bit reverse of x of b bits
-uint bitReverse(uint x, uint b)
+//  return the bit reverse of x related to M2, which is a multiple of 2
+uint bitReverse(uint x, uint M2)
 {
-    return x;
+    uint r = 0;
+    uint shiftRight = uint(log2(M2)) - 1;
+    M2 >>= 1;
+    uint shiftLeft = 0;
+    while (M2 > 0)
+    {
+        r |= ((x & M2) >> shiftRight << shiftLeft);
+        shiftRight--;
+        shiftLeft++;
+        M2 >>= 1;
+    }
+    return r;
 }
+
+Complex calcFFTWm(uint m, uint x)
+{
+    return expi(-2*PI*float(x)/float(m));
+};
+
+Complex calcIFFTWm(uint m, uint x)
+{
+    return expi( 2*PI*float(x)/float(m));
+};
 
 void main()
 {
 	uvec2 pos = gl_GlobalInvocationID.xy;
+    bool fftOnRow = direction == 0;
+    bool isFFT = isInverse == 0;
 
     //  we do in-place DIT FFT/IFFT (input is reordered)
-    uint n = direction == 0 ? pos.x : pos.y;             //  the index in the data to do fft/ifft
-    uint dataLine = direction == 0 ? pos.y : pos.x;      //  the index of the line - if direction is x, this is the idx of row; otherwise it's column
+    uint n = fftOnRow ? pos.x : pos.y;             //  the index in the data to do fft/ifft
+    uint dataLine = fftOnRow ? pos.y : pos.x;      //  the index of the line - if direction is x, this is the idx of row; otherwise it's column
 
     //  reorder input first and save to output
-    
+    uint nReversed = bitReverse(n, N);
+    if (fftOnRow)
+    {
+        imageStore(outImage, ivec2(nReversed, dataLine), imageLoad(inImage, ivec2(n, dataLine)));
+    }
+    else
+    {
+        imageStore(outImage, ivec2(dataLine, nReversed), imageLoad(inImage, ivec2(dataLine, n)));
+    }
+
+    barrier();
+
+    uint iteration = uint(log2(N));
+    for (uint s = 1; s <= iteration; s++)
+    {
+        uint m = uint(exp2(s));
+        uint j = n % m % (m/2);
+        uint k = n / m;
+        Complex Wm = isFFT ? calcFFTWm(m, j) : calcIFFTWm(m, j);
+    }
 }
