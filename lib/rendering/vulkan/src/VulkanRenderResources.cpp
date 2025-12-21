@@ -103,9 +103,10 @@ BunnyResult VulkanRenderResources::initialize(Base::Window* window)
     featureRtPipeline.rayTracingPipeline = true;
     featureRtPipeline.rayTracingPipelineTraceRaysIndirect = true;
 
-    // VkPhysicalDeviceBufferDeviceAddressFeatures featureDeviceAddress{
-    //     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_ADDRESS_FEATURES_EXT};
-    // featureDeviceAddress.bufferDeviceAddress = true;
+    VkPhysicalDeviceMeshShaderFeaturesEXT featureMeshShader = {
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT};
+    featureMeshShader.taskShader = VK_TRUE;
+    featureMeshShader.meshShader = VK_TRUE;
 
     vkb::PhysicalDeviceSelector selector{vkbInstance};
     auto deviceSelectResult =
@@ -115,8 +116,8 @@ BunnyResult VulkanRenderResources::initialize(Base::Window* window)
             .add_required_extension(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME)
             .add_required_extension_features(featureRtPipeline)
             .add_required_extension(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME) //  required by ray tracing pipeline
-            // .add_required_extension(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME)
-            // .add_required_extension_features(featureDeviceAddress)
+            .add_required_extension(VK_EXT_MESH_SHADER_EXTENSION_NAME)
+            .add_required_extension_features(featureMeshShader)
             .set_required_features_13(features13)
             .set_required_features_12(features12)
             .set_required_features(featureBasic)
