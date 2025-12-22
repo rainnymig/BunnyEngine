@@ -24,5 +24,7 @@ class OceanPass : PbrGraphicsPass
 
   private:
     using super = PbrGraphicsPass;
+
+    BunnyResult initDescriptorLayouts();
 };
 } // namespace Bunny::Render

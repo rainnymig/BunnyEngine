@@ -1,0 +1,61 @@
+#version 460
+
+#extension GL_EXT_mesh_shader : require
+
+#define THREAD_SIZE_X 8
+#define THREAD_SIZE_Y 8
+#define OCTAVE_COUNT 4
+//  8 x 8
+#define VERTEX_COUNT 64
+//  (8-1) x (8-1) x 2
+#define PRIMITIVE_COUNT 98
+
+layout(local_size_x = 8, local_size_y = 8)
+layout(triangles, max_vertices = VERTEX_COUNT, max_primitives = PRIMITIVE_COUNT) out;
+
+struct SineWaveOctave
+{
+    vec2 k;     //  wave number
+    //  float w;    //  omega, angular frequence, can be calculated from dispersion relation
+    float A;    //  magnitude
+    float phi;  //  initial phase
+
+    //  wave function: f(x) = Asin(kx+wt+phi)
+};
+
+layout(set = 0, binding = 0) uniform WaveFieldParams
+{
+    SineWaveOctave octaves[OCTAVE_COUNT];
+    vec3 gridOrigin;    //  the position of the (0, 0) point in the grid
+    float gridWidth;
+};
+
+layout(set = 0, binding = 1) uniform WorldParams
+{
+    mat4 mvpMatrix;
+    mat4 invTransModel;
+    float elapsedTime;
+    float deltaTime;
+};
+
+uint uvec2ToIdx(uvec2 v, uint rowSize)
+{
+    return v.y * rowSize + v.x;
+}
+
+void main()
+{
+    SetMeshOutputsEXT(VERTEX_COUNT, PRIMITIVE_COUNT);
+
+    uvec2 globalId = gl_GlobalInvocationID.xy;
+    uvec2 localId = gl_LocalInvocationID.xy;
+
+    vec3 gridPointPos = gridOrigin + vec3(globalId * gridWidth);
+    uint vertId = uvec2ToIdx(localId, THREAD_SIZE_X);
+    gl_MeshVerticesEXT[vertId].gl_Position = mvpMatrix * vec4(gridPointPos, 1);
+
+    if (localId.x < THREAD_SIZE_X - 1 && localId.y < THREAD_SIZE_Y - 1)
+    {
+        
+    }
+}

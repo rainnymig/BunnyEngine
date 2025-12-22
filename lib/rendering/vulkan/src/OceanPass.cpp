@@ -21,4 +21,9 @@ BunnyResult OceanPass::initDataAndResources()
     return BUNNY_HAPPY;
 }
 
+BunnyResult OceanPass::initDescriptorLayouts()
+{
+    return BUNNY_HAPPY;
+}
+
 } // namespace Bunny::Render
