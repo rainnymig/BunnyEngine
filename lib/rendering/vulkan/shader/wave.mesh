@@ -2,6 +2,7 @@
 
 #extension GL_EXT_mesh_shader : require
 
+#define GRAVITY 9.8
 #define THREAD_SIZE_X 8
 #define THREAD_SIZE_Y 8
 #define OCTAVE_COUNT 4
@@ -10,7 +11,7 @@
 //  (8-1) x (8-1) x 2
 #define PRIMITIVE_COUNT 98
 
-layout(local_size_x = 8, local_size_y = 8)
+layout(local_size_x = 8, local_size_y = 8) in;
 layout(triangles, max_vertices = VERTEX_COUNT, max_primitives = PRIMITIVE_COUNT) out;
 
 struct SineWaveOctave
@@ -26,21 +27,67 @@ struct SineWaveOctave
 layout(set = 0, binding = 0) uniform WaveFieldParams
 {
     SineWaveOctave octaves[OCTAVE_COUNT];
-    vec3 gridOrigin;    //  the position of the (0, 0) point in the grid
+    vec2 gridOrigin;    //  the position of the (0, 0) point in the grid
     float gridWidth;
 };
 
 layout(set = 0, binding = 1) uniform WorldParams
 {
     mat4 mvpMatrix;
-    mat4 invTransModel;
+    //  mat4 invTransModel;     //  for now always unit matrix
     float elapsedTime;
     float deltaTime;
 };
 
+layout(location = 0) out vec3 vertexNormal[];
+layout(location = 1) out vec3 vertexPosition[];
+
 uint uvec2ToIdx(uvec2 v, uint rowSize)
 {
     return v.y * rowSize + v.x;
+}
+
+float dispersion(float k)
+{
+    return sqrt(GRAVITY * k);
+}
+
+float getWaveHeight(vec2 x)
+{
+    float height = 0;
+    for (int idx = 0; idx < OCTAVE_COUNT; idx++)
+    {
+        SineWaveOctave octave = octaves[idx];
+        float w = dispersion(length(octave.k));
+        height += octave.A * sin(dot(octave.k, x) + w * elapsedTime + octave.phi);
+    }
+    return height;
+}
+
+vec3 getWaveNormal(vec2 x)
+{
+    vec3 normal = vec3(0, 0, 0);
+    for (int idx = 0; idx < OCTAVE_COUNT; idx++)
+    {
+        SineWaveOctave octave = octaves[idx];
+        float w = dispersion(length(octave.k));
+        vec2 partials = octave.A * octave.k * cos(octave.k * x + w * elapsedTime + octave.phi);
+        normal += vec3(-partials.x, 1, -partials.y);
+    }
+    return normalize(normal);
+}
+
+//  calculate the vertex position and normal given the grid coordinate
+void calcVertex(uvec2 gridCoord, uint vertId)
+{
+    vec2 vertWorldPosXZ = gridOrigin + gridCoord * gridWidth;
+    float vertexHeight = getWaveHeight(vertWorldPosXZ);
+    vec3 vertWorldNormal = getWaveNormal(vertWorldPosXZ);
+    vec3 vertWorldPos = vec3(vertWorldPosXZ.x, vertexHeight, vertWorldPosXZ.y);
+
+    gl_MeshVerticesEXT[vertId].gl_Position = mvpMatrix * vec4(vertWorldPos, 1);
+    vertexNormal[vertId] = vertWorldNormal;
+    vertexPosition[vertId] = vertWorldPos;
 }
 
 void main()
@@ -50,12 +97,22 @@ void main()
     uvec2 globalId = gl_GlobalInvocationID.xy;
     uvec2 localId = gl_LocalInvocationID.xy;
 
-    vec3 gridPointPos = gridOrigin + vec3(globalId * gridWidth);
     uint vertId = uvec2ToIdx(localId, THREAD_SIZE_X);
-    gl_MeshVerticesEXT[vertId].gl_Position = mvpMatrix * vec4(gridPointPos, 1);
+    calcVertex(globalId, vertId);
 
     if (localId.x < THREAD_SIZE_X - 1 && localId.y < THREAD_SIZE_Y - 1)
     {
-        
+        uvec3 tri;
+        uint primId = 2*vertId;
+        tri.x = uvec2ToIdx(localId, THREAD_SIZE_X);
+        tri.y = uvec2ToIdx(localId+uvec2(0, 1), THREAD_SIZE_X);
+        tri.z = uvec2ToIdx(localId+uvec2(1, 1), THREAD_SIZE_X);
+        gl_PrimitiveTriangleIndicesEXT[primId] = tri;
+
+        primId += 1;
+        tri.x = uvec2ToIdx(localId+uvec2(1, 1), THREAD_SIZE_X);
+        tri.y = uvec2ToIdx(localId+uvec2(1, 0), THREAD_SIZE_X);
+        tri.z = uvec2ToIdx(localId, THREAD_SIZE_X);
+        gl_PrimitiveTriangleIndicesEXT[primId] = tri;
     }
 }
