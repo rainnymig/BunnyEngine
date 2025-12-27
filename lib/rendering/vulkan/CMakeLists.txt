@@ -18,7 +18,6 @@ target_sources(VulkanRenderer
         headers/Material.h
         headers/MaterialBank.h
         headers/MeshBank.h
-        headers/MeshPipelineBuilder.h
         headers/OceanPass.h
         headers/PbrForwardPass.h
         headers/PbrGraphicsPass.h
@@ -45,7 +44,6 @@ target_sources(VulkanRenderer
         src/Material.cpp
         src/MaterialBank.cpp
         src/MeshBank.cpp
-        src/MeshPipelineBuilder.cpp
         src/OceanPass.cpp
         src/PbrForwardPass.cpp
         src/PbrGraphicsPass.cpp

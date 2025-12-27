@@ -9,8 +9,10 @@ GraphicsPipelineBuilder::GraphicsPipelineBuilder()
     clear();
 }
 
-VkPipeline GraphicsPipelineBuilder::build(VkDevice device)
+VkPipeline GraphicsPipelineBuilder::build(VkDevice device, PipelineType pipelineType)
 {
+    bool isVertexPipeline = pipelineType == PipelineType::Vertex;
+
     //  make viewport state from our stored viewport and scissor.
     //  at the moment we wont support multiple viewports or scissors
     VkPipelineViewportStateCreateInfo viewportState = {};
@@ -42,8 +44,8 @@ VkPipeline GraphicsPipelineBuilder::build(VkDevice device)
 
     pipelineInfo.stageCount = (uint32_t)mShaderStages.size();
     pipelineInfo.pStages = mShaderStages.data();
-    pipelineInfo.pVertexInputState = &mVertexInputInfo;
-    pipelineInfo.pInputAssemblyState = &mInputAssembly;
+    pipelineInfo.pVertexInputState = isVertexPipeline ? &mVertexInputInfo : nullptr;
+    pipelineInfo.pInputAssemblyState = isVertexPipeline ? &mInputAssembly : nullptr;
     pipelineInfo.pViewportState = &viewportState;
     pipelineInfo.pRasterizationState = &mRasterizer;
     pipelineInfo.pMultisampleState = &mMultisampling;
@@ -86,11 +88,9 @@ void GraphicsPipelineBuilder::clear()
     mShaderStages.clear();
 }
 
-void GraphicsPipelineBuilder::setShaders(VkShaderModule vertexShader, VkShaderModule fragmentShader)
+void GraphicsPipelineBuilder::addShaderStage(VkShaderModule shader, VkShaderStageFlagBits stage)
 {
-    mShaderStages.clear();
-    mShaderStages.push_back(makeShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, vertexShader));
-    mShaderStages.push_back(makeShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, fragmentShader));
+    mShaderStages.push_back(makeShaderStageCreateInfo(stage, shader));
 }
 
 void GraphicsPipelineBuilder::setInputTopology(VkPrimitiveTopology topology)

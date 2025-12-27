@@ -4,7 +4,7 @@
 #include "ErrorCheck.h"
 #include "Error.h"
 #include "Shader.h"
-#include "MeshPipelineBuilder.h"
+#include "GraphicsPipelineBuilder.h"
 #include "VulkanRenderResources.h"
 #include "VulkanGraphicsRenderer.h"
 #include "Helper.h"
@@ -97,9 +97,17 @@ BunnyResult OceanPass::initPipeline()
     mDeletionStack.AddFunction(
         [this]() { vkDestroyPipelineLayout(mVulkanResources->getDevice(), mPipelineLayout, nullptr); });
 
-    MeshPipelineBuilder pipelineBuilder;
-    pipelineBuilder.setMeshShader(meshShader.getShaderModule());
-    pipelineBuilder.setFragmentShader(fragShader.getShaderModule());
+    GraphicsPipelineBuilder pipelineBuilder;
+    pipelineBuilder.addShaderStage(meshShader.getShaderModule(), VK_SHADER_STAGE_MESH_BIT_EXT);
+    pipelineBuilder.addShaderStage(fragShader.getShaderModule(), VK_SHADER_STAGE_FRAGMENT_BIT);
+    pipelineBuilder.setPolygonMode(VK_POLYGON_MODE_FILL);
+    pipelineBuilder.setCulling(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
+    pipelineBuilder.setMultisamplingNone();
+    pipelineBuilder.disableBlending(); //  opaque pipeline
+    pipelineBuilder.enableDepthTest(VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL);
+    std::vector<VkFormat> colorFormats{mRenderer->getSwapChainImageFormat()};
+    pipelineBuilder.setColorAttachmentFormats(colorFormats);
+    pipelineBuilder.setDepthFormat(mRenderer->getDepthImageFormat());
     pipelineBuilder.setPipelineLayout(mPipelineLayout);
     mPipeline = pipelineBuilder.build(device);
     if (mPipeline == nullptr)

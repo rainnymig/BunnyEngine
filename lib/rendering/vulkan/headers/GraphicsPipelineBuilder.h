@@ -12,11 +12,17 @@ namespace Bunny::Render
 class GraphicsPipelineBuilder
 {
   public:
+    enum class PipelineType
+    {
+        Vertex,
+        Mesh
+    };
+
     GraphicsPipelineBuilder();
-    VkPipeline build(VkDevice device);
+    VkPipeline build(VkDevice device, PipelineType pipelineType = PipelineType::Vertex);
     void clear();
 
-    void setShaders(VkShaderModule vertexShader, VkShaderModule fragmentShader);
+    void addShaderStage(VkShaderModule shader, VkShaderStageFlagBits stage);
     void setInputTopology(VkPrimitiveTopology topology);
     void setVertexInput(const VkVertexInputAttributeDescription* pAttributeDesc, uint32_t attributeDescCount,
         const VkVertexInputBindingDescription* pBindingDesc, uint32_t bindingDescCount);

@@ -272,7 +272,8 @@ BunnyResult GBufferPass::initPipeline()
 
     //  build pipeline
     GraphicsPipelineBuilder builder;
-    builder.setShaders(vertexShader.getShaderModule(), fragmentShader.getShaderModule());
+    builder.addShaderStage(vertexShader.getShaderModule(), VK_SHADER_STAGE_VERTEX_BIT);
+    builder.addShaderStage(fragmentShader.getShaderModule(), VK_SHADER_STAGE_FRAGMENT_BIT);
     builder.setVertexInput(attributeDescriptions.data(), attributeDescriptions.size(), &bindingDescription, 1);
     builder.setInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
     builder.setPolygonMode(VK_POLYGON_MODE_FILL);
