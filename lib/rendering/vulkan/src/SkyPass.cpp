@@ -174,6 +174,8 @@ BunnyResult SkyPass::initPipeline()
     pipelineBuilder.setPipelineLayout(mPipelineLayout);
     mPipeline = pipelineBuilder.build(device);
 
+    mDeletionStack.AddFunction([this]() { vkDestroyPipeline(mVulkanResources->getDevice(), mPipeline, nullptr); });
+
     return BUNNY_HAPPY;
 }
 

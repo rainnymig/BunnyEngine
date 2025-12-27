@@ -263,7 +263,6 @@ int main(void)
 
         finalOutputPass.updateInputTextures(&skyPass.getCurrentCloudTexture(), &skyPass.getCurrentFogShadowTexture(),
             &pbrForwardPass.getCurrentRenderTarget());
-        // finalOutputPass.updateInputTextures(nullptr, nullptr, &pbrForwardPass.getCurrentRenderTarget());
         finalOutputPass.draw();
 
         depthReducePass.dispatch();
