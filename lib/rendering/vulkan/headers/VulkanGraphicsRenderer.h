@@ -25,7 +25,8 @@ class VulkanGraphicsRenderer
     void beginRenderFrame();
     void finishRenderFrame();
     void beginRender(bool updateDepth) const;
-    void beginRender(const std::vector<VkImageView>& colorAttachmentViews, bool updateDepth) const;
+    void beginRender(
+        const std::vector<VkImageView>& colorAttachmentViews, bool updateDepth, bool clearColor = true) const;
     void finishRender() const;
     void beginImguiFrame();
     void finishImguiFrame();

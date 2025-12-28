@@ -17,13 +17,12 @@ OceanPass::OceanPass(const VulkanRenderResources* vulkanResources, const VulkanG
     std::string_view meshShaderPath, std::string_view fragShaderPath)
     : super(vulkanResources, renderer, nullptr, nullptr),
       mMeshShaderPath(meshShaderPath),
-      mFragShaderPath(mFragShaderPath)
+      mFragShaderPath(fragShaderPath)
 {
 }
 
 void OceanPass::draw() const
 {
-    static constexpr bool updateDepth = true;
 
     VkCommandBuffer cmd = mRenderer->getCurrentCommandBuffer();
     const FrameData& frame = mFrameData[mRenderer->getCurrentFrameIdx()];
@@ -38,7 +37,9 @@ void OceanPass::draw() const
     //  render
     std::vector<VkImageView> colorAttachmentViews;
     colorAttachmentViews.push_back(frame.mRenderTarget->mImageView);
-    mRenderer->beginRender(colorAttachmentViews, updateDepth);
+    static constexpr bool updateDepth = true;
+    static constexpr bool clearColor = false;
+    mRenderer->beginRender(colorAttachmentViews, updateDepth, clearColor);
 
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipeline);
 
@@ -115,6 +116,8 @@ BunnyResult OceanPass::initPipeline()
         return BUNNY_SAD;
     }
 
+    mDeletionStack.AddFunction([this]() { vkDestroyPipeline(mVulkanResources->getDevice(), mPipeline, nullptr); });
+
     return BUNNY_HAPPY;
 }
 
@@ -144,22 +147,22 @@ BunnyResult OceanPass::initDataAndResources()
 {
     //  create wave field and world param data
     mWaveParams.mOctaves[0] = SineWaveOctave{
-        .mK{1.0f, 0.0f},
+        .mK{0.5, 0},
         .mA{1},
         .mPhi{0}
     };
     mWaveParams.mOctaves[1] = SineWaveOctave{
-        .mK{2.0f, 0.0f},
+        .mK{0.8f, 0},
         .mA{0.7},
         .mPhi{glm::pi<float>() / 4}
     };
     mWaveParams.mOctaves[2] = SineWaveOctave{
-        .mK{4.0f, 0.0f},
+        .mK{1, 0},
         .mA{0.35},
         .mPhi{glm::pi<float>() / 8}
     };
     mWaveParams.mOctaves[3] = SineWaveOctave{
-        .mK{6.0f, 0.0f},
+        .mK{1.5, 0},
         .mA{0.2},
         .mPhi{glm::pi<float>() / 2}
     };

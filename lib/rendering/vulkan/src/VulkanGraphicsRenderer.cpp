@@ -170,7 +170,8 @@ void VulkanGraphicsRenderer::beginRender(bool updateDepth) const
     vkCmdBeginRendering(getCurrentCommandBuffer(), &renderInfo);
 }
 
-void VulkanGraphicsRenderer::beginRender(const std::vector<VkImageView>& colorAttachmentViews, bool updateDepth) const
+void VulkanGraphicsRenderer::beginRender(
+    const std::vector<VkImageView>& colorAttachmentViews, bool updateDepth, bool clearColor) const
 {
     if (colorAttachmentViews.empty())
     {
@@ -178,7 +179,6 @@ void VulkanGraphicsRenderer::beginRender(const std::vector<VkImageView>& colorAt
         return;
     }
 
-    //  for now always clear render target color
     VkClearValue colorClearValue = {
         .color = {0.0f, 0.0f, 0.0f, 1.0f}
     };
@@ -186,7 +186,9 @@ void VulkanGraphicsRenderer::beginRender(const std::vector<VkImageView>& colorAt
     std::vector<VkRenderingAttachmentInfo> colorAttachments;
     colorAttachments.reserve(colorAttachmentViews.size());
     std::transform(colorAttachmentViews.begin(), colorAttachmentViews.end(), std::back_inserter(colorAttachments),
-        [&colorClearValue](VkImageView imageView) { return makeColorAttachmentInfo(imageView, &colorClearValue); });
+        [&colorClearValue, clearColor](VkImageView imageView) {
+            return makeColorAttachmentInfo(imageView, clearColor ? &colorClearValue : nullptr);
+        });
     VkRenderingAttachmentInfo depthAttachment = makeDepthAttachmentInfo(mDepthImage.mImageView, nullptr);
     VkRenderingInfo renderInfo = makeRenderingInfo(
         mSwapChainExtent, colorAttachments.size(), colorAttachments.data(), updateDepth ? &depthAttachment : nullptr);

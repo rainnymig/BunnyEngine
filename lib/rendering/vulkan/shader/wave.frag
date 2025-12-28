@@ -7,13 +7,13 @@ layout(location = 1) in vec3 fragPos;
 
 layout (location = 0) out vec4 outColor;
 
-layout(set = 0, binding = 0) uniform LightData
+layout(set = 1, binding = 0) uniform LightData
 {
     Light lights[MAX_LIGHT_COUNT];
     uint lightCount;
 };
 
-layout(set = 0, binding = 1) uniform CameraData
+layout(set = 1, binding = 1) uniform CameraData
 {
     mat4 viewProj;
     mat4 inverseView;

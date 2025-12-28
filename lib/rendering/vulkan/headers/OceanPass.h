@@ -19,7 +19,7 @@ class VulkanGraphicsRenderer;
 class TextureBank;
 class Camera;
 
-class OceanPass : PbrGraphicsPass
+class OceanPass : public PbrGraphicsPass
 {
   public:
     struct SineWaveOctave

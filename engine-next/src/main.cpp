@@ -27,6 +27,7 @@
 #include "SkyPass.h"
 #include "FinalOutputPass.h"
 #include "ImguiHelper.h"
+#include "OceanPass.h"
 
 #include <imgui.h>
 #include <fmt/core.h>
@@ -140,6 +141,7 @@ int main(void)
     FinalOutputPass finalOutputPass(&renderResources, &renderer, &textureBank);
     DepthReducePass depthReducePass(&renderResources, &renderer);
     TexturePreviewPass texturePreviewPass(&renderResources, &renderer, &pbrMaterialBank, &meshBank, &textureBank);
+    OceanPass oceanPass(&renderResources, &renderer);
 
     rtShadowPass.initializePass();
     pbrForwardPass.initializePass();
@@ -148,6 +150,7 @@ int main(void)
     finalOutputPass.initializePass();
     depthReducePass.initializePass();
     texturePreviewPass.initializePass();
+    oceanPass.initializePass();
 
     pbrForwardPass.buildDrawCommands();
 
@@ -180,6 +183,8 @@ int main(void)
         depthReducePass.getDepthHierarchyLevels());
 
     skyPass.linkLightData(worldTranslator.getPbrLightBuffer());
+
+    oceanPass.linkLightAndCameraData(worldTranslator.getPbrLightBuffer(), worldTranslator.getPbrCameraBuffer());
 
     CameraSystem cameraSystem(&inputManager);
     ObjectRandomMovementSystem objRandMovSystem;
@@ -245,6 +250,7 @@ int main(void)
             const auto& cam = bunnyWorld.mEntityRegistry.get<PbrCameraComponent>(camComps.front());
             cullingPass.updateCullingData(cam.mCamera);
             skyPass.updateRenderParams(cam.mCamera, timer.getTime());
+            oceanPass.updateWorldParams(cam.mCamera.getViewProjMatrix(), timer.getTime(), timer.getDeltaTime());
         }
 
         texturePreviewPass.updateTextureForPreview();
@@ -257,6 +263,9 @@ int main(void)
         cullingPass.dispatch();
         rtShadowPass.draw();
         pbrForwardPass.draw();
+
+        oceanPass.updateRenderTarget(&pbrForwardPass.getCurrentRenderTarget());
+        oceanPass.draw();
 
         skyPass.updateFrameData();
         skyPass.draw();
@@ -281,6 +290,7 @@ int main(void)
     depthReducePass.cleanup();
     finalOutputPass.cleanup();
     skyPass.cleanup();
+    oceanPass.cleanup();
     pbrForwardPass.cleanup();
     rtShadowPass.cleanup();
     acceStructBuilder.cleanup();
