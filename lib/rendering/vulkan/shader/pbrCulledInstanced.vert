@@ -32,9 +32,10 @@ layout (location = 0) out vec3 outNormal;
 layout (location = 1) out vec3 outColor;
 layout (location = 2) out vec3 outFragPos;
 layout (location = 3) out vec2 outUV;
-layout (location = 4) out uint outMatId;
-layout (location = 5) out mat3 outTbnMat;   //  tangent-bitangent-normal matrix
-                                            //  maybe calculate this in frag shader instead to allow correct interpolation?
+layout (location = 4) out flat uint outMatId;
+layout (location = 5) out vec3 outTangent;
+layout (location = 6) out vec3 outBitangent;
+
 
 void main()
 {
@@ -51,10 +52,8 @@ void main()
     outUV = uv.xy;
     outMatId = surface.materialId;
 
-    vec3 tangentTransformed = normalize((objData.invTransModel * vec4(tangent, 0)).xyz);
-    vec3 bitangentTransformed = normalize(cross(outNormal, tangentTransformed));
-
-    outTbnMat = mat3(tangentTransformed, bitangentTransformed, outNormal);
+    outTangent = normalize((objData.invTransModel * vec4(tangent, 0)).xyz);
+    outBitangent = normalize(cross(outNormal, outTangent));
 
     gl_Position = cameraData.viewProj * worldPos;
 }

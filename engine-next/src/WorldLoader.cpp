@@ -80,7 +80,7 @@ BunnyResult WorldLoader::loadPbrTestWorldWithGltfMeshes(std::string_view filePat
     // }
 
     const auto nodeEntity = outWorld.mEntityRegistry.create();
-    Base::Transform nodeTransform({0, 0, 0}, {0, 0, 0}, {1, 1, 1});
+    Base::Transform nodeTransform({0, 10, 0}, {0, 0, 0}, {1, 1, 1});
     outWorld.mEntityRegistry.emplace<TransformComponent>(nodeEntity, nodeTransform);
     //  assign a random material instance from the pbr material bank instead of using the one from the mesh
     outWorld.mEntityRegistry.emplace<MeshComponent>(
@@ -89,7 +89,7 @@ BunnyResult WorldLoader::loadPbrTestWorldWithGltfMeshes(std::string_view filePat
     //  camera
     {
         const auto cameraEntity = outWorld.mEntityRegistry.create();
-        Render::PhysicalCamera camera(glm::vec3{0, 15, 80}, glm::vec3{-glm::pi<float>() / 16, 0, 0});
+        Render::PhysicalCamera camera(glm::vec3{0, 10.5, 3}, glm::vec3{-glm::pi<float>() / 16, 0, 0});
         camera.setAperture(4);
         camera.setShutterTime(1.0f / 1600);
         outWorld.mEntityRegistry.emplace<PbrCameraComponent>(cameraEntity, camera);

@@ -7,7 +7,8 @@ layout (location = 1) in vec3 color;
 layout (location = 2) in vec3 fragPos;
 layout (location = 3) in vec2 uv;
 layout (location = 4) flat in uint matId;
-layout (location = 5) flat in mat3 tbnMat;
+layout (location = 5) in vec3 tangent;
+layout (location = 6) in vec3 bitangent;
 
 layout (location = 0) out vec4 outColor;
 
@@ -19,6 +20,9 @@ void main()
     vec3 lightResult = vec3(0, 0, 0);
     const uint shadowBit = 1;
     uvec4 lightShadowInfo = imageLoad(lightShadowMap, ivec2(gl_FragCoord.xy));
+
+    mat3 tbnMat = mat3(tangent, bitangent, normal);
+
     for (uint i = 0; i < lightCountCapped; i++)
     {
         float shadowCoef = (lightShadowInfo.r & (shadowBit << i)) > 0 ? 0.2 : 1.0;
@@ -27,5 +31,4 @@ void main()
     }
     lightResult *= cameraData.exposure;
     outColor = vec4(lightResult, 1);
-    // outColor = vec4(1, 1, 1, 1);
 }
