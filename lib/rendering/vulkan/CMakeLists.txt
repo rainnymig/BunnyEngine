@@ -32,6 +32,7 @@ target_sources(VulkanRenderer
         headers/Vertex.h
         headers/VulkanGraphicsRenderer.h
         headers/VulkanRenderResources.h
+        headers/WaveSpectrumPrePass.h
     PRIVATE
         src/AccelerationStructureBuilder.cpp
         src/ComputePipelineBuilder.cpp
@@ -58,6 +59,7 @@ target_sources(VulkanRenderer
         src/Vertex.cpp
         src/VulkanGraphicsRenderer.cpp
         src/VulkanRenderResources.cpp
+        src/WaveSpectrumPrePass.cpp
 )
 
 # target_compile_definitions(VulkanRenderer PUBLIC GLFW_INCLUDE_VULKAN)

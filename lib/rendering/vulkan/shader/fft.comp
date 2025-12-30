@@ -55,7 +55,7 @@ Complex calcIFFTWm(uint m, uint x)
 Complex imageLoadToComplex(ivec2 coord)
 {
     //  hard coded to use outImage here because can't use Image2D as function parameter
-    vec2 item = imageLoad(outImage, coord).xy;
+    vec2 item = imageLoad(outImage, coord).xw;      //  should be xw?
     return Complex(item.x, item.y);
 }
 
