@@ -88,6 +88,14 @@ BunnyResult TextureBank::addTextureFromMemory(unsigned char* data, int dataLengt
     return BUNNY_HAPPY;
 }
 
+BunnyResult TextureBank::addAllocatedTexture(const AllocatedImage& image, IdType& outId)
+{
+    outId = mTextures.size();
+    mTextures.push_back(image);
+
+    return BUNNY_HAPPY;
+}
+
 BunnyResult TextureBank::addTexture3d(
     const char* filePath, VkFormat format, uint32_t width, uint32_t height, uint32_t depth, IdType& outId)
 {

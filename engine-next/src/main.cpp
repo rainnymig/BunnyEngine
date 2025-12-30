@@ -28,6 +28,7 @@
 #include "FinalOutputPass.h"
 #include "ImguiHelper.h"
 #include "OceanPass.h"
+#include "WaveSpectrumPrePass.h"
 
 #include <imgui.h>
 #include <fmt/core.h>
@@ -133,6 +134,7 @@ int main(void)
     acceStructBuilder.buildBottomLevelAccelerationStructures(
         meshBank.getBlasGeometryData(), VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR);
 
+    WaveSpectrumPrePass waveSpectrumPrePass(&renderResources, &renderer);
     RaytracingShadowPass rtShadowPass(&renderResources, &renderer, &pbrMaterialBank, &meshBank);
     PbrForwardPass pbrForwardPass(&renderResources, &renderer, &pbrMaterialBank, &meshBank,
         "pbr_culled_instanced_vert.spv", "pbr_forward_frag.spv");
@@ -143,6 +145,7 @@ int main(void)
     TexturePreviewPass texturePreviewPass(&renderResources, &renderer, &pbrMaterialBank, &meshBank, &textureBank);
     OceanPass oceanPass(&renderResources, &renderer);
 
+    waveSpectrumPrePass.initializePass();
     rtShadowPass.initializePass();
     pbrForwardPass.initializePass();
     cullingPass.initializePass();
@@ -210,6 +213,19 @@ int main(void)
     auto showTexturePreviewControl = [&texturePreviewPass]() { texturePreviewPass.showImguiControls(); };
     ImguiHelper::get().registerCommand(showTexturePreviewControl);
 
+    IdType spectrumImageDebugId = BUNNY_INVALID_ID;
+    bool shouldGenerateSpectrum = false;
+    auto showSpectrumDebug = [&waveSpectrumPrePass, spectrumImageDebugId, &shouldGenerateSpectrum]() {
+        ImGui::Begin("Spectrum Debug");
+        if (ImGui::Button("Generate Spectrum"))
+        {
+            shouldGenerateSpectrum = true;
+        }
+        ImGui::Text(fmt::format("Generated spectrum texture id: {}", spectrumImageDebugId).c_str());
+        ImGui::End();
+    };
+    ImguiHelper::get().registerCommand(showSpectrumDebug);
+
     timer.start();
     while (true)
     {
@@ -260,6 +276,16 @@ int main(void)
 
         pbrForwardPass.prepareDrawCommandsForFrame();
 
+        if (shouldGenerateSpectrum)
+        {
+            waveSpectrumPrePass.draw();
+            shouldGenerateSpectrum = false;
+            if (spectrumImageDebugId == BUNNY_INVALID_ID)
+            {
+                textureBank.addAllocatedTexture(waveSpectrumPrePass.getSpectrumImage(), spectrumImageDebugId);
+            }
+        }
+
         cullingPass.dispatch();
         rtShadowPass.draw();
         pbrForwardPass.draw();
@@ -296,6 +322,7 @@ int main(void)
     acceStructBuilder.cleanup();
     worldTranslator.cleanup();
     texturePreviewPass.cleanup();
+    waveSpectrumPrePass.cleanup();
 
     meshBank.cleanup();
     pbrMaterialBank.cleanup();

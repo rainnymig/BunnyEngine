@@ -29,9 +29,11 @@ class WaveSpectrumPrePass : public PbrGraphicsPass
     static constexpr int GRID_N = 512;
 
     WaveSpectrumPrePass(const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer,
-        std::string_view shaderPath = "wave_mesh.spv");
+        std::string_view shaderPath = "wave_spectrum_comp.spv");
 
     void draw() const override;
+
+    const AllocatedImage& getSpectrumImage() const { return mSpectrumImage; }
 
   protected:
     BunnyResult initPipeline() override;
