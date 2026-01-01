@@ -91,7 +91,8 @@ BunnyResult TextureBank::addTextureFromMemory(unsigned char* data, int dataLengt
 BunnyResult TextureBank::addAllocatedTexture(const AllocatedImage& image, IdType& outId)
 {
     outId = mTextures.size();
-    mTextures.push_back(image);
+    AllocatedImage& newImage = mTextures.emplace_back(image);
+	newImage.mIsOwning = false; //  mark as non-owning to avoid double destrution
 
     return BUNNY_HAPPY;
 }

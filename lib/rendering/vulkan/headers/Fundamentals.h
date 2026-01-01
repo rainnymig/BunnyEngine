@@ -14,6 +14,7 @@ struct AllocatedImage
     VmaAllocation mAllocation;
     VkExtent3D mExtent;
     VkFormat mFormat;
+	bool mIsOwning = true;   //  temporary hack flag to indicate whether this image is owning the underlying resource
 };
 
 struct AllocatedBuffer

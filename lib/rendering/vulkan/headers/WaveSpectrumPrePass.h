@@ -25,7 +25,7 @@ class WaveSpectrumPrePass : public PbrGraphicsPass
         float A;        //  Phillips spectrum magnitude coefficient
     };
 
-    static constexpr float AREA_WIDTH = 51.2f;
+    static constexpr float AREA_WIDTH = 102.4f;
     static constexpr int GRID_N = 512;
 
     WaveSpectrumPrePass(const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer,

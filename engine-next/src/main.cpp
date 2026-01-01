@@ -215,13 +215,12 @@ int main(void)
 
     IdType spectrumImageDebugId = BUNNY_INVALID_ID;
     bool shouldGenerateSpectrum = false;
-    auto showSpectrumDebug = [&waveSpectrumPrePass, spectrumImageDebugId, &shouldGenerateSpectrum]() {
+    auto showSpectrumDebug = [&waveSpectrumPrePass, &shouldGenerateSpectrum]() {
         ImGui::Begin("Spectrum Debug");
         if (ImGui::Button("Generate Spectrum"))
         {
             shouldGenerateSpectrum = true;
         }
-        ImGui::Text(fmt::format("Generated spectrum texture id: {}", spectrumImageDebugId).c_str());
         ImGui::End();
     };
     ImguiHelper::get().registerCommand(showSpectrumDebug);

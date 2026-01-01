@@ -7,6 +7,7 @@
 #include "ComputePipelineBuilder.h"
 #include "VulkanRenderResources.h"
 #include "VulkanGraphicsRenderer.h"
+#include "Helper.h"
 
 namespace Bunny::Render
 {
@@ -14,6 +15,7 @@ namespace Bunny::Render
 WaveSpectrumPrePass::WaveSpectrumPrePass(
     const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer, std::string_view shaderPath)
     : super(vulkanResources, renderer, nullptr, nullptr)
+	, mShaderPath(shaderPath)
 {
 }
 
@@ -28,7 +30,19 @@ void WaveSpectrumPrePass::draw() const
     constexpr static uint32_t computeSizeX = 16;
     constexpr static uint32_t computeSizeY = 16;
 
+    VkImageMemoryBarrier spectrumImagePreBarrier = makeImageMemoryBarrier(mSpectrumImage.mImage,
+        VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+        VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_ASPECT_COLOR_BIT);
+    vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 1, &spectrumImagePreBarrier);
+
     vkCmdDispatch(cmd, mWaveSpectrumData.N / computeSizeX, mWaveSpectrumData.N / computeSizeY, 1);
+
+    VkImageMemoryBarrier spectrumImagePostBarrier = makeImageMemoryBarrier(mSpectrumImage.mImage,
+        VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL,
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_ASPECT_COLOR_BIT);
+    vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+        VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 1, &spectrumImagePostBarrier);
 }
 
 BunnyResult WaveSpectrumPrePass::initPipeline()
@@ -82,11 +96,12 @@ BunnyResult WaveSpectrumPrePass::initDataAndResources()
 {
     //  create spectrum data and buffer
     mWaveSpectrumData.width = AREA_WIDTH;
-    mWaveSpectrumData.ksiR = 0.2f;
-    mWaveSpectrumData.ksiI = 0.35f;
+    mWaveSpectrumData.ksiR = 0.1f;
+    mWaveSpectrumData.ksiI = 0.2f;
     mWaveSpectrumData.N = GRID_N;
-    mWaveSpectrumData.wind = glm::vec2(3.5f, 2.0f);
+    mWaveSpectrumData.wind = glm::vec2(3.0f, 3.0f);
     mWaveSpectrumData.A = 0.81f / (AREA_WIDTH * AREA_WIDTH);
+    //mWaveSpectrumData.A = 4;
 
     mVulkanResources->createBufferWithData(&mWaveSpectrumData, sizeof(WaveSpectrumData),
         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
@@ -95,7 +110,8 @@ BunnyResult WaveSpectrumPrePass::initDataAndResources()
 
     //  create spectrum image
     mSpectrumImage = mVulkanResources->createImage({GRID_N, GRID_N, 1}, VK_FORMAT_R32G32_SFLOAT,
-        VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_ASPECT_COLOR_BIT, false, VK_IMAGE_LAYOUT_GENERAL);
+        VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT, false,
+        VK_IMAGE_LAYOUT_GENERAL);
 
     //  link descriptor sets
     DescriptorWriter writer;
@@ -128,6 +144,7 @@ BunnyResult WaveSpectrumPrePass::initDescriptorLayouts()
 
     builder.clear();
     descBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	builder.addBinding(descBinding);
     mSpectrumDescLayout = builder.build(device);
 
     mDeletionStack.AddFunction([this]() {

@@ -379,7 +379,7 @@ void VulkanRenderResources::destroyBuffer(AllocatedBuffer& buffer) const
 
 void VulkanRenderResources::destroyImage(AllocatedImage& image) const
 {
-    if (image.mImage == nullptr)
+    if (image.mImage == nullptr || !image.mIsOwning)
     {
         return;
     }
