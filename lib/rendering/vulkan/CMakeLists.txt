@@ -33,6 +33,7 @@ target_sources(VulkanRenderer
         headers/VulkanGraphicsRenderer.h
         headers/VulkanRenderResources.h
         headers/WaveSpectrumPrePass.h
+        headers/WaveSpectrumTransformPass.h
     PRIVATE
         src/AccelerationStructureBuilder.cpp
         src/ComputePipelineBuilder.cpp
@@ -60,6 +61,7 @@ target_sources(VulkanRenderer
         src/VulkanGraphicsRenderer.cpp
         src/VulkanRenderResources.cpp
         src/WaveSpectrumPrePass.cpp
+        src/WaveSpectrumTransformPass.cpp
 )
 
 # target_compile_definitions(VulkanRenderer PUBLIC GLFW_INCLUDE_VULKAN)

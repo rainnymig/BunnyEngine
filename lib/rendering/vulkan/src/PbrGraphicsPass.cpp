@@ -1,6 +1,8 @@
 #include "PbrGraphicsPass.h"
 
 #include "Error.h"
+#include "ErrorCheck.h"
+#include "ComputePipelineBuilder.h"
 
 #include <cassert>
 
@@ -44,6 +46,50 @@ BunnyResult PbrGraphicsPass::initDescriptors()
 }
 BunnyResult PbrGraphicsPass::initDataAndResources()
 {
+    return BUNNY_HAPPY;
+}
+
+BunnyResult PbrGraphicsPass::buildComputePipeline(std::string_view shaderPath,
+    const std::vector<VkDescriptorSetLayout>* descSetLayouts, const std::vector<VkPushConstantRange>* pushConstants)
+{
+    VkDevice device = mVulkanResources->getDevice();
+    Shader spectrumShader(shaderPath, device);
+
+    VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    if (descSetLayouts != nullptr)
+    {
+        pipelineLayoutInfo.setLayoutCount = descSetLayouts->size();
+        pipelineLayoutInfo.pSetLayouts = descSetLayouts->data();
+    }
+    else
+    {
+        pipelineLayoutInfo.setLayoutCount = 0;
+        pipelineLayoutInfo.pSetLayouts = nullptr;
+    }
+
+    if (pushConstants != nullptr)
+    {
+        pipelineLayoutInfo.pushConstantRangeCount = pushConstants->size();
+        pipelineLayoutInfo.pPushConstantRanges = pushConstants->data();
+    }
+    else
+    {
+        pipelineLayoutInfo.pushConstantRangeCount = 0;
+        pipelineLayoutInfo.pPushConstantRanges = nullptr;
+    }
+
+    VK_CHECK_OR_RETURN_BUNNY_SAD(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &mPipelineLayout))
+    mDeletionStack.AddFunction(
+        [this]() { vkDestroyPipelineLayout(mVulkanResources->getDevice(), mPipelineLayout, nullptr); });
+
+    ComputePipelineBuilder pipelineBuilder;
+    pipelineBuilder.setShader(spectrumShader.getShaderModule());
+    pipelineBuilder.setPipelineLayout(mPipelineLayout);
+    mPipeline = pipelineBuilder.build(device);
+
+    mDeletionStack.AddFunction([this]() { vkDestroyPipeline(mVulkanResources->getDevice(), mPipeline, nullptr); });
+
     return BUNNY_HAPPY;
 }
 } // namespace Bunny::Render

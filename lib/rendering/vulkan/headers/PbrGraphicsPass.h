@@ -5,10 +5,12 @@
 #include "FunctionStack.h"
 #include "MeshBank.h"
 #include "Vertex.h"
+#include "Shader.h"
 
 #include <volk.h>
 
 #include <string_view>
+#include <vector>
 
 namespace Bunny::Render
 {
@@ -32,6 +34,10 @@ class PbrGraphicsPass
     virtual BunnyResult initDescriptors();
     virtual BunnyResult initDataAndResources();
 
+    BunnyResult buildComputePipeline(std::string_view shaderPath,
+        const std::vector<VkDescriptorSetLayout>* descSetLayouts,
+        const std::vector<VkPushConstantRange>* pushConstants);
+
     const VulkanRenderResources* mVulkanResources;
     const VulkanGraphicsRenderer* mRenderer;
     const PbrMaterialBank* mMaterialBank;
@@ -42,4 +48,5 @@ class PbrGraphicsPass
 
     Base::FunctionStack<> mDeletionStack;
 };
+
 } // namespace Bunny::Render

@@ -23,6 +23,7 @@ layout(push_constant) uniform FftParams
     uint N;             //  size of the sequence
     uint isInverse;     //  0: forward fft, 1: inversed fft
     uint direction;     //  0: fft on row, 1: fft on column
+    float time;         //  elapsed time
 };
 
 //  return the bit reverse of x related to M2, which is a multiple of 2

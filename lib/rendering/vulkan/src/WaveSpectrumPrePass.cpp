@@ -9,13 +9,15 @@
 #include "VulkanGraphicsRenderer.h"
 #include "Helper.h"
 
+#include <array>
+
 namespace Bunny::Render
 {
 
 WaveSpectrumPrePass::WaveSpectrumPrePass(
     const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer, std::string_view shaderPath)
-    : super(vulkanResources, renderer, nullptr, nullptr)
-	, mShaderPath(shaderPath)
+    : super(vulkanResources, renderer, nullptr, nullptr),
+      mShaderPath(shaderPath)
 {
 }
 
@@ -30,45 +32,25 @@ void WaveSpectrumPrePass::draw() const
     constexpr static uint32_t computeSizeX = 16;
     constexpr static uint32_t computeSizeY = 16;
 
-    VkImageMemoryBarrier spectrumImagePreBarrier = makeImageMemoryBarrier(mSpectrumImage.mImage,
-        VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
-        VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_ASPECT_COLOR_BIT);
+    VkImageMemoryBarrier spectrumImagePreBarrier =
+        makeImageMemoryBarrier(mSpectrumImage.mImage, VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_SHADER_WRITE_BIT,
+            VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_ASPECT_COLOR_BIT);
     vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
         VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 1, &spectrumImagePreBarrier);
 
     vkCmdDispatch(cmd, mWaveSpectrumData.N / computeSizeX, mWaveSpectrumData.N / computeSizeY, 1);
 
-    VkImageMemoryBarrier spectrumImagePostBarrier = makeImageMemoryBarrier(mSpectrumImage.mImage,
-        VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL,
-        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_ASPECT_COLOR_BIT);
+    VkImageMemoryBarrier spectrumImagePostBarrier =
+        makeImageMemoryBarrier(mSpectrumImage.mImage, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+            VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_ASPECT_COLOR_BIT);
     vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
         VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 1, &spectrumImagePostBarrier);
 }
 
 BunnyResult WaveSpectrumPrePass::initPipeline()
 {
-    VkDevice device = mVulkanResources->getDevice();
-    Shader spectrumShader(mShaderPath, device);
-
-    VkDescriptorSetLayout layouts[] = {mImageDescLayout, mSpectrumDescLayout};
-    VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 2;
-    pipelineLayoutInfo.pSetLayouts = layouts;
-    pipelineLayoutInfo.pushConstantRangeCount = 0;
-    pipelineLayoutInfo.pPushConstantRanges = nullptr;
-
-    VK_CHECK_OR_RETURN_BUNNY_SAD(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &mPipelineLayout))
-    mDeletionStack.AddFunction(
-        [this]() { vkDestroyPipelineLayout(mVulkanResources->getDevice(), mPipelineLayout, nullptr); });
-
-    ComputePipelineBuilder pipelineBuilder;
-    pipelineBuilder.setShader(spectrumShader.getShaderModule());
-    pipelineBuilder.setPipelineLayout(mPipelineLayout);
-    mPipeline = pipelineBuilder.build(device);
-
-    mDeletionStack.AddFunction([this]() { vkDestroyPipeline(mVulkanResources->getDevice(), mPipeline, nullptr); });
-
+    std::vector<VkDescriptorSetLayout> descLayouts{mImageDescLayout, mSpectrumDescLayout};
+    BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(buildComputePipeline(mShaderPath, &descLayouts, nullptr))
     return BUNNY_HAPPY;
 }
 
@@ -101,7 +83,7 @@ BunnyResult WaveSpectrumPrePass::initDataAndResources()
     mWaveSpectrumData.N = GRID_N;
     mWaveSpectrumData.wind = glm::vec2(3.0f, 3.0f);
     mWaveSpectrumData.A = 0.81f / (AREA_WIDTH * AREA_WIDTH);
-    //mWaveSpectrumData.A = 4;
+    // mWaveSpectrumData.A = 4;
 
     mVulkanResources->createBufferWithData(&mWaveSpectrumData, sizeof(WaveSpectrumData),
         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
@@ -144,7 +126,7 @@ BunnyResult WaveSpectrumPrePass::initDescriptorLayouts()
 
     builder.clear();
     descBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	builder.addBinding(descBinding);
+    builder.addBinding(descBinding);
     mSpectrumDescLayout = builder.build(device);
 
     mDeletionStack.AddFunction([this]() {
