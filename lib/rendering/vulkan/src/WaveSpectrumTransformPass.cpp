@@ -16,9 +16,50 @@ Render::WaveSpectrumTransformPass::WaveSpectrumTransformPass(
 
 void Render::WaveSpectrumTransformPass::draw() const
 {
+    VkCommandBuffer cmd = mRenderer->getCurrentCommandBuffer();
+    const FrameData& frame = mFrameData[mRenderer->getCurrentFrameIdx()];
+
+    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, mPipeline);
+
+    constexpr static uint32_t computeSizeX = 512;
+    constexpr static uint32_t computeSizeY = 1;
+
     //  vertical ifft
+    {
+        VkImageMemoryBarrier spectrumImageBarrier =
+            makeImageMemoryBarrier(frame.mSpectrumImage->mImage, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+                VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_ASPECT_COLOR_BIT);
+        VkImageMemoryBarrier intermediateImageBarrier = makeImageMemoryBarrier(frame.mIntermediateFftImage.mImage,
+            VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
+            VK_IMAGE_ASPECT_COLOR_BIT);
+        VkImageMemoryBarrier barriers[]{spectrumImageBarrier, intermediateImageBarrier};
+        vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 2, barriers);
+    }
+    vkCmdBindDescriptorSets(
+        cmd, VK_PIPELINE_BIND_POINT_COMPUTE, mPipelineLayout, 0, 1, &frame.mFirstFftImageDescSet, 0, nullptr);
+    mFFTParams.mDirection = 1;
+    vkCmdPushConstants(cmd, mPipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, 1, &mFFTParams);
+    vkCmdDispatch(cmd, mFFTParams.mN / computeSizeX, mFFTParams.mN / computeSizeY, 1);
 
     //  horizontal ifft
+    //  wait for the vertical pass to finish writing to the intermediate image
+    {
+        VkImageMemoryBarrier intermediateImageBarrier =
+            makeImageMemoryBarrier(frame.mIntermediateFftImage.mImage, VK_ACCESS_SHADER_WRITE_BIT,
+                VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_ASPECT_COLOR_BIT);
+        VkImageMemoryBarrier heightImageBarrier =
+            makeImageMemoryBarrier(frame.mWaveHeightImage.mImage, VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_SHADER_WRITE_BIT,
+                VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_ASPECT_COLOR_BIT);
+        VkImageMemoryBarrier barriers[]{intermediateImageBarrier, heightImageBarrier};
+        vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 2, barriers);
+    }
+    vkCmdBindDescriptorSets(
+        cmd, VK_PIPELINE_BIND_POINT_COMPUTE, mPipelineLayout, 0, 1, &frame.mSecondFftImageDescSet, 0, nullptr);
+    mFFTParams.mDirection = 0;
+    vkCmdPushConstants(cmd, mPipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, 1, &mFFTParams);
+    vkCmdDispatch(cmd, mFFTParams.mN / computeSizeX, mFFTParams.mN / computeSizeY, 1);
 }
 
 void Render::WaveSpectrumTransformPass::updateWaveTime(float time)
@@ -33,9 +74,28 @@ void Render::WaveSpectrumTransformPass::updateFFTSize(uint32_t size)
 
 void Render::WaveSpectrumTransformPass::updateSpectrumImage(const AllocatedImage* spectrumImage)
 {
+    VkDevice device = mVulkanResources->getDevice();
+    DescriptorWriter writer;
+
     for (FrameData& frame : mFrameData)
     {
         frame.mSpectrumImage = spectrumImage;
+
+        //  link the images of the frame to the descriptor sets
+
+        writer.clear();
+        writer.writeImage(0, frame.mSpectrumImage->mImageView, nullptr, VK_IMAGE_LAYOUT_GENERAL,
+            VK_DESCRIPTOR_TYPE_STORAGE_IMAGE); //  or VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL?
+        writer.writeImage(1, frame.mIntermediateFftImage.mImageView, nullptr, VK_IMAGE_LAYOUT_GENERAL,
+            VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+        writer.updateSet(device, frame.mFirstFftImageDescSet);
+
+        writer.clear();
+        writer.writeImage(0, frame.mIntermediateFftImage.mImageView, nullptr, VK_IMAGE_LAYOUT_GENERAL,
+            VK_DESCRIPTOR_TYPE_STORAGE_IMAGE); //  or VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL?
+        writer.writeImage(
+            1, frame.mWaveHeightImage.mImageView, nullptr, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+        writer.updateSet(device, frame.mFirstFftImageDescSet);
     }
 }
 
@@ -58,14 +118,15 @@ BunnyResult Render::WaveSpectrumTransformPass::initDescriptors()
     VkDevice device = mVulkanResources->getDevice();
 
     DescriptorAllocator::PoolSize poolSizes[] = {
-        {.mType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .mRatio = 2},
+        {.mType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, .mRatio = 2},
     };
-    mDescriptorAllocator.init(device, 2, poolSizes);
+    mDescriptorAllocator.init(device, 4, poolSizes);
 
     VkDescriptorSetLayout descLayouts[] = {mImageDescLayout};
     for (FrameData& frame : mFrameData)
     {
-        mDescriptorAllocator.allocate(device, descLayouts, &frame.mImageDescSet, 1);
+        mDescriptorAllocator.allocate(device, descLayouts, &frame.mFirstFftImageDescSet, 1);
+        mDescriptorAllocator.allocate(device, descLayouts, &frame.mSecondFftImageDescSet, 1);
     }
 
     mDeletionStack.AddFunction([this]() { mDescriptorAllocator.destroyPools(mVulkanResources->getDevice()); });
@@ -76,8 +137,23 @@ BunnyResult Render::WaveSpectrumTransformPass::initDescriptors()
 BunnyResult Render::WaveSpectrumTransformPass::initDataAndResources()
 {
     //  create image for fft result
+    for (FrameData& frame : mFrameData)
+    {
+        frame.mIntermediateFftImage = mVulkanResources->createImage(VkExtent3D{mFFTParams.mN, mFFTParams.mN, 1},
+            VK_FORMAT_R32G32_SFLOAT, VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
+        frame.mWaveHeightImage = mVulkanResources->createImage(VkExtent3D{mFFTParams.mN, mFFTParams.mN, 1},
+            VK_FORMAT_R32G32_SFLOAT, VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
+    }
 
-    //  allocate descriptor sets and link image resources to them
+    mDeletionStack.AddFunction([this]() {
+        for (FrameData& frame : mFrameData)
+        {
+            mVulkanResources->destroyImage(frame.mIntermediateFftImage);
+            mVulkanResources->destroyImage(frame.mWaveHeightImage);
+        }
+    });
+
+    //  the images will be linked to the descriptor set later after the spectrum image is set
 
     return BUNNY_HAPPY;
 }

@@ -4,7 +4,10 @@
 
 #define PI 3.14159265359
 
-layout (local_size_x = 256) in;
+//  double check this: for simplicity fft size can not be larger than this value for now
+//  512 may not be supported
+//  update implementation to allow fft size larger than this
+layout (local_size_x = 512) in;
 
 //  image
 //  ---------> x
@@ -72,6 +75,7 @@ void main()
     bool fftOnRow = direction == 0;
     bool isFFT = isInverse == 0;
 
+    //  double check this: we must ensure the fft happens in the same thread group
     //  we do in-place DIT FFT/IFFT (input is reordered)
     uint n = fftOnRow ? pos.x : pos.y;             //  the index in the data to do fft/ifft
     uint dataLine = fftOnRow ? pos.y : pos.x;      //  the index of the line - if direction is x, this is the idx of row; otherwise it's column

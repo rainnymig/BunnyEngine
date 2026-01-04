@@ -41,10 +41,12 @@ class WaveSpectrumTransformPass : public PbrGraphicsPass
     using super = PbrGraphicsPass;
     struct FrameData
     {
-        VkDescriptorSet mImageDescSet;
+        //  two descriptor sets, one for vertical fft and one for horizontal fft
+        VkDescriptorSet mFirstFftImageDescSet;
+        VkDescriptorSet mSecondFftImageDescSet;
 
         const AllocatedImage* mSpectrumImage;
-        AllocatedImage mVerticalFftOutImage;
+        AllocatedImage mIntermediateFftImage;
         AllocatedImage mWaveHeightImage;
     };
 
@@ -57,6 +59,6 @@ class WaveSpectrumTransformPass : public PbrGraphicsPass
     VkDescriptorSetLayout mImageDescLayout;
     DescriptorAllocator mDescriptorAllocator;
 
-    FFTParams mFFTParams{.mIsInverse = 1};
+    mutable FFTParams mFFTParams{.mIsInverse = 1};
 };
 } // namespace Bunny::Render
