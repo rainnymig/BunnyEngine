@@ -17,11 +17,9 @@ class WaveSpectrumPrePass : public PbrGraphicsPass
   public:
     struct WaveSpectrumData
     {
-        float width;    //  the horizontal dimension of the whole wave grid area, in meters
-        float ksiR;     //  a random value from a standard normal distribution (mean 0, standard deviation 1)
-        float ksiI;     //  another random value from a standard normal distribution (mean 0, standard deviation 1)
-        int N;          //  size of the spectrum (in one dimension)
         glm::vec2 wind; //  wind vector
+        float width;    //  the horizontal dimension of the whole wave grid area, in meters
+        int N;          //  size of the spectrum (in one dimension)
         float A;        //  Phillips spectrum magnitude coefficient
     };
 
@@ -50,6 +48,7 @@ class WaveSpectrumPrePass : public PbrGraphicsPass
     };
 
     BunnyResult initDescriptorLayouts();
+    BunnyResult createRandomValueImage();
 
     std::string_view mShaderPath;
 
@@ -58,6 +57,7 @@ class WaveSpectrumPrePass : public PbrGraphicsPass
     AllocatedImage mSpectrumImage;
     WaveSpectrumData mWaveSpectrumData;
     AllocatedBuffer mWaveSpectrumBuffer;
+    AllocatedImage mStdNormalDistImage;
 
     DescriptorAllocator mDescriptorAllocator;
     VkDescriptorSetLayout mImageDescLayout;

@@ -9,7 +9,11 @@
 #include "VulkanGraphicsRenderer.h"
 #include "Helper.h"
 
+#include <glm/vec4.hpp>
+
 #include <array>
+#include <vector>
+#include <random>
 
 namespace Bunny::Render
 {
@@ -64,7 +68,7 @@ BunnyResult WaveSpectrumPrePass::initDescriptors()
         {.mType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .mRatio = 2},
         {.mType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,  .mRatio = 2},
     };
-    mDescriptorAllocator.init(device, 2, poolSizes);
+    mDescriptorAllocator.init(device, 4, poolSizes);
 
     VkDescriptorSetLayout descLayouts[] = {mImageDescLayout, mSpectrumDescLayout};
     mDescriptorAllocator.allocate(device, descLayouts, &mFrame.mImageDescSet, 2);
@@ -77,11 +81,11 @@ BunnyResult WaveSpectrumPrePass::initDescriptors()
 BunnyResult WaveSpectrumPrePass::initDataAndResources()
 {
     //  create spectrum data and buffer
-    mWaveSpectrumData.width = AREA_WIDTH;
-    mWaveSpectrumData.ksiR = 0.1f;
-    mWaveSpectrumData.ksiI = 0.2f;
-    mWaveSpectrumData.N = GRID_N;
     mWaveSpectrumData.wind = glm::vec2(3.0f, 3.0f);
+    mWaveSpectrumData.width = AREA_WIDTH;
+    // mWaveSpectrumData.ksiR = 0.1f;
+    // mWaveSpectrumData.ksiI = 0.2f;
+    mWaveSpectrumData.N = GRID_N;
     mWaveSpectrumData.A = 0.81f / (AREA_WIDTH * AREA_WIDTH);
     // mWaveSpectrumData.A = 4;
 
@@ -95,20 +99,24 @@ BunnyResult WaveSpectrumPrePass::initDataAndResources()
         VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT, false,
         VK_IMAGE_LAYOUT_GENERAL);
 
+    mDeletionStack.AddFunction([this]() {
+        mVulkanResources->destroyBuffer(mWaveSpectrumBuffer);
+        mVulkanResources->destroyImage(mSpectrumImage);
+    });
+
+    //  create image containing random values drawn from standard normal distribution
+    BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(createRandomValueImage())
+
     //  link descriptor sets
     DescriptorWriter writer;
     writer.writeImage(0, mSpectrumImage.mImageView, nullptr, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+    writer.writeImage(
+        1, mStdNormalDistImage.mImageView, nullptr, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
     writer.updateSet(mVulkanResources->getDevice(), mFrame.mImageDescSet);
 
     writer.clear();
     writer.writeBuffer(0, mWaveSpectrumBuffer.mBuffer, sizeof(WaveSpectrumData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
     writer.updateSet(mVulkanResources->getDevice(), mFrame.mSpectrumDescSet);
-
-    //  clean up
-    mDeletionStack.AddFunction([this]() {
-        mVulkanResources->destroyBuffer(mWaveSpectrumBuffer);
-        mVulkanResources->destroyImage(mSpectrumImage);
-    });
 
     return BUNNY_HAPPY;
 }
@@ -121,18 +129,48 @@ BunnyResult WaveSpectrumPrePass::initDescriptorLayouts()
     VkDevice device = mVulkanResources->getDevice();
 
     DescriptorLayoutBuilder builder;
-    builder.addBinding(descBinding);
+    builder.addBinding(descBinding); //  out spectrum image
+    descBinding.binding = 1;
+    builder.addBinding(descBinding); //  standard normal distribution random values
     mImageDescLayout = builder.build(device);
 
     builder.clear();
+    descBinding.binding = 0;
     descBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    builder.addBinding(descBinding);
+    builder.addBinding(descBinding); //  wave spectrum params
     mSpectrumDescLayout = builder.build(device);
 
     mDeletionStack.AddFunction([this]() {
         vkDestroyDescriptorSetLayout(mVulkanResources->getDevice(), mImageDescLayout, nullptr);
         vkDestroyDescriptorSetLayout(mVulkanResources->getDevice(), mSpectrumDescLayout, nullptr);
     });
+
+    return BUNNY_HAPPY;
+}
+
+BunnyResult WaveSpectrumPrePass::createRandomValueImage()
+{
+    //  create random value image data
+    size_t size = GRID_N * GRID_N;
+    std::vector<glm::vec4> dataVec;
+    dataVec.reserve(size);
+
+    std::random_device rd{};
+    std::mt19937 gen(rd());
+    std::normal_distribution<float> stdNormal(0, 1);
+
+    for (size_t i = 0; i < size; i++)
+    {
+        dataVec.emplace_back(stdNormal(gen), stdNormal(gen), stdNormal(gen), stdNormal(gen));
+    }
+
+    //  create image
+    BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(mVulkanResources->createImageWithData(dataVec.data(),
+        getContainerDataSize(dataVec), VkExtent3D{GRID_N, GRID_N, 1}, VK_FORMAT_R32G32B32A32_SFLOAT,
+        VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_GENERAL, mStdNormalDistImage))
+
+    //  clean up
+    mDeletionStack.AddFunction([this]() { mVulkanResources->destroyImage(mStdNormalDistImage); });
 
     return BUNNY_HAPPY;
 }

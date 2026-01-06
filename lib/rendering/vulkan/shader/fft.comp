@@ -59,7 +59,7 @@ Complex calcIFFTWm(uint m, uint x)
 Complex imageLoadToComplex(ivec2 coord)
 {
     //  hard coded to use outImage here because can't use Image2D as function parameter
-    vec2 item = imageLoad(outImage, coord).xw;      //  should be xw?
+    vec2 item = imageLoad(outImage, coord).xy;      //  should be xw?
     return Complex(item.x, item.y);
 }
 
@@ -77,8 +77,8 @@ void main()
 
     //  double check this: we must ensure the fft happens in the same thread group
     //  we do in-place DIT FFT/IFFT (input is reordered)
-    uint n = fftOnRow ? pos.x : pos.y;             //  the index in the data to do fft/ifft
-    uint dataLine = fftOnRow ? pos.y : pos.x;      //  the index of the line - if direction is x, this is the idx of row; otherwise it's column
+    uint n = pos.x;             //  the index in the data to do fft/ifft
+    uint dataLine = pos.y;      //  the index of the line - if direction is x, this is the idx of row; otherwise it's column
 
     //  reorder input first and save to output
     uint nReversed = bitReverse(n, N);

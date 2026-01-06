@@ -8,6 +8,7 @@
 layout (local_size_x = 16, local_Size_y = 16) in;
 
 layout(set = 0, binding = 0, rg32f) uniform image2D outImage;
+layout(set = 0, binding = 1, rgba32f) uniform image2D stdNormalDistImage;
 
 void imageStoreFromComplex(ivec2 coord, Complex c)
 {
@@ -17,11 +18,9 @@ void imageStoreFromComplex(ivec2 coord, Complex c)
 
 layout(set = 1, binding = 0) uniform WaveSpectrumData
 {
-    float width;            //  the horizontal dimension of the whole wave grid area, in meters
-    float ksiR;             //  a random value from a standard normal distribution (mean 0, standard deviation 1)
-    float ksiI;             //  another random value from a standard normal distribution (mean 0, standard deviation 1)
-    int N;                  //  size of the spectrum (in one dimension)
     vec2 wind;              //  wind vector
+    float width;            //  the horizontal dimension of the whole wave grid area, in meters
+    int N;                  //  size of the spectrum (in one dimension)
     float A;                //  Phillips spectrum magnitude coefficient
 };
 
@@ -43,10 +42,14 @@ void main()
 
     float k2 = k * k;
     
+    vec4 stdNormalDistRndVal = imageLoad(stdNormalDistImage, pos);
+    // float ksiR = stdNormalDistRndVal.x;
+    // float ksiI = stdNormalDistRndVal.y;
+
     //  Phillips spectrum
     float Ph = A * exp(-1 / (k2 * L * L) - (k2 * l * l)) / (k2 * k2) * windFactor;
     float hc = 1/sqrt(2);
-    Complex h0 = multiply(Complex(ksiR, ksiI), hc * sqrt(2*Ph*dk*dk));
+    Complex h0 = multiply(Complex(stdNormalDistRndVal.x, stdNormalDistRndVal.y), hc * sqrt(2*Ph*dk*dk));
 
     // vec2 col = vec2(gl_GlobalInvocationID.xy) / float(N);
     // Complex colComplex = Complex(col.x, col.y);
