@@ -28,6 +28,7 @@ glslc.exe --target-env=vulkan1.3 ./lib/rendering/vulkan/shader/finalOutput.frag 
 
 glslc.exe --target-env=vulkan1.3 ./lib/rendering/vulkan/shader/fft.comp                 -o ./build/engine-next/Debug/fft_comp.spv
 glslc.exe --target-env=vulkan1.3 ./lib/rendering/vulkan/shader/waveSpectrum.comp        -o ./build/engine-next/Debug/wave_spectrum_comp.spv
+glslc.exe --target-env=vulkan1.3 ./lib/rendering/vulkan/shader/waveTimeSpectrum.comp    -o ./build/engine-next/Debug/wave_time_spectrum_comp.spv
 
 # glslc.exe --target-env=vulkan1.3 ./lib/rendering/vulkan/shader/wave.mesh                -o ./build/engine-next/Debug/wave_mesh.spv
 # glslc.exe --target-env=vulkan1.3 ./lib/rendering/vulkan/shader/wave.frag                -o ./build/engine-next/Debug/wave_frag.spv

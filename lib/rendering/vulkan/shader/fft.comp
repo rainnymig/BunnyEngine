@@ -5,9 +5,9 @@
 #define PI 3.14159265359
 
 //  double check this: for simplicity fft size can not be larger than this value for now
-//  512 may not be supported
+//  256 may not be supported
 //  update implementation to allow fft size larger than this
-layout (local_size_x = 512) in;
+layout (local_size_x = 256) in;
 
 //  image
 //  ---------> x

@@ -1,0 +1,48 @@
+#version 460
+
+#include "complex.glsl"
+
+#define PI 3.14159265359
+#define GRAVITY 9.8
+
+layout (local_size_x = 16, local_Size_y = 16) in;
+
+layout(set = 0, binding = 0, rgba32f) uniform readonly image2D inSpectrumImage;
+layout(set = 0, binding = 1, rg32f) uniform image2D outTimedSpectrumImage;
+
+layout(push_constant) uniform SpectrumParams
+{
+    float time;
+    float width;            //  the horizontal dimension of the whole wave grid area, in meters
+    int N;                  //  size of the spectrum (in one dimension)
+};
+
+void imageStoreFromComplex(ivec2 coord, Complex c)
+{
+    vec4 item = vec4(c.real, c.imaginary, 0, 0);
+    imageStore(outTimedSpectrumImage, coord, item);
+}
+
+float dispersion(float k)
+{
+    return sqrt(GRAVITY * k);
+}
+
+void main()
+{
+    ivec2 pos = ivec2(gl_GlobalInvocationID.xy);
+    
+    float kx = 2*PI*(pos.x-N/2)/width;
+    float kz = 2*PI*(pos.y-N/2)/width;
+    vec2 kvec = vec2(kx, kz);
+    float k = length(kvec);
+    float omega = dispersion(k);
+
+
+    vec4 h = imageLoad(inSpectrumImage, pos);
+    Complex h0k = Complex(h.x, h.y);
+    Complex h0_minusk_conjugate = Complex(h.z, h.w);
+
+    Complex h0kt = add(multiply(multiply(h0k, expi(-omega*time)), 0.5), multiply(multiply(h0_minusk_conjugate, expi(omega*time)), 0.5));
+    imageStoreFromComplex(pos, h0kt);
+}

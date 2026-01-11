@@ -15,6 +15,13 @@ namespace Bunny::Render
 class WaveSpectrumTransformPass : public PbrGraphicsPass
 {
   public:
+    struct TimedSpectrumParams
+    {
+        float mTime;
+        float mWidth;
+        uint32_t mN; //  size of the sequence
+    };
+
     struct FFTParams
     {
         uint32_t mN;         //  size of the sequence
@@ -24,12 +31,13 @@ class WaveSpectrumTransformPass : public PbrGraphicsPass
     };
 
     WaveSpectrumTransformPass(const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer,
-        std::string_view shaderPath = "wave_spectrum_transform_comp.spv");
+        std::string_view spectrumShaderPath = "wave_time_spectrum_comp.spv",
+        std::string_view fftShaderPath = "wave_spectrum_transform_comp.spv");
 
     void draw() const override;
 
     void updateWaveTime(float time);
-    void updateFFTSize(uint32_t size);
+    void updateWidth(uint32_t size, float width);
     void updateSpectrumImage(const AllocatedImage* spectrumImage);
 
   protected:
@@ -41,24 +49,33 @@ class WaveSpectrumTransformPass : public PbrGraphicsPass
     using super = PbrGraphicsPass;
     struct FrameData
     {
+        //  desc set for timed spectrum
+        VkDescriptorSet mTimedSpectrumDescSet;
+
         //  two descriptor sets, one for vertical fft and one for horizontal fft
         VkDescriptorSet mFirstFftImageDescSet;
         VkDescriptorSet mSecondFftImageDescSet;
 
         const AllocatedImage* mSpectrumImage;
+        AllocatedImage mTimedSpectrumImage;
         AllocatedImage mIntermediateFftImage;
         AllocatedImage mWaveHeightImage;
     };
 
     BunnyResult initDescriptorLayouts();
 
-    std::string_view mShaderPath;
+    VkPipelineLayout mSpectrumPipelineLayout;
+    VkPipeline mSpectrumPipeline;
+
+    std::string_view mTimedSpectrumShaderPath;
+    std::string_view mFftShaderPath;
 
     std::array<FrameData, MAX_FRAMES_IN_FLIGHT> mFrameData;
 
     VkDescriptorSetLayout mImageDescLayout;
     DescriptorAllocator mDescriptorAllocator;
 
+    TimedSpectrumParams mTimedSpectrumParams;
     mutable FFTParams mFFTParams{.mIsInverse = 1};
 };
 } // namespace Bunny::Render

@@ -35,8 +35,8 @@ class PbrGraphicsPass
     virtual BunnyResult initDataAndResources();
 
     BunnyResult buildComputePipeline(std::string_view shaderPath,
-        const std::vector<VkDescriptorSetLayout>* descSetLayouts,
-        const std::vector<VkPushConstantRange>* pushConstants);
+        const std::vector<VkDescriptorSetLayout>* descSetLayouts, const std::vector<VkPushConstantRange>* pushConstants,
+        VkPipelineLayout* layout, VkPipeline* pipeline);
 
     const VulkanRenderResources* mVulkanResources;
     const VulkanGraphicsRenderer* mRenderer;

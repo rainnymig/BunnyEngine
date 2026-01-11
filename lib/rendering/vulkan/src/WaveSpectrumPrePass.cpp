@@ -54,7 +54,8 @@ void WaveSpectrumPrePass::draw() const
 BunnyResult WaveSpectrumPrePass::initPipeline()
 {
     std::vector<VkDescriptorSetLayout> descLayouts{mImageDescLayout, mSpectrumDescLayout};
-    BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(buildComputePipeline(mShaderPath, &descLayouts, nullptr))
+    BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(
+        buildComputePipeline(mShaderPath, &descLayouts, nullptr, &mPipelineLayout, &mPipeline))
     return BUNNY_HAPPY;
 }
 
@@ -95,7 +96,7 @@ BunnyResult WaveSpectrumPrePass::initDataAndResources()
         VMA_MEMORY_USAGE_AUTO, mWaveSpectrumBuffer);
 
     //  create spectrum image
-    mSpectrumImage = mVulkanResources->createImage({GRID_N, GRID_N, 1}, VK_FORMAT_R32G32_SFLOAT,
+    mSpectrumImage = mVulkanResources->createImage({GRID_N, GRID_N, 1}, VK_FORMAT_R32G32B32A32_SFLOAT,
         VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT, false,
         VK_IMAGE_LAYOUT_GENERAL);
 

@@ -50,7 +50,8 @@ BunnyResult PbrGraphicsPass::initDataAndResources()
 }
 
 BunnyResult PbrGraphicsPass::buildComputePipeline(std::string_view shaderPath,
-    const std::vector<VkDescriptorSetLayout>* descSetLayouts, const std::vector<VkPushConstantRange>* pushConstants)
+    const std::vector<VkDescriptorSetLayout>* descSetLayouts, const std::vector<VkPushConstantRange>* pushConstants,
+    VkPipelineLayout* layout, VkPipeline* pipeline)
 {
     VkDevice device = mVulkanResources->getDevice();
     Shader spectrumShader(shaderPath, device);
@@ -79,16 +80,17 @@ BunnyResult PbrGraphicsPass::buildComputePipeline(std::string_view shaderPath,
         pipelineLayoutInfo.pPushConstantRanges = nullptr;
     }
 
-    VK_CHECK_OR_RETURN_BUNNY_SAD(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &mPipelineLayout))
+    VK_CHECK_OR_RETURN_BUNNY_SAD(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, layout))
     mDeletionStack.AddFunction(
-        [this]() { vkDestroyPipelineLayout(mVulkanResources->getDevice(), mPipelineLayout, nullptr); });
+        [this, layout]() { vkDestroyPipelineLayout(mVulkanResources->getDevice(), *layout, nullptr); });
 
     ComputePipelineBuilder pipelineBuilder;
     pipelineBuilder.setShader(spectrumShader.getShaderModule());
-    pipelineBuilder.setPipelineLayout(mPipelineLayout);
-    mPipeline = pipelineBuilder.build(device);
+    pipelineBuilder.setPipelineLayout(*layout);
+    *pipeline = pipelineBuilder.build(device);
 
-    mDeletionStack.AddFunction([this]() { vkDestroyPipeline(mVulkanResources->getDevice(), mPipeline, nullptr); });
+    mDeletionStack.AddFunction(
+        [this, pipeline]() { vkDestroyPipeline(mVulkanResources->getDevice(), *pipeline, nullptr); });
 
     return BUNNY_HAPPY;
 }

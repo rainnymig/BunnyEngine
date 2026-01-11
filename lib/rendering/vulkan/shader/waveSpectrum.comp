@@ -7,12 +7,12 @@
 
 layout (local_size_x = 16, local_Size_y = 16) in;
 
-layout(set = 0, binding = 0, rg32f) uniform image2D outImage;
+layout(set = 0, binding = 0, rgba32f) uniform image2D outImage; //  rg: h0k, ba: h0_minusk_conjugate
 layout(set = 0, binding = 1, rgba32f) uniform image2D stdNormalDistImage;
 
-void imageStoreFromComplex(ivec2 coord, Complex c)
+void imageStoreFrom2Complex(ivec2 coord, Complex c1, Complex c2)
 {
-    vec4 item = vec4(c.real, c.imaginary, 0, 0);
+    vec4 item = vec4(c1.real, c1.imaginary, c2.real, c2.imaginary);
     imageStore(outImage, coord, item);
 }
 
@@ -43,19 +43,12 @@ void main()
     float k2 = k * k;
     
     vec4 stdNormalDistRndVal = imageLoad(stdNormalDistImage, pos);
-    // float ksiR = stdNormalDistRndVal.x;
-    // float ksiI = stdNormalDistRndVal.y;
 
     //  Phillips spectrum
     float Ph = A * exp(-1 / (k2 * L * L) - (k2 * l * l)) / (k2 * k2) * windFactor;
     float hc = 1/sqrt(2);
-    Complex h0 = multiply(Complex(stdNormalDistRndVal.x, stdNormalDistRndVal.y), hc * sqrt(2*Ph*dk*dk));
+    Complex h0k = multiply(Complex(stdNormalDistRndVal.x, stdNormalDistRndVal.y), hc * sqrt(2*Ph*dk*dk));
+    Complex h0_minusk_conjugate = conjugate(h0k);    //  phillips spectrum is even function for k so h0(k) == h0(-k)
 
-    // vec2 col = vec2(gl_GlobalInvocationID.xy) / float(N);
-    // Complex colComplex = Complex(col.x, col.y);
-
-    // h0 = multiply(h0, 10000.0);
-
-    imageStoreFromComplex(pos, h0);
-    // imageStoreFromComplex(pos, colComplex);
+    imageStoreFrom2Complex(pos, h0k, h0_minusk_conjugate);
 }

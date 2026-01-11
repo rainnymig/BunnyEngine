@@ -24,7 +24,7 @@ class WaveSpectrumPrePass : public PbrGraphicsPass
     };
 
     static constexpr float AREA_WIDTH = 102.4f;
-    static constexpr int GRID_N = 512;
+    static constexpr int GRID_N = 256;
 
     WaveSpectrumPrePass(const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer,
         std::string_view shaderPath = "wave_spectrum_comp.spv");
