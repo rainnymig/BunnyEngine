@@ -153,7 +153,10 @@ int main(void)
     finalOutputPass.initializePass();
     depthReducePass.initializePass();
     texturePreviewPass.initializePass();
-    oceanPass.initializePass();
+    if (renderResources.getSupportMeshShader())
+    {
+        oceanPass.initializePass();
+    }
 
     pbrForwardPass.buildDrawCommands();
 
@@ -187,7 +190,10 @@ int main(void)
 
     skyPass.linkLightData(worldTranslator.getPbrLightBuffer());
 
-    oceanPass.linkLightAndCameraData(worldTranslator.getPbrLightBuffer(), worldTranslator.getPbrCameraBuffer());
+    if (renderResources.getSupportMeshShader())
+    {
+        oceanPass.linkLightAndCameraData(worldTranslator.getPbrLightBuffer(), worldTranslator.getPbrCameraBuffer());
+    }
 
     CameraSystem cameraSystem(&inputManager);
     ObjectRandomMovementSystem objRandMovSystem;
@@ -265,7 +271,10 @@ int main(void)
             const auto& cam = bunnyWorld.mEntityRegistry.get<PbrCameraComponent>(camComps.front());
             cullingPass.updateCullingData(cam.mCamera);
             skyPass.updateRenderParams(cam.mCamera, timer.getTime());
-            oceanPass.updateWorldParams(cam.mCamera.getViewProjMatrix(), timer.getTime(), timer.getDeltaTime());
+            if (renderResources.getSupportMeshShader())
+            {
+                oceanPass.updateWorldParams(cam.mCamera.getViewProjMatrix(), timer.getTime(), timer.getDeltaTime());
+            }
         }
 
         texturePreviewPass.updateTextureForPreview();
@@ -289,8 +298,11 @@ int main(void)
         rtShadowPass.draw();
         pbrForwardPass.draw();
 
-        oceanPass.updateRenderTarget(&pbrForwardPass.getCurrentRenderTarget());
-        oceanPass.draw();
+        if (renderResources.getSupportMeshShader())
+        {
+            oceanPass.updateRenderTarget(&pbrForwardPass.getCurrentRenderTarget());
+            oceanPass.draw();
+        }
 
         skyPass.updateFrameData();
         skyPass.draw();

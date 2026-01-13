@@ -93,6 +93,8 @@ class VulkanRenderResources
     //  https://registry.khronos.org/vulkan/specs/latest/man/html/VkPhysicalDeviceProperties2.html#VUID-VkPhysicalDeviceProperties2-pNext-pNext
     void getPhysicalDeviceProperties(void* properties) const;
 
+    bool getSupportMeshShader() const { return mSupportMeshShader; }
+
     ~VulkanRenderResources();
 
   private:
@@ -121,5 +123,7 @@ class VulkanRenderResources
 
     //  deletion stack
     Base::FunctionStack<> mDeletionStack;
+
+    bool mSupportMeshShader = false;
 };
 } // namespace Bunny::Render

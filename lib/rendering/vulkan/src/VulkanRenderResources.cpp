@@ -116,8 +116,8 @@ BunnyResult VulkanRenderResources::initialize(Base::Window* window)
             .add_required_extension(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME)
             .add_required_extension_features(featureRtPipeline)
             .add_required_extension(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME) //  required by ray tracing pipeline
-            .add_required_extension(VK_EXT_MESH_SHADER_EXTENSION_NAME)
-            .add_required_extension_features(featureMeshShader)
+            .add_desired_extension(VK_EXT_MESH_SHADER_EXTENSION_NAME)
+            // .add_required_extension_features(featureMeshShader)
             .set_required_features_13(features13)
             .set_required_features_12(features12)
             .set_required_features(featureBasic)
@@ -129,9 +129,9 @@ BunnyResult VulkanRenderResources::initialize(Base::Window* window)
     }
     vkb::PhysicalDevice vkbPhysicalDevice = deviceSelectResult.value();
 
-    // //  enable physical device extensions
-    // vkbPhysicalDevice.enable_extensions_if_present({VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
-    //     VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME});
+    mSupportMeshShader = vkbPhysicalDevice.enable_extension_if_present(VK_EXT_MESH_SHADER_EXTENSION_NAME);
+    mSupportMeshShader =
+        mSupportMeshShader && vkbPhysicalDevice.enable_extension_features_if_present(featureMeshShader);
 
     mPhysicalDevice = vkbPhysicalDevice.physical_device;
 
