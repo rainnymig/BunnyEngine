@@ -29,6 +29,7 @@
 #include "ImguiHelper.h"
 #include "OceanPass.h"
 #include "WaveSpectrumPrePass.h"
+#include "WaveSpectrumTransformPass.h"
 
 #include <imgui.h>
 #include <fmt/core.h>
@@ -95,11 +96,6 @@ int main(void)
         textureBank.addTexture("./assets/texture/j12.jpg", VK_FORMAT_R8G8B8A8_UNORM, texId);
         textureBank.addTexture3d(
             "./assets/texture/test_simplex_3d.png", VK_FORMAT_R8G8B8A8_UNORM, 128, 128, 128, texId);
-        // textureBank.addTexture3d(
-        //     "./assets/texture/main_cloud_noise.png", VK_FORMAT_R8G8B8A8_UNORM, 128, 128, 128, texId);
-        // textureBank.addTexture3d(
-        //     "./assets/texture/detail_cloud_noise.png", VK_FORMAT_R8G8B8A8_UNORM, 32, 32, 32, texId);
-        // textureBank.addTexture("./assets/texture/weather.png", VK_FORMAT_R8G8B8A8_UNORM, texId);
     }
 
     {
@@ -135,6 +131,8 @@ int main(void)
         meshBank.getBlasGeometryData(), VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR);
 
     WaveSpectrumPrePass waveSpectrumPrePass(&renderResources, &renderer);
+    WaveSpectrumTransformPass waveTransformPass(
+        &renderResources, &renderer, waveSpectrumPrePass.getGridN(), waveSpectrumPrePass.getWidth());
     RaytracingShadowPass rtShadowPass(&renderResources, &renderer, &pbrMaterialBank, &meshBank);
     PbrForwardPass pbrForwardPass(&renderResources, &renderer, &pbrMaterialBank, &meshBank,
         "pbr_culled_instanced_vert.spv", "pbr_forward_frag.spv");
@@ -146,6 +144,7 @@ int main(void)
     OceanPass oceanPass(&renderResources, &renderer);
 
     waveSpectrumPrePass.initializePass();
+    waveTransformPass.initializePass();
     rtShadowPass.initializePass();
     pbrForwardPass.initializePass();
     cullingPass.initializePass();
@@ -189,6 +188,8 @@ int main(void)
         depthReducePass.getDepthHierarchyLevels());
 
     skyPass.linkLightData(worldTranslator.getPbrLightBuffer());
+
+    waveTransformPass.updateSpectrumImage(&waveSpectrumPrePass.getSpectrumImage());
 
     if (renderResources.getSupportMeshShader())
     {
@@ -271,6 +272,7 @@ int main(void)
             const auto& cam = bunnyWorld.mEntityRegistry.get<PbrCameraComponent>(camComps.front());
             cullingPass.updateCullingData(cam.mCamera);
             skyPass.updateRenderParams(cam.mCamera, timer.getTime());
+            waveTransformPass.updateWaveTime(timer.getTime());
             if (renderResources.getSupportMeshShader())
             {
                 oceanPass.updateWorldParams(cam.mCamera.getViewProjMatrix(), timer.getTime(), timer.getDeltaTime());
@@ -286,11 +288,20 @@ int main(void)
 
         if (shouldGenerateSpectrum)
         {
-            waveSpectrumPrePass.draw();
             shouldGenerateSpectrum = false;
+            waveSpectrumPrePass.draw();
+            waveTransformPass.draw();
+
+            waveSpectrumPrePass.prepareSpectrumImageForView();
+            waveTransformPass.prepareCurrentFrameImagesForView();
+
             if (spectrumImageDebugId == BUNNY_INVALID_ID)
             {
+                IdType texId1, texId2, texId3;
                 textureBank.addAllocatedTexture(waveSpectrumPrePass.getSpectrumImage(), spectrumImageDebugId);
+                textureBank.addAllocatedTexture(waveTransformPass.getTimedSpectrumImage(), texId1);
+                textureBank.addAllocatedTexture(waveTransformPass.getIntermediateImage(), texId2);
+                textureBank.addAllocatedTexture(waveTransformPass.getHeightImage(), texId3);
             }
         }
 
@@ -333,6 +344,7 @@ int main(void)
     acceStructBuilder.cleanup();
     worldTranslator.cleanup();
     texturePreviewPass.cleanup();
+    waveTransformPass.cleanup();
     waveSpectrumPrePass.cleanup();
 
     meshBank.cleanup();

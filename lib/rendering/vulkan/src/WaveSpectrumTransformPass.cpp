@@ -8,11 +8,13 @@
 namespace Bunny::Render
 {
 Render::WaveSpectrumTransformPass::WaveSpectrumTransformPass(const VulkanRenderResources* vulkanResources,
-    const VulkanGraphicsRenderer* renderer, std::string_view spectrumShaderPath, std::string_view fftShaderPath)
+    const VulkanGraphicsRenderer* renderer, uint32_t size, float width, std::string_view spectrumShaderPath,
+    std::string_view fftShaderPath)
     : super(vulkanResources, renderer, nullptr, nullptr),
       mTimedSpectrumShaderPath(spectrumShaderPath),
       mFftShaderPath(fftShaderPath)
 {
+    updateWidth(size, width);
 }
 
 void Render::WaveSpectrumTransformPass::draw() const
@@ -38,7 +40,8 @@ void Render::WaveSpectrumTransformPass::draw() const
 
     vkCmdBindDescriptorSets(
         cmd, VK_PIPELINE_BIND_POINT_COMPUTE, mSpectrumPipelineLayout, 0, 1, &frame.mTimedSpectrumDescSet, 0, nullptr);
-    vkCmdPushConstants(cmd, mSpectrumPipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, 1, &mTimedSpectrumParams);
+    vkCmdPushConstants(cmd, mSpectrumPipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(TimedSpectrumParams),
+        &mTimedSpectrumParams);
     vkCmdDispatch(
         cmd, mTimedSpectrumParams.mN / spectrumComputeSizeX, mTimedSpectrumParams.mN / spectrumComputeSizeY, 1);
 
@@ -63,7 +66,7 @@ void Render::WaveSpectrumTransformPass::draw() const
     vkCmdBindDescriptorSets(
         cmd, VK_PIPELINE_BIND_POINT_COMPUTE, mPipelineLayout, 0, 1, &frame.mFirstFftImageDescSet, 0, nullptr);
     mFFTParams.mDirection = 1;
-    vkCmdPushConstants(cmd, mPipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, 1, &mFFTParams);
+    vkCmdPushConstants(cmd, mPipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FFTParams), &mFFTParams);
     vkCmdDispatch(cmd, mFFTParams.mN / fftComputeSizeX, mFFTParams.mN / fftComputeSizeY, 1);
 
     //  horizontal ifft
@@ -82,7 +85,7 @@ void Render::WaveSpectrumTransformPass::draw() const
     vkCmdBindDescriptorSets(
         cmd, VK_PIPELINE_BIND_POINT_COMPUTE, mPipelineLayout, 0, 1, &frame.mSecondFftImageDescSet, 0, nullptr);
     mFFTParams.mDirection = 0;
-    vkCmdPushConstants(cmd, mPipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, 1, &mFFTParams);
+    vkCmdPushConstants(cmd, mPipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FFTParams), &mFFTParams);
     vkCmdDispatch(cmd, mFFTParams.mN / fftComputeSizeX, mFFTParams.mN / fftComputeSizeY, 1);
 }
 
@@ -128,15 +131,49 @@ void Render::WaveSpectrumTransformPass::updateSpectrumImage(const AllocatedImage
             VK_DESCRIPTOR_TYPE_STORAGE_IMAGE); //  or VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL?
         writer.writeImage(
             1, frame.mWaveHeightImage.mImageView, nullptr, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-        writer.updateSet(device, frame.mFirstFftImageDescSet);
+        writer.updateSet(device, frame.mSecondFftImageDescSet);
     }
+}
+
+void WaveSpectrumTransformPass::prepareCurrentFrameImagesForView()
+{
+    VkCommandBuffer cmd = mRenderer->getCurrentCommandBuffer();
+    const FrameData& frame = mFrameData[mRenderer->getCurrentFrameIdx()];
+
+    VkImageMemoryBarrier timedSpectrumImageBarrier =
+        makeImageMemoryBarrier(frame.mTimedSpectrumImage.mImage, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+            VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_ASPECT_COLOR_BIT);
+    VkImageMemoryBarrier intermediateImageBarrier = makeImageMemoryBarrier(frame.mIntermediateFftImage.mImage,
+        VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL,
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_ASPECT_COLOR_BIT);
+    VkImageMemoryBarrier heightImageBarrier =
+        makeImageMemoryBarrier(frame.mWaveHeightImage.mImage, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_WRITE_BIT,
+            VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_ASPECT_COLOR_BIT);
+    VkImageMemoryBarrier barriers[]{timedSpectrumImageBarrier, intermediateImageBarrier, heightImageBarrier};
+    vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+        VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 3, barriers);
+}
+
+const AllocatedImage& WaveSpectrumTransformPass::getTimedSpectrumImage() const
+{
+    return mFrameData[mRenderer->getCurrentFrameIdx()].mTimedSpectrumImage;
+}
+
+const AllocatedImage& WaveSpectrumTransformPass::getIntermediateImage() const
+{
+    return mFrameData[mRenderer->getCurrentFrameIdx()].mIntermediateFftImage;
+}
+
+const AllocatedImage& WaveSpectrumTransformPass::getHeightImage() const
+{
+    return mFrameData[mRenderer->getCurrentFrameIdx()].mWaveHeightImage;
 }
 
 BunnyResult Render::WaveSpectrumTransformPass::initPipeline()
 {
     std::vector<VkDescriptorSetLayout> descLayouts{mImageDescLayout};
     std::vector<VkPushConstantRange> pushConsts;
-    VkPushConstantRange pushConst = pushConsts.emplace_back();
+    VkPushConstantRange& pushConst = pushConsts.emplace_back();
 
     //  fft pipeline
     pushConst.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
@@ -182,12 +219,15 @@ BunnyResult Render::WaveSpectrumTransformPass::initDataAndResources()
     //  create image for fft result
     for (FrameData& frame : mFrameData)
     {
-        frame.mTimedSpectrumImage = mVulkanResources->createImage(VkExtent3D{mFFTParams.mN, mFFTParams.mN, 1},
-            VK_FORMAT_R32G32_SFLOAT, VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
-        frame.mIntermediateFftImage = mVulkanResources->createImage(VkExtent3D{mFFTParams.mN, mFFTParams.mN, 1},
-            VK_FORMAT_R32G32_SFLOAT, VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
-        frame.mWaveHeightImage = mVulkanResources->createImage(VkExtent3D{mFFTParams.mN, mFFTParams.mN, 1},
-            VK_FORMAT_R32G32_SFLOAT, VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
+        frame.mTimedSpectrumImage =
+            mVulkanResources->createImage(VkExtent3D{mFFTParams.mN, mFFTParams.mN, 1}, VK_FORMAT_R32G32_SFLOAT,
+                VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
+        frame.mIntermediateFftImage =
+            mVulkanResources->createImage(VkExtent3D{mFFTParams.mN, mFFTParams.mN, 1}, VK_FORMAT_R32G32_SFLOAT,
+                VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
+        frame.mWaveHeightImage =
+            mVulkanResources->createImage(VkExtent3D{mFFTParams.mN, mFFTParams.mN, 1}, VK_FORMAT_R32G32_SFLOAT,
+                VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
     }
 
     mDeletionStack.AddFunction([this]() {

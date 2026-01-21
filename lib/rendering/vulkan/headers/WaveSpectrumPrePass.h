@@ -32,6 +32,11 @@ class WaveSpectrumPrePass : public PbrGraphicsPass
     void draw() const override;
 
     const AllocatedImage& getSpectrumImage() const { return mSpectrumImage; }
+    const float getWidth() const { return AREA_WIDTH; }
+    const int getGridN() const { return GRID_N; }
+
+    //  transition the spectrum image for viewing
+    void prepareSpectrumImageForView();
 
   protected:
     BunnyResult initPipeline() override;

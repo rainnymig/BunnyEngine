@@ -44,6 +44,17 @@ void WaveSpectrumPrePass::draw() const
 
     vkCmdDispatch(cmd, mWaveSpectrumData.N / computeSizeX, mWaveSpectrumData.N / computeSizeY, 1);
 
+    // VkImageMemoryBarrier spectrumImagePostBarrier =
+    //     makeImageMemoryBarrier(mSpectrumImage.mImage, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+    //         VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_ASPECT_COLOR_BIT);
+    // vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+    //     VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 1, &spectrumImagePostBarrier);
+}
+
+void WaveSpectrumPrePass::prepareSpectrumImageForView()
+{
+    VkCommandBuffer cmd = mRenderer->getCurrentCommandBuffer();
+
     VkImageMemoryBarrier spectrumImagePostBarrier =
         makeImageMemoryBarrier(mSpectrumImage.mImage, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
             VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_ASPECT_COLOR_BIT);

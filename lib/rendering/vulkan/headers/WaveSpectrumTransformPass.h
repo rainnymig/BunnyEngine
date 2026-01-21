@@ -31,7 +31,7 @@ class WaveSpectrumTransformPass : public PbrGraphicsPass
     };
 
     WaveSpectrumTransformPass(const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer,
-        std::string_view spectrumShaderPath = "wave_time_spectrum_comp.spv",
+        uint32_t size, float width, std::string_view spectrumShaderPath = "wave_time_spectrum_comp.spv",
         std::string_view fftShaderPath = "wave_spectrum_transform_comp.spv");
 
     void draw() const override;
@@ -39,6 +39,12 @@ class WaveSpectrumTransformPass : public PbrGraphicsPass
     void updateWaveTime(float time);
     void updateWidth(uint32_t size, float width);
     void updateSpectrumImage(const AllocatedImage* spectrumImage);
+
+    //  transition the timed spectrum and fft transformed image for viewing
+    void prepareCurrentFrameImagesForView();
+    const AllocatedImage& getTimedSpectrumImage() const;
+    const AllocatedImage& getIntermediateImage() const;
+    const AllocatedImage& getHeightImage() const;
 
   protected:
     BunnyResult initPipeline() override;
