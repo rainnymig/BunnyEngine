@@ -1,0 +1,88 @@
+#version 460
+
+#include "complex.glsl"
+
+#define PI 3.14159265359
+
+layout (local_size_x = 64) in;
+
+//  image
+//  ---------> x
+//  |
+//  |
+//  |
+//  V
+//  y
+
+//  image should be N x N, N must be multiples of 2 
+layout(set = 0, binding = 0, rg32f) uniform readonly image2D inImage;
+layout(set = 0, binding = 1, rg32f) uniform image2D outImage;
+
+layout(push_constant) uniform FftParams
+{
+    uint N;             //  size of the sequence
+    uint isInverse;     //  0: forward fft, 1: inversed fft
+    uint direction;     //  0: fft on row, 1: fft on column
+    uint iteration;     //  currenct iteration, should be between 0 and log2(N);
+};
+
+Complex calcFFTWm(uint m, uint x)
+{
+    return expi(-2*PI*float(x)/float(m));
+};
+
+Complex calcIFFTWm(uint m, uint x)
+{
+    return expi(2*PI*float(x)/float(m));
+};
+
+Complex imageLoadToComplex(ivec2 coord)
+{
+    vec2 item = imageLoad(inImage, coord).xy;
+    return Complex(item.x, item.y);
+}
+
+void imageStoreFromComplex(ivec2 coord, Complex c)
+{
+    vec4 item = vec4(c.real, c.imaginary, 0, 0);
+    imageStore(outImage, coord, item);
+}
+
+void main()
+{
+	uvec2 pos = gl_GlobalInvocationID.xy;
+    bool fftOnRow = direction == 0;
+    bool isFFT = isInverse == 0;
+
+    uint n = pos.x;             //  the index in the data to do fft/ifft
+    uint dataLine = pos.y;      //  the index of the line - if direction is x, this is the idx of row; otherwise it's column
+
+    uint s = iteration;
+    uint m = uint(exp2(s));
+    uint j = n % m % (m/2);
+    uint k = n / m;
+    Complex Wm = isFFT ? calcFFTWm(m, j) : calcIFFTWm(m, j);
+
+    ivec2 slot1 = fftOnRow ? ivec2(k+j+m/2, dataLine) : ivec2(dataLine, k+j+m/2);
+    ivec2 slot2 = fftOnRow ? ivec2(k+j, dataLine) : ivec2(dataLine, k+j);
+    Complex t = multiply(Wm, imageLoadToComplex(slot1));
+    Complex u = imageLoadToComplex(slot2);
+
+    //  only save its own slot to avoid writing to the same pixel
+    if (n == k+j)
+    {
+        imageStoreFromComplex(slot2, add(u, t));
+    }
+    else
+    {
+        imageStoreFromComplex(slot1, subtract(u, t));
+    }
+
+    // if (!isFFT)
+    // {
+    //     //  here we just want to multiply the final result with 1/N in case of IFFT
+    //     //  so we can just use pos as the coordinate, no need to check direction
+    //     vec4 val = imageLoad(outImage, ivec2(pos));
+    //     imageStore(outImage, ivec2(pos), val/float(N));
+    // }
+}

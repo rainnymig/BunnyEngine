@@ -1,0 +1,48 @@
+#version 460
+
+#include "complex.glsl"
+
+#define PI 3.14159265359
+
+layout (local_size_x = 64) in;
+
+//  image
+//  ---------> x
+//  |
+//  |
+//  |
+//  V
+//  y
+
+//  the image should be of size N x logN, N being the size of the sequence to transform
+layout(set = 0, binding = 1, rg32f) uniform image2D twiddleFactors;
+
+layout(push_constant) uniform FftParams
+{
+    uint N;             //  size of the sequence
+    uint isInverse;     //  0: forward fft, 1: inversed fft
+    uint direction;     //  0: fft on row, 1: fft on column
+};
+
+Complex calcFFTWm(uint m, uint x)
+{
+    return expi(-2*PI*float(x)/float(m));
+};
+
+Complex calcIFFTWm(uint m, uint x)
+{
+    return expi(2*PI*float(x)/float(m));
+};
+
+void imageStoreFromComplex(ivec2 coord, Complex c)
+{
+    vec4 item = vec4(c.real, c.imaginary, 0, 0);
+    imageStore(twiddleFactors, coord, item);
+}
+
+void main()
+{
+	uvec2 pos = gl_GlobalInvocationID.xy;
+    uint logN = uint(log2(N));
+    uint m = pow(2, pos.y+1);
+}

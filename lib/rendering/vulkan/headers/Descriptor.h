@@ -33,7 +33,7 @@ class DescriptorAllocator
     };
 
     void init(VkDevice device, uint32_t maxSets, std::span<PoolSize> poolSizes);
-    void allocate(VkDevice device, VkDescriptorSetLayout* pLayout, VkDescriptorSet* pDescSet, uint32_t count = 1,
+    void allocate(VkDevice device, const VkDescriptorSetLayout* pLayout, VkDescriptorSet* pDescSet, uint32_t count = 1,
         void* pNext = nullptr);
     void clearPools(VkDevice device);
     void destroyPools(VkDevice device);

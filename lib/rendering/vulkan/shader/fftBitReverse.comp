@@ -1,0 +1,59 @@
+#version 460
+
+layout (local_size_x = 16, local_size_y = 16) in;
+
+//  image
+//  ---------> x
+//  |
+//  |
+//  |
+//  V
+//  y
+
+layout(set = 0, binding = 0, rg32f) uniform readonly image2D inImage;
+layout(set = 0, binding = 1, rg32f) uniform image2D outImage;
+
+layout(push_constant) uniform FftParams
+{
+    uint N;             //  size of the sequence
+    uint isInverse;     //  0: forward fft, 1: inversed fft
+    uint direction;     //  0: fft on row, 1: fft on column
+    uint iteration;     //  currenct iteration, should be between 0 and log2(N); (no use in bit reverse)
+};
+
+//  return the bit reverse of x related to M2, which is a multiple of 2
+uint bitReverse(uint x, uint M2)
+{
+    uint r = 0;
+    uint shiftRight = uint(log2(M2)) - 1;
+    M2 >>= 1;
+    uint shiftLeft = 0;
+    while (M2 > 0)
+    {
+        r |= ((x & M2) >> shiftRight << shiftLeft);
+        shiftRight--;
+        shiftLeft++;
+        M2 >>= 1;
+    }
+    return r;
+}
+
+void main()
+{
+	uvec2 pos = gl_GlobalInvocationID.xy;
+    bool fftOnRow = direction == 0;
+
+    uint n = pos.x;             //  the index in the data to do fft/ifft
+    uint dataLine = pos.y;      //  the index of the line
+
+    //  reorder input first and save to output
+    uint nReversed = bitReverse(n, N);
+    if (fftOnRow)
+    {
+        imageStore(outImage, ivec2(nReversed, dataLine), imageLoad(inImage, ivec2(n, dataLine)));
+    }
+    else
+    {
+        imageStore(outImage, ivec2(dataLine, nReversed), imageLoad(inImage, ivec2(dataLine, n)));
+    }
+}

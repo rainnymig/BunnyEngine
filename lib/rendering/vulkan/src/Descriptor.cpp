@@ -55,7 +55,7 @@ void DescriptorAllocator::init(VkDevice device, uint32_t maxSets, std::span<Pool
 }
 
 void DescriptorAllocator::allocate(
-    VkDevice device, VkDescriptorSetLayout* pLayout, VkDescriptorSet* pDescSet, uint32_t count, void* pNext)
+    VkDevice device, const VkDescriptorSetLayout* pLayout, VkDescriptorSet* pDescSet, uint32_t count, void* pNext)
 {
     VkDescriptorPool pool = getPool(device);
 

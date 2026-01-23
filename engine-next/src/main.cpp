@@ -203,6 +203,7 @@ int main(void)
     constexpr float interval = 0.5f;
     uint32_t accumulatedFrames = 0;
     float fps = 0;
+    uint64_t totalFrames = 0;
 
     auto showBasicInfo = [&fps]() {
         ImGui::Begin("Game Stats");
@@ -221,7 +222,7 @@ int main(void)
     ImguiHelper::get().registerCommand(showTexturePreviewControl);
 
     IdType spectrumImageDebugId = BUNNY_INVALID_ID;
-    bool shouldGenerateSpectrum = false;
+    bool shouldGenerateSpectrum = true;
     auto showSpectrumDebug = [&waveSpectrumPrePass, &shouldGenerateSpectrum]() {
         ImGui::Begin("Spectrum Debug");
         if (ImGui::Button("Generate Spectrum"))
@@ -239,6 +240,7 @@ int main(void)
 
         accumulatedTime += timer.getDeltaTime();
         accumulatedFrames++;
+        totalFrames++;
         if (accumulatedTime > interval)
         {
             fps = accumulatedFrames / accumulatedTime;
@@ -286,7 +288,7 @@ int main(void)
 
         pbrForwardPass.prepareDrawCommandsForFrame();
 
-        if (shouldGenerateSpectrum)
+        if (shouldGenerateSpectrum && totalFrames > 2)
         {
             shouldGenerateSpectrum = false;
             waveSpectrumPrePass.draw();
@@ -297,11 +299,9 @@ int main(void)
 
             if (spectrumImageDebugId == BUNNY_INVALID_ID)
             {
-                IdType texId1, texId2, texId3;
+                IdType texId;
                 textureBank.addAllocatedTexture(waveSpectrumPrePass.getSpectrumImage(), spectrumImageDebugId);
-                textureBank.addAllocatedTexture(waveTransformPass.getTimedSpectrumImage(), texId1);
-                textureBank.addAllocatedTexture(waveTransformPass.getIntermediateImage(), texId2);
-                textureBank.addAllocatedTexture(waveTransformPass.getHeightImage(), texId3);
+                textureBank.addAllocatedTexture(waveTransformPass.getHeightImage(), texId);
             }
         }
 
