@@ -5,6 +5,7 @@
 #include "Error.h"
 #include "Shader.h"
 #include "GraphicsPipelineBuilder.h"
+#include "TextureBank.h"
 #include "VulkanRenderResources.h"
 #include "VulkanGraphicsRenderer.h"
 #include "Helper.h"
@@ -14,16 +15,21 @@
 namespace Bunny::Render
 {
 OceanPass::OceanPass(const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer,
-    std::string_view meshShaderPath, std::string_view fragShaderPath)
+    const TextureBank* textureBank, float waveAreaWidth, float waveCellWidth, std::string_view meshShaderPath,
+    std::string_view fragShaderPath)
     : super(vulkanResources, renderer, nullptr, nullptr),
       mMeshShaderPath(meshShaderPath),
-      mFragShaderPath(fragShaderPath)
+      mFragShaderPath(fragShaderPath),
+      mTextureBank(textureBank)
 {
+    //  create wave field and world param data
+    mWaveParams.mGridAreaWidth = waveAreaWidth;
+    mWaveParams.mGridCellWidth = waveCellWidth;
+    mWaveParams.mGridOrigin = glm::vec2(-mWaveParams.mGridCellWidth * GRID_SIZE / 2);
 }
 
 void OceanPass::draw() const
 {
-
     VkCommandBuffer cmd = mRenderer->getCurrentCommandBuffer();
     const FrameData& frame = mFrameData[mRenderer->getCurrentFrameIdx()];
 
@@ -52,6 +58,41 @@ void OceanPass::draw() const
     mRenderer->finishRender();
 }
 
+void OceanPass::prepareFrameDescriptors()
+{
+    FrameData& frame = mFrameData[mRenderer->getCurrentFrameIdx()];
+    VkDevice device = mVulkanResources->getDevice();
+    frame.mDescriptorAllocator.clearPools(device);
+
+    //  allocate discriptors for this frame
+    //  mainly because we need to bind the updated wave textures
+    //  maybe find a solution later to avoid reallocating descriptors every frame
+    //  because the wave textures for each frame is basically fixed and can be bound upfront
+    //  this is just an easy and lazy temp solution
+
+    //  allocate descriptor sets
+    VkDescriptorSetLayout descLayouts[] = {mMeshDescLayout, mWaveImageDescLayout, mFragDescLayout};
+    frame.mDescriptorAllocator.allocate(device, descLayouts, &frame.mMeshDescSet, 3);
+
+    //  write the resources to the desc sets
+    DescriptorWriter writer;
+    writer.writeBuffer(0, mWaveParamsBuffer.mBuffer, sizeof(WaveFieldParams), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+    writer.writeBuffer(1, mWorldParamsBuffer.mBuffer, sizeof(WorldParams), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+    writer.updateSet(device, frame.mMeshDescSet);
+
+    writer.clear();
+    writer.writeImage(0, frame.mVertexDisplacementImage->mImageView, mTextureBank->getSampler(),
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+    writer.writeImage(1, frame.mVertexNormalImage->mImageView, mTextureBank->getSampler(),
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+    writer.updateSet(device, frame.mWaveImageDescSet);
+
+    writer.clear();
+    writer.writeBuffer(0, mLightDataBuffer->mBuffer, sizeof(LightData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+    writer.writeBuffer(1, mCameraDataBuffer->mBuffer, sizeof(PbrCameraData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+    writer.updateSet(device, frame.mFragDescSet);
+}
+
 void OceanPass::updateWorldParams(const glm::mat4& mvpMatrix, float elapsedTime, float deltaTime)
 {
     mWorldParams.mMvpMatrix = mvpMatrix;
@@ -64,19 +105,22 @@ void OceanPass::updateWorldParams(const glm::mat4& mvpMatrix, float elapsedTime,
 
 void OceanPass::linkLightAndCameraData(const AllocatedBuffer& lightData, const AllocatedBuffer& cameraData)
 {
-    DescriptorWriter writer;
-    writer.writeBuffer(0, lightData.mBuffer, sizeof(LightData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-    writer.writeBuffer(1, cameraData.mBuffer, sizeof(PbrCameraData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-    for (FrameData& frame : mFrameData)
-    {
-        writer.updateSet(mVulkanResources->getDevice(), frame.mFragDescSet);
-    }
+    mLightDataBuffer = &lightData;
+    mCameraDataBuffer = &cameraData;
 }
 
 void OceanPass::updateRenderTarget(const AllocatedImage* renderTarget)
 {
     FrameData& frame = mFrameData[mRenderer->getCurrentFrameIdx()];
     frame.mRenderTarget = renderTarget;
+}
+
+void OceanPass::updateWaveTextures(const AllocatedImage* vertexDisplacementTex, const AllocatedImage* vertexNormalTex)
+{
+    FrameData& frame = mFrameData[mRenderer->getCurrentFrameIdx()];
+
+    frame.mVertexDisplacementImage = vertexDisplacementTex;
+    frame.mVertexNormalImage = vertexNormalTex;
 }
 
 BunnyResult OceanPass::initPipeline()
@@ -86,10 +130,10 @@ BunnyResult OceanPass::initPipeline()
     Shader meshShader(mMeshShaderPath, device);
     Shader fragShader(mFragShaderPath, device);
 
-    VkDescriptorSetLayout layouts[] = {mMeshDescLayout, mFragDescLayout};
+    VkDescriptorSetLayout layouts[] = {mMeshDescLayout, mWaveImageDescLayout, mFragDescLayout};
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 2;
+    pipelineLayoutInfo.setLayoutCount = 3;
     pipelineLayoutInfo.pSetLayouts = layouts;
     pipelineLayoutInfo.pushConstantRangeCount = 0;
     pipelineLayoutInfo.pPushConstantRanges = nullptr;
@@ -128,47 +172,28 @@ BunnyResult OceanPass::initDescriptors()
     VkDevice device = mVulkanResources->getDevice();
 
     DescriptorAllocator::PoolSize poolSizes[] = {
-        {.mType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .mRatio = 4},
+        {.mType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         .mRatio = 4},
+        {.mType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .mRatio = 2},
     };
-    mDescriptorAllocator.init(device, 4, poolSizes);
-
-    VkDescriptorSetLayout descLayouts[] = {mMeshDescLayout, mFragDescLayout};
     for (FrameData& frame : mFrameData)
     {
-        mDescriptorAllocator.allocate(device, descLayouts, &frame.mMeshDescSet, 2);
+        frame.mDescriptorAllocator.init(device, 4, poolSizes);
     }
 
-    mDeletionStack.AddFunction([this]() { mDescriptorAllocator.destroyPools(mVulkanResources->getDevice()); });
+    //  descriptors will be allocated every frame when wave textures are updated
+
+    mDeletionStack.AddFunction([this]() {
+        for (FrameData& frame : mFrameData)
+        {
+            frame.mDescriptorAllocator.destroyPools(mVulkanResources->getDevice());
+        }
+    });
 
     return BUNNY_HAPPY;
 }
 
 BunnyResult OceanPass::initDataAndResources()
 {
-    //  create wave field and world param data
-    mWaveParams.mOctaves[0] = SineWaveOctave{
-        .mK{0.5, 0},
-        .mA{1},
-        .mPhi{0}
-    };
-    mWaveParams.mOctaves[1] = SineWaveOctave{
-        .mK{0.8f, 0},
-        .mA{0.7},
-        .mPhi{glm::pi<float>() / 4}
-    };
-    mWaveParams.mOctaves[2] = SineWaveOctave{
-        .mK{1, 0},
-        .mA{0.35},
-        .mPhi{glm::pi<float>() / 8}
-    };
-    mWaveParams.mOctaves[3] = SineWaveOctave{
-        .mK{1.5, 0},
-        .mA{0.2},
-        .mPhi{glm::pi<float>() / 2}
-    };
-    mWaveParams.mGridWidth = 0.1f;
-    mWaveParams.mGridOrigin = glm::vec2(-mWaveParams.mGridWidth * GRID_SIZE / 2);
-
     //  create wave field and world buffers
     mVulkanResources->createBufferWithData(&mWaveParams, sizeof(WaveFieldParams), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
         VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
@@ -181,16 +206,6 @@ BunnyResult OceanPass::initDataAndResources()
         mVulkanResources->destroyBuffer(mWaveParamsBuffer);
         mVulkanResources->destroyBuffer(mWorldParamsBuffer);
     });
-
-    //  update mesh desc set
-    //  fragment desc set will be updated separately
-    DescriptorWriter writer;
-    writer.writeBuffer(0, mWaveParamsBuffer.mBuffer, sizeof(WaveFieldParams), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-    writer.writeBuffer(1, mWorldParamsBuffer.mBuffer, sizeof(WorldParams), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-    for (FrameData& frame : mFrameData)
-    {
-        writer.updateSet(mVulkanResources->getDevice(), frame.mMeshDescSet);
-    }
 
     return BUNNY_HAPPY;
 }
@@ -210,14 +225,25 @@ BunnyResult OceanPass::initDescriptorLayouts()
 
     builder.clear();
     descBinding.binding = 0;
-    descBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    builder.addBinding(descBinding);
+    descBinding.stageFlags = VK_SHADER_STAGE_MESH_BIT_EXT;
+    descBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    builder.addBinding(descBinding); //  wave vertex displacement texture
     descBinding.binding = 1;
-    builder.addBinding(descBinding);
+    builder.addBinding(descBinding); //  wave vertex normal texture
+    mWaveImageDescLayout = builder.build(device);
+
+    builder.clear();
+    descBinding.binding = 0;
+    descBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    descBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    builder.addBinding(descBinding); //  light data
+    descBinding.binding = 1;
+    builder.addBinding(descBinding); //  camera data
     mFragDescLayout = builder.build(device);
 
     mDeletionStack.AddFunction([this]() {
         vkDestroyDescriptorSetLayout(mVulkanResources->getDevice(), mMeshDescLayout, nullptr);
+        vkDestroyDescriptorSetLayout(mVulkanResources->getDevice(), mWaveImageDescLayout, nullptr);
         vkDestroyDescriptorSetLayout(mVulkanResources->getDevice(), mFragDescLayout, nullptr);
     });
 

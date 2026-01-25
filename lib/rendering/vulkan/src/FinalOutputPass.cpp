@@ -26,6 +26,8 @@ void FinalOutputPass::draw() const
     const FrameData& frame = mFrameData[mRenderer->getCurrentFrameIdx()];
 
     //  wait for scene render and cloud render to finish
+    //  huh? should probably transition the image layout to shader read only optimal
+    //  not sure why I didn't do that
     VkImageMemoryBarrier sceneRenderBarrier = makeImageMemoryBarrier(frame.mRenderedSceneTexture->mImage,
         VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_ASPECT_COLOR_BIT);

@@ -22,13 +22,6 @@ class Camera;
 class OceanPass : public PbrGraphicsPass
 {
   public:
-    struct SineWaveOctave
-    {
-        glm::vec2 mK;
-        float mA;
-        float mPhi;
-    };
-
     static constexpr uint32_t OCTAVE_COUNT = 4;
     static constexpr uint32_t GRID_SIZE = 1024;
     static constexpr uint32_t MESH_THREAD_COUNT_X = 8;
@@ -36,9 +29,9 @@ class OceanPass : public PbrGraphicsPass
 
     struct WaveFieldParams
     {
-        SineWaveOctave mOctaves[OCTAVE_COUNT];
         glm::vec2 mGridOrigin;
-        float mGridWidth;
+        float mGridCellWidth;
+        float mGridAreaWidth;
     };
 
     struct WorldParams
@@ -49,13 +42,17 @@ class OceanPass : public PbrGraphicsPass
     };
 
     OceanPass(const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer,
-        std::string_view meshShaderPath = "wave_mesh.spv", std::string_view fragShaderPath = "wave_frag.spv");
+        const TextureBank* textureBank, float waveAreaWidth, float waveCellWidth,
+        std::string_view meshShaderPath = "wave_fft_mesh.spv", std::string_view fragShaderPath = "wave_frag.spv");
 
     void draw() const override;
+
+    void prepareFrameDescriptors();
 
     void updateWorldParams(const glm::mat4& mvpMatrix, float elapsedTime, float deltaTime);
     void linkLightAndCameraData(const AllocatedBuffer& lightData, const AllocatedBuffer& cameraData);
     void updateRenderTarget(const AllocatedImage* renderTarget);
+    void updateWaveTextures(const AllocatedImage* vertexDisplacementTex, const AllocatedImage* vertexNormalTex);
 
   protected:
     BunnyResult initPipeline() override;
@@ -68,24 +65,33 @@ class OceanPass : public PbrGraphicsPass
     struct FrameData
     {
         VkDescriptorSet mMeshDescSet;
+        VkDescriptorSet mWaveImageDescSet;
         VkDescriptorSet mFragDescSet;
 
         const AllocatedImage* mRenderTarget;
+        const AllocatedImage* mVertexDisplacementImage;
+        const AllocatedImage* mVertexNormalImage;
+
+        DescriptorAllocator mDescriptorAllocator;
     };
 
     BunnyResult initDescriptorLayouts();
+
+    const TextureBank* mTextureBank;
 
     std::string_view mMeshShaderPath;
     std::string_view mFragShaderPath;
 
     std::array<FrameData, MAX_FRAMES_IN_FLIGHT> mFrameData;
     VkDescriptorSetLayout mMeshDescLayout;
+    VkDescriptorSetLayout mWaveImageDescLayout;
     VkDescriptorSetLayout mFragDescLayout;
-    DescriptorAllocator mDescriptorAllocator;
 
     WaveFieldParams mWaveParams;
     WorldParams mWorldParams;
     AllocatedBuffer mWaveParamsBuffer;
     AllocatedBuffer mWorldParamsBuffer;
+    const AllocatedBuffer* mLightDataBuffer;
+    const AllocatedBuffer* mCameraDataBuffer;
 };
 } // namespace Bunny::Render

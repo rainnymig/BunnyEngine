@@ -35,5 +35,5 @@ glslc.exe --target-env=vulkan1.3 ./lib/rendering/vulkan/shader/waveSpectrumTrans
 # glslc.exe --target-env=vulkan1.3 ./lib/rendering/vulkan/shader/wave.mesh                -o ./build/engine-next/Debug/wave_mesh.spv
 # glslc.exe --target-env=vulkan1.3 ./lib/rendering/vulkan/shader/wave.frag                -o ./build/engine-next/Debug/wave_frag.spv
 glslc.exe --target-spv=spv1.5 ./lib/rendering/vulkan/shader/wave.mesh                   -o ./build/engine-next/Debug/wave_mesh.spv
+glslc.exe --target-spv=spv1.5 ./lib/rendering/vulkan/shader/wavefft.mesh                -o ./build/engine-next/Debug/wave_fft_mesh.spv
 glslc.exe --target-spv=spv1.5 ./lib/rendering/vulkan/shader/wave.frag                   -o ./build/engine-next/Debug/wave_frag.spv
-
