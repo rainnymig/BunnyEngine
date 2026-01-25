@@ -129,30 +129,6 @@ vec3 calculateLighting(PbrMaterial material, Light light, vec3 fragPos, vec3 vie
     float reflectance;
     float ambientOcclusion;
 
-    // //  decide whether to use values from texture
-    // //  the metallic value is set to less than 0 if want to use texture
-    // if (material.metallic < 0)
-    // {
-    //     baseColor = texture(textures[material.colorTexId], texCoord);
-    //     emissiveColor = texture(textures[material.emissiveTexId], texCoord);
-    //     normal = normalize(tbnMatrix * texture(textures[material.normalTexId], texCoord).xyz);
-    //     vec4 mrra = texture(textures[material.metalRoughnessTexId], texCoord);
-    //     metallic = mrra.x;
-    //     roughness = mrra.y;
-    //     reflectance = mrra.z;
-    //     ambientOcclusion = mrra.w;
-    // }
-    // else
-    // {
-    //     baseColor = material.baseColor;
-    //     emissiveColor = material.emissiveColor;
-    //     normal = normalFromVtx;
-    //     metallic = material.metallic;
-    //     roughness = material.roughness;
-    //     reflectance = material.reflectance;
-    //     ambientOcclusion = material.ambientOcclusion;
-    // }
-
     baseColor = material.baseColor;
     emissiveColor = material.emissiveColor;
     normal = normalFromVtx;
@@ -178,8 +154,11 @@ vec3 calculateLighting(PbrMaterial material, Light light, vec3 fragPos, vec3 vie
     if (material.metalRoughnessTexId != INVALID_ID)
     {
         vec4 metalRoughness = texture(textures[material.metalRoughnessTexId], texCoord);
-        metallic = metallic * metalRoughness.x;
-        roughness = roughness * metalRoughness.w;
+        //  according to gltf specification, roughness is in g(y) channel, metallic is in b(z) channel
+        //  https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#metallic-roughness-material
+        //  very intuitive
+        metallic = metallic * metalRoughness.z;
+        roughness = roughness * metalRoughness.y;
     }
 
     vec3 lightDir = light.type == DIRECTIONAL ? -light.dirOrPos : normalize(light.dirOrPos - fragPos);
