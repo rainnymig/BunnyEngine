@@ -93,13 +93,11 @@ BunnyResult WaveSpectrumPrePass::initDescriptors()
 BunnyResult WaveSpectrumPrePass::initDataAndResources()
 {
     //  create spectrum data and buffer
-    mWaveSpectrumData.wind = glm::vec2(3.0f, 3.0f);
+    mWaveSpectrumData.wind = glm::vec2(5.0f, 3.0f);
     mWaveSpectrumData.width = AREA_WIDTH;
-    // mWaveSpectrumData.ksiR = 0.1f;
-    // mWaveSpectrumData.ksiI = 0.2f;
     mWaveSpectrumData.N = GRID_N;
-    mWaveSpectrumData.A = 0.81f / (AREA_WIDTH * AREA_WIDTH);
-    // mWaveSpectrumData.A = 4;
+    // mWaveSpectrumData.A = 0.81f / (AREA_WIDTH * AREA_WIDTH);
+    mWaveSpectrumData.A = 4;
 
     mVulkanResources->createBufferWithData(&mWaveSpectrumData, sizeof(WaveSpectrumData),
         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,

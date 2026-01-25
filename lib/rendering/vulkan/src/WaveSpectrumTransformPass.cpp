@@ -208,10 +208,10 @@ BunnyResult Render::WaveSpectrumTransformPass::initDescriptorLayouts()
 void Render::WaveSpectrumTransformPass::fastFourierTransform(const AllocatedImage& inputImage,
     const AllocatedImage& bufferImage, uint32_t N, bool isInverse, bool& isOutputToBuffer) const
 {
-    fastFourierTransformOneDir(inputImage, bufferImage, N, DIRECTION_ROW, isInverse, isOutputToBuffer);
+    fastFourierTransformOneDir(inputImage, bufferImage, N, DIRECTION_COLUMN, isInverse, isOutputToBuffer);
     if (isOutputToBuffer)
     {
-        fastFourierTransformOneDir(bufferImage, inputImage, N, DIRECTION_COLUMN, isInverse, isOutputToBuffer);
+        fastFourierTransformOneDir(bufferImage, inputImage, N, DIRECTION_ROW, isInverse, isOutputToBuffer);
 
         //  tricky here! because the "buffer" in this call to OneDir is actually the inputImage,
         //  so when passing the value out the bool should be inverted
@@ -219,7 +219,7 @@ void Render::WaveSpectrumTransformPass::fastFourierTransform(const AllocatedImag
     }
     else
     {
-        fastFourierTransformOneDir(inputImage, bufferImage, N, DIRECTION_COLUMN, isInverse, isOutputToBuffer);
+        fastFourierTransformOneDir(inputImage, bufferImage, N, DIRECTION_ROW, isInverse, isOutputToBuffer);
     }
 }
 
@@ -231,7 +231,7 @@ void Render::WaveSpectrumTransformPass::fastFourierTransformOneDir(const Allocat
     VkDevice device = mVulkanResources->getDevice();
 
     FFTParams fftParams = mFFTParams;
-    fftParams.mIsInverse = isInverse;
+    fftParams.mIsInverse = isInverse ? 1 : 0;
     fftParams.mN = N;
 
     uint32_t maxIteration = std::log2<uint32_t>(N);
@@ -279,10 +279,8 @@ void Render::WaveSpectrumTransformPass::fastFourierTransformOneDir(const Allocat
     vkCmdPushConstants(cmd, mBitReversePipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(FFTParams), &fftParams);
     vkCmdDispatch(cmd, mFFTParams.mN / bitReverseSizeX, mFFTParams.mN / bitReverseSizeY, 1);
 
-    //  vertical ifft
-
-    constexpr static uint32_t fftSizeX = 16;
-    constexpr static uint32_t fftSizeY = 16;
+    constexpr static uint32_t fftSizeX = 64;
+    constexpr static uint32_t fftSizeY = 1;
 
     //  bind fft pipeline
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, mPipeline);

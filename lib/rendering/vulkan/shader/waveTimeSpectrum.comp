@@ -44,7 +44,7 @@ void main()
     Complex h0_minusk_conjugate = Complex(h.z, h.w);
 
     Complex h0kt = add(multiply(multiply(h0k, expi(-omega*time)), 0.5), multiply(multiply(h0_minusk_conjugate, expi(omega*time)), 0.5));
-    // Complex h0kt = multiply(h0k, expi(-omega*time));
     imageStoreFromComplex(pos, h0kt);
-    // imageStoreFromComplex(pos, h0k);
+
+    // imageStore(outTimedSpectrumImage, pos, vec4(vec2(pos)/N, 0, 0));
 }

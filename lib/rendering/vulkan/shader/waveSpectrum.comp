@@ -27,6 +27,13 @@ layout(set = 1, binding = 0) uniform WaveSpectrumData
 void main()
 {
 	ivec2 pos = ivec2(gl_GlobalInvocationID.xy);
+
+    if (pos.x == N/2 && pos.y == N/2)
+    {
+        imageStore(outImage, pos, vec4(0, 0, 0, 0));
+        return;
+    }
+
     float dk = 2*PI/width;
     float kx = 2*PI*(pos.x-N/2)/width;
     float kz = 2*PI*(pos.y-N/2)/width;
@@ -49,11 +56,11 @@ void main()
     float Ph = A * exp(-1 / (k2 * L * L) - (k2 * l * l)) / (k2 * k2) * windFactor;
     float hc = 1/sqrt(2);
     Complex h0k = multiply(Complex(stdNormalDistRndVal.x, stdNormalDistRndVal.y), hc * sqrt(2*Ph*dk*dk));
-    h0k = multiply(h0k, 10000);
+    // h0k = multiply(h0k, 1000);
 
     // Complex h0_minusk_conjugate = conjugate(h0k);    //  phillips spectrum is even function for k so h0(k) == h0(-k)
     Complex h0_minusk_conjugate = multiply(Complex(stdNormalDistRndValMinus.x, stdNormalDistRndValMinus.y), hc * sqrt(2*Ph*dk*dk));
-    h0_minusk_conjugate = multiply(h0_minusk_conjugate, 10000);
+    // h0_minusk_conjugate = multiply(h0_minusk_conjugate, 1000);
     
     imageStoreFrom2Complex(pos, h0k, h0_minusk_conjugate);
 }
