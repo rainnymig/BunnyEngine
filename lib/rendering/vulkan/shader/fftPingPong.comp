@@ -57,10 +57,12 @@ void main()
     uint n = pos.x;             //  the index in the data to do fft/ifft
     uint dataLine = pos.y;      //  the index of the line - if direction is x, this is the idx of row; otherwise it's column
 
+    //  mostly a parallelized version of this Cooley-Tukey FFT implementation
+    //  https://en.wikipedia.org/wiki/Cooley%E2%80%93Tukey_FFT_algorithm#Data_reordering,_bit_reversal,_and_in-place_algorithms
+    
     uint s = iteration;
     uint m = uint(exp2(s));
     uint j = n % m % (m/2);
-    // uint k = n / m;
     uint k = n - (n % m);
     Complex Wm = isFFT ? calcFFTWm(m, j) : calcIFFTWm(m, j);
 
@@ -73,14 +75,11 @@ void main()
     if (n == k+j)
     {
         imageStoreFromComplex(slot2, add(u, t));
-        // imageStoreFromComplex(slot2, Complex(1, 0));
     }
     else
     {
         imageStoreFromComplex(slot1, subtract(u, t));
-        // imageStoreFromComplex(slot1, Complex(0, 1));
     }
-    // imageStoreFromComplex(ivec2(pos), Wm);
 
     // if (!isFFT)
     // {

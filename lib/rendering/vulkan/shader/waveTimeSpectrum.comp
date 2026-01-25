@@ -32,19 +32,19 @@ void main()
 {
     ivec2 pos = ivec2(gl_GlobalInvocationID.xy);
     
-    float kx = 2*PI*(pos.x-N/2)/width;
-    float kz = 2*PI*(pos.y-N/2)/width;
-    vec2 kvec = vec2(kx, kz);
+    int halfN = N/2;
+    vec2 kvec = 2*PI*(pos-halfN)/width;
     float k = length(kvec);
     float omega = dispersion(k);
-
 
     vec4 h = imageLoad(inSpectrumImage, pos);
     Complex h0k = Complex(h.x, h.y);
     Complex h0_minusk_conjugate = Complex(h.z, h.w);
 
     Complex h0kt = add(multiply(multiply(h0k, expi(-omega*time)), 0.5), multiply(multiply(h0_minusk_conjugate, expi(omega*time)), 0.5));
-    imageStoreFromComplex(pos, h0kt);
 
-    // imageStore(outTimedSpectrumImage, pos, vec4(vec2(pos)/N, 0, 0));
+    //  shift the output position from -N/2 ~ N/2-1 to 0 ~ N-1
+    //  so that we can use the "common" fft way of summing from 0 ~ N-1
+    ivec2 shiftedPos = (pos - halfN) % int(N);
+    imageStoreFromComplex(shiftedPos, h0kt);
 }
