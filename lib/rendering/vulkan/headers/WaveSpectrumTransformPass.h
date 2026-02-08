@@ -30,10 +30,16 @@ class WaveSpectrumTransformPass : public PbrGraphicsPass
         uint32_t iteration;  //  currenct iteration, should be between 0 and log2(N);
     };
 
+    struct WaveParams
+    {
+        float mU; //  displacement factor, should be >= 0
+    };
+
     WaveSpectrumTransformPass(const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer,
         uint32_t size, float width, std::string_view spectrumShaderPath = "wave_time_spectrum_comp.spv",
         std::string_view bitReverseShaderPath = "fft_bit_reverse_comp.spv",
-        std::string_view fftPingPongShaderPath = "fft_ping_pong_comp.spv");
+        std::string_view fftPingPongShaderPath = "fft_ping_pong_comp.spv",
+        std::string_view waveConstructShaderPath = "wave_construct_comp.spv");
 
     void draw() const override;
 
@@ -44,6 +50,8 @@ class WaveSpectrumTransformPass : public PbrGraphicsPass
     //  transition the timed spectrum and fft transformed image for viewing
     void prepareCurrentFrameImagesForView();
     const AllocatedImage& getHeightImage() const;
+    const AllocatedImage& getWaveDisplacementImage() const;
+    const AllocatedImage& getWaveNormalImage() const;
 
   protected:
     BunnyResult initPipeline() override;
@@ -66,7 +74,7 @@ class WaveSpectrumTransformPass : public PbrGraphicsPass
         AllocatedImage mDisplaceSlopeSpectrumPong;
 
         AllocatedImage mWaveDisplacementImage;
-        AllocatedImage mWaveNormlImage;
+        AllocatedImage mWaveNormalImage;
         //  self intersection image?
 
         bool mIsOutputToImagePong; //  now all images have same dimension so can share the same mIsOutputToImagePong
@@ -97,17 +105,22 @@ class WaveSpectrumTransformPass : public PbrGraphicsPass
     VkPipeline mSpectrumPipeline;
     VkPipelineLayout mBitReversePipelineLayout;
     VkPipeline mBitReversePipeline;
+    VkPipelineLayout mWaveConstructPipelineLayout;
+    VkPipeline mWaveConstructPipeline;
 
     std::string_view mTimedSpectrumShaderPath;
     std::string_view mBitReverseShaderPath;
     std::string_view mFftShaderPath;
+    std::string_view mWaveConstructShaderPath;
 
     mutable std::array<FrameData, MAX_FRAMES_IN_FLIGHT> mFrameData;
 
     VkDescriptorSetLayout mTimedSpectrumDescLayout;
     VkDescriptorSetLayout mImageDescLayout;
+    VkDescriptorSetLayout mWaveConstructDescLayout;
 
     TimedSpectrumParams mTimedSpectrumParams;
     mutable FFTParams mFFTParams{.mIsInverse = 1};
+    WaveParams mWaveParams{.mU = 2.0f};
 };
 } // namespace Bunny::Render

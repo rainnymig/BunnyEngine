@@ -13,11 +13,13 @@ static constexpr uint32_t DIRECTION_COLUMN = 1;
 
 Render::WaveSpectrumTransformPass::WaveSpectrumTransformPass(const VulkanRenderResources* vulkanResources,
     const VulkanGraphicsRenderer* renderer, uint32_t size, float width, std::string_view spectrumShaderPath,
-    std::string_view bitReverseShaderPath, std::string_view fftPingPongShaderPath)
+    std::string_view bitReverseShaderPath, std::string_view fftPingPongShaderPath,
+    std::string_view waveConstructShaderPath)
     : super(vulkanResources, renderer, nullptr, nullptr),
       mTimedSpectrumShaderPath(spectrumShaderPath),
       mBitReverseShaderPath(bitReverseShaderPath),
-      mFftShaderPath(fftPingPongShaderPath)
+      mFftShaderPath(fftPingPongShaderPath),
+      mWaveConstructShaderPath(waveConstructShaderPath)
 {
     updateWidth(size, width);
 }
@@ -97,6 +99,16 @@ const AllocatedImage& WaveSpectrumTransformPass::getHeightImage() const
     return frame.mIsOutputToImagePong ? frame.mTimedSpectrumPong : frame.mTimedSpectrumPing;
 }
 
+const AllocatedImage& WaveSpectrumTransformPass::getWaveDisplacementImage() const
+{
+    return mFrameData[mRenderer->getCurrentFrameIdx()].mWaveDisplacementImage;
+}
+
+const AllocatedImage& WaveSpectrumTransformPass::getWaveNormalImage() const
+{
+    return mFrameData[mRenderer->getCurrentFrameIdx()].mWaveNormalImage;
+}
+
 BunnyResult Render::WaveSpectrumTransformPass::initPipeline()
 {
     std::vector<VkDescriptorSetLayout> descLayouts{mImageDescLayout};
@@ -121,6 +133,12 @@ BunnyResult Render::WaveSpectrumTransformPass::initPipeline()
     BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(buildComputePipeline(
         mTimedSpectrumShaderPath, &specDescLayouts, &pushConsts, &mSpectrumPipelineLayout, &mSpectrumPipeline))
 
+    //  wave construct
+    std::vector<VkDescriptorSetLayout> waveDescLayouts{mWaveConstructDescLayout};
+    pushConst.size = sizeof(WaveParams);
+    BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(buildComputePipeline(mWaveConstructShaderPath, &waveDescLayouts, &pushConsts,
+        &mWaveConstructPipelineLayout, &mWaveConstructPipeline))
+
     return BUNNY_HAPPY;
 }
 
@@ -131,12 +149,12 @@ BunnyResult Render::WaveSpectrumTransformPass::initDescriptors()
     VkDevice device = mVulkanResources->getDevice();
 
     DescriptorAllocator::PoolSize poolSizes[] = {
-        {.mType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, .mRatio = 2},
+        {.mType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, .mRatio = 6},
     };
 
     for (FrameData& frame : mFrameData)
     {
-        frame.mDescriptorAllocator.init(device, 6, poolSizes);
+        frame.mDescriptorAllocator.init(device, 10, poolSizes);
     }
 
     //  all desc sets will be allocated and written to when drawing every frame
@@ -180,6 +198,13 @@ BunnyResult Render::WaveSpectrumTransformPass::initDataAndResources()
         frame.mDisplaceSlopeSpectrumPong =
             mVulkanResources->createImage(VkExtent3D{mFFTParams.mN, mFFTParams.mN, 1}, VK_FORMAT_R32G32_SFLOAT,
                 VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
+
+        frame.mWaveDisplacementImage =
+            mVulkanResources->createImage(VkExtent3D{mFFTParams.mN, mFFTParams.mN, 1}, VK_FORMAT_R32G32B32A32_SFLOAT,
+                VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
+        frame.mWaveNormalImage =
+            mVulkanResources->createImage(VkExtent3D{mFFTParams.mN, mFFTParams.mN, 1}, VK_FORMAT_R32G32B32A32_SFLOAT,
+                VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
     }
 
     mDeletionStack.AddFunction([this]() {
@@ -193,6 +218,8 @@ BunnyResult Render::WaveSpectrumTransformPass::initDataAndResources()
             mVulkanResources->destroyImage(frame.mDisplaceSpectrumPong);
             mVulkanResources->destroyImage(frame.mDisplaceSlopeSpectrumPing);
             mVulkanResources->destroyImage(frame.mDisplaceSlopeSpectrumPong);
+            mVulkanResources->destroyImage(frame.mWaveDisplacementImage);
+            mVulkanResources->destroyImage(frame.mWaveNormalImage);
         }
     });
 
@@ -207,6 +234,7 @@ BunnyResult Render::WaveSpectrumTransformPass::initDescriptorLayouts()
         0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_COMPUTE_BIT, nullptr};
 
     DescriptorLayoutBuilder builder;
+
     builder.addBinding(descBinding); //  input spectrum
     descBinding.binding = 1;
     builder.addBinding(descBinding); //  timed spectrum
@@ -221,7 +249,8 @@ BunnyResult Render::WaveSpectrumTransformPass::initDescriptorLayouts()
     mDeletionStack.AddFunction(
         [this]() { vkDestroyDescriptorSetLayout(mVulkanResources->getDevice(), mTimedSpectrumDescLayout, nullptr); });
 
-    DescriptorLayoutBuilder builder;
+    builder.clear();
+    descBinding.binding = 0;
     builder.addBinding(descBinding);
     descBinding.binding = 1;
     builder.addBinding(descBinding);
@@ -229,6 +258,24 @@ BunnyResult Render::WaveSpectrumTransformPass::initDescriptorLayouts()
 
     mDeletionStack.AddFunction(
         [this]() { vkDestroyDescriptorSetLayout(mVulkanResources->getDevice(), mImageDescLayout, nullptr); });
+
+    builder.clear();
+    descBinding.binding = 0;
+    builder.addBinding(descBinding); //  height
+    descBinding.binding = 1;
+    builder.addBinding(descBinding); //  slope
+    descBinding.binding = 2;
+    builder.addBinding(descBinding); //  displacement xz
+    descBinding.binding = 3;
+    builder.addBinding(descBinding); //  displacement xz slope
+    descBinding.binding = 4;
+    builder.addBinding(descBinding); //  wave displacement
+    descBinding.binding = 5;
+    builder.addBinding(descBinding); //  wave normal
+    mWaveConstructDescLayout = builder.build(mVulkanResources->getDevice());
+
+    mDeletionStack.AddFunction(
+        [this]() { vkDestroyDescriptorSetLayout(mVulkanResources->getDevice(), mWaveConstructDescLayout, nullptr); });
 
     return BUNNY_HAPPY;
 }
@@ -398,6 +445,65 @@ void Render::WaveSpectrumTransformPass::fastFourierTransformOneDir(const Allocat
 
 void WaveSpectrumTransformPass::constructWave() const
 {
+    VkCommandBuffer cmd = mRenderer->getCurrentCommandBuffer();
+    FrameData& frame = mFrameData[mRenderer->getCurrentFrameIdx()];
+    VkDevice device = mVulkanResources->getDevice();
+
+    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, mWaveConstructPipeline);
+
+    const AllocatedImage& heightImage =
+        frame.mIsOutputToImagePong ? frame.mTimedSpectrumPong : frame.mTimedSpectrumPing;
+    const AllocatedImage& slopeImage = frame.mIsOutputToImagePong ? frame.mSlopeSpectrumPong : frame.mSlopeSpectrumPing;
+    const AllocatedImage& displaceXZImage =
+        frame.mIsOutputToImagePong ? frame.mDisplaceSpectrumPong : frame.mDisplaceSpectrumPing;
+    const AllocatedImage& displaceSlopeXZImage =
+        frame.mIsOutputToImagePong ? frame.mDisplaceSlopeSpectrumPong : frame.mDisplaceSlopeSpectrumPing;
+
+    VkDescriptorSet waveConstructDescSet;
+    frame.mDescriptorAllocator.allocate(device, &mWaveConstructDescLayout, &waveConstructDescSet, 1);
+    DescriptorWriter writer;
+    writer.writeImage(0, heightImage.mImageView, nullptr, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+    writer.writeImage(1, slopeImage.mImageView, nullptr, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+    writer.writeImage(
+        2, displaceXZImage.mImageView, nullptr, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+    writer.writeImage(
+        3, displaceSlopeXZImage.mImageView, nullptr, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+    writer.writeImage(
+        4, frame.mWaveDisplacementImage.mImageView, nullptr, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+    writer.writeImage(
+        5, frame.mWaveNormalImage.mImageView, nullptr, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+    writer.updateSet(device, waveConstructDescSet);
+
+    constexpr static uint32_t waveComputeSizeX = 16;
+    constexpr static uint32_t waveComputeSizeY = 16;
+    {
+        VkImageMemoryBarrier heightImageBarrier = makeImageMemoryBarrier(heightImage.mImage, VK_ACCESS_SHADER_WRITE_BIT,
+            VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_ASPECT_COLOR_BIT);
+        VkImageMemoryBarrier slopeImageBarrier = makeImageMemoryBarrier(slopeImage.mImage, VK_ACCESS_SHADER_READ_BIT,
+            VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_ASPECT_COLOR_BIT);
+        VkImageMemoryBarrier displaceImageBarrier =
+            makeImageMemoryBarrier(displaceXZImage.mImage, VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_SHADER_WRITE_BIT,
+                VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_ASPECT_COLOR_BIT);
+        VkImageMemoryBarrier displaceSlopeImageBarrier =
+            makeImageMemoryBarrier(displaceSlopeXZImage.mImage, VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_SHADER_WRITE_BIT,
+                VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_ASPECT_COLOR_BIT);
+        VkImageMemoryBarrier waveDisplacementImageBarrier = makeImageMemoryBarrier(frame.mWaveDisplacementImage.mImage,
+            VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
+            VK_IMAGE_ASPECT_COLOR_BIT);
+        VkImageMemoryBarrier waveNormalImageBarrier =
+            makeImageMemoryBarrier(frame.mWaveNormalImage.mImage, VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_SHADER_WRITE_BIT,
+                VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_ASPECT_COLOR_BIT);
+        VkImageMemoryBarrier barriers[]{heightImageBarrier, slopeImageBarrier, displaceImageBarrier,
+            displaceSlopeImageBarrier, waveDisplacementImageBarrier, waveNormalImageBarrier};
+        vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 6, barriers);
+    }
+
+    vkCmdBindDescriptorSets(
+        cmd, VK_PIPELINE_BIND_POINT_COMPUTE, mWaveConstructPipelineLayout, 0, 1, &waveConstructDescSet, 0, nullptr);
+    vkCmdPushConstants(
+        cmd, mWaveConstructPipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(WaveParams), &mWaveParams);
+    vkCmdDispatch(cmd, mTimedSpectrumParams.mN / waveComputeSizeX, mTimedSpectrumParams.mN / waveComputeSizeY, 1);
 }
 
 } // namespace Bunny::Render
