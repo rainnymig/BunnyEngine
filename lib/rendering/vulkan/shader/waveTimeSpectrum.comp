@@ -11,7 +11,7 @@ layout(set = 0, binding = 0, rgba32f) uniform readonly image2D inSpectrumImage;
 layout(set = 0, binding = 1, rg32f) uniform image2D outTimedSpectrumImage;
 layout(set = 0, binding = 2, rg32f) uniform image2D outSlopeSpectrumImage;
 layout(set = 0, binding = 3, rg32f) uniform image2D outDisplacementSpectrumImage;
-layout(set = 0, binding = 4, rg32f) uniform image2D outDisplacedSlopeSpectrumImage;
+layout(set = 0, binding = 4, rg32f) uniform image2D outDisplacementSlopeSpectrumImage;
 
 layout(push_constant) uniform SpectrumParams
 {
@@ -19,18 +19,6 @@ layout(push_constant) uniform SpectrumParams
     float width;            //  the horizontal dimension of the whole wave grid area, in meters
     int N;                  //  size of the spectrum (in one dimension)
 };
-
-void imageStoreFromComplexTimed(ivec2 coord, Complex c)
-{
-    vec4 item = vec4(c.real, c.imaginary, 0, 0);
-    imageStore(outTimedSpectrumImage, coord, item);
-}
-
-void imageStoreFromComplexSlope(ivec2 coord, Complex c)
-{
-    vec4 item = vec4(c.real, c.imaginary, 0, 0);
-    imageStore(outSlopeSpectrumImage, coord, item);
-}
 
 float dispersion(float k)
 {
@@ -42,7 +30,9 @@ void main()
     ivec2 pos = ivec2(gl_GlobalInvocationID.xy);
     
     int halfN = N/2;
-    vec2 kvec = 2*PI*(pos-halfN)/width;
+    ivec2 kIdx = pos - halfN;
+
+    vec2 kvec = 2*PI*kIdx/width;
     float k = length(kvec);
     float omega = dispersion(k);
 
@@ -55,24 +45,39 @@ void main()
     //  shift the output position from -N/2 ~ N/2-1 to 0 ~ N-1
     //  so that we can use the "common" fft way of summing from 0 ~ N-1
     ivec2 shiftedPos = (pos - halfN) % int(N);
-    imageStoreFromComplexTimed(shiftedPos, h0kt);
+
+    imageStore(outTimedSpectrumImage, shiftedPos, vec4(h0kt.real, h0kt.imaginary, 0, 0));
 
     //  calculate spectrum for the slope
     //  dk = 0 if the order of derivative is odd (1 in this case so always true),
     //  and N is even (also always true in our case) and |k| == 2*pi*N/(2L), 
     //  i.e. when either pos.x or pos.y == 0, that is k == -2*pi*N/(2L)
     //  otherwise, dk = i * k (i.e. Complex(0, k))
-    Complex dkx = Complex(0, pos.x == 0 ? 0 : kvec.x);
-    Complex dkz = Complex(0, pos.y == 0 ? 0 : kvec.y);
+    Complex sdkx = Complex(0, pos.x == 0 ? 0 : kvec.x);
+    Complex sdkz = Complex(0, pos.y == 0 ? 0 : kvec.y);
 
-    Complex dkx_h0kt = multiply(dkx, h0kt);
-    Complex dkz_h0kt = multiply(dkz, h0kt);
+    Complex sdkx_h0kt = multiply(sdkx, h0kt);
+    Complex sdkz_h0kt = multiply(sdkz, h0kt);
     //  combine these two to use the optimization of hermitian spectrum
     //  to calculate the idft two spectrum with just 1 idft process
-    Complex combined = add(dkx_h0kt, multiply(Complex(0, 1), dkz_h0kt));
-    imageStoreFromComplexSlope(shiftedPos, combined);
+    Complex combinedSlopeSpec = add(sdkx_h0kt, multiply(Complex(0, 1), sdkz_h0kt));
+    imageStore(outSlopeSpectrumImage, shiftedPos, vec4(combinedSlopeSpec.real, combinedSlopeSpec.imaginary, 0, 0));
 
     //  maybe use only one texture to hold both h0kt and combined
     //  and do the idft in one pass? 
     //  since they have same dimension and does not affect each other
+
+    //  displacement spectrum
+    Complex ddkx = Complex(0, (pos.x == 0 || kIdx.x == 0) ? 0 : -kvec.x / kIdx.x);
+    Complex ddkz = Complex(0, (pos.y == 0 || kIdx.y == 0) ? 0 : -kvec.y / kIdx.y);
+    Complex ddkx_h0kt = multiply(ddkx, h0kt);
+    Complex ddkz_h0kt = multiply(ddkz, h0kt);
+    Complex combinedDispSpec = add(ddkx_h0kt, multiply(Complex(0, 1), ddkz_h0kt));
+    imageStore(outDisplacementSpectrumImage, shiftedPos, vec4(combinedDispSpec.real, combinedDispSpec.imaginary, 0, 0));
+
+    //  slope of displacement spectrum
+    Complex sdkx_ddkx_h0kt = multiply(sdkx, ddkx_h0kt);
+    Complex sdkz_ddkz_h0kt = multiply(sdkz, ddkz_h0kt);
+    Complex combinedDispSlopSpec = add(sdkx_ddkx_h0kt, multiply(Complex(0, 1), sdkz_ddkz_h0kt));
+    imageStore(outDisplacementSlopeSpectrumImage, shiftedPos, vec4(combinedDispSlopSpec.real, combinedDispSlopSpec.imaginary, 0, 0));
 }

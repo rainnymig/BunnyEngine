@@ -24,46 +24,34 @@ Render::WaveSpectrumTransformPass::WaveSpectrumTransformPass(const VulkanRenderR
 
 void Render::WaveSpectrumTransformPass::draw() const
 {
-    VkCommandBuffer cmd = mRenderer->getCurrentCommandBuffer();
     FrameData& frame = mFrameData[mRenderer->getCurrentFrameIdx()];
     VkDevice device = mVulkanResources->getDevice();
 
     frame.mDescriptorAllocator.clearPools(device);
 
     //  add time to the wave spectrum
-    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, mSpectrumPipeline);
+    computeTimedSpectrum();
 
-    VkDescriptorSet spectrumDescSet;
-    frame.mDescriptorAllocator.allocate(device, &mImageDescLayout, &spectrumDescSet, 1);
-    DescriptorWriter writer;
-    writer.writeImage(
-        0, frame.mSpectrumImage->mImageView, nullptr, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-    writer.writeImage(
-        1, frame.mFftImage1.mImageView, nullptr, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-    writer.updateSet(device, spectrumDescSet);
-
-    constexpr static uint32_t spectrumComputeSizeX = 16;
-    constexpr static uint32_t spectrumComputeSizeY = 16;
+    //  transform the spectrums to get the actual values
+    //  should not matter, but only one is setting the frame.mIsOutputToImagePong
+    fastFourierTransform(
+        frame.mTimedSpectrumPing, frame.mTimedSpectrumPong, mFFTParams.mN, true, frame.mIsOutputToImagePong);
     {
-        VkImageMemoryBarrier spectrumImageBarrier =
-            makeImageMemoryBarrier(frame.mSpectrumImage->mImage, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
-                VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_ASPECT_COLOR_BIT);
-        VkImageMemoryBarrier timedSpectrumImageBarrier =
-            makeImageMemoryBarrier(frame.mFftImage1.mImage, VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_SHADER_WRITE_BIT,
-                VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_ASPECT_COLOR_BIT);
-        VkImageMemoryBarrier barriers[]{spectrumImageBarrier, timedSpectrumImageBarrier};
-        vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-            VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 2, barriers);
+        bool dummyBool;
+        fastFourierTransform(frame.mSlopeSpectrumPing, frame.mSlopeSpectrumPong, mFFTParams.mN, true, dummyBool);
+    }
+    {
+        bool dummyBool;
+        fastFourierTransform(frame.mDisplaceSpectrumPing, frame.mDisplaceSpectrumPong, mFFTParams.mN, true, dummyBool);
+    }
+    {
+        bool dummyBool;
+        fastFourierTransform(
+            frame.mDisplaceSlopeSpectrumPing, frame.mDisplaceSlopeSpectrumPong, mFFTParams.mN, true, dummyBool);
     }
 
-    vkCmdBindDescriptorSets(
-        cmd, VK_PIPELINE_BIND_POINT_COMPUTE, mSpectrumPipelineLayout, 0, 1, &spectrumDescSet, 0, nullptr);
-    vkCmdPushConstants(cmd, mSpectrumPipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(TimedSpectrumParams),
-        &mTimedSpectrumParams);
-    vkCmdDispatch(
-        cmd, mTimedSpectrumParams.mN / spectrumComputeSizeX, mTimedSpectrumParams.mN / spectrumComputeSizeY, 1);
-
-    fastFourierTransform(frame.mFftImage1, frame.mFftImage2, mFFTParams.mN, true, frame.mIsOutputToImage2);
+    //  use the inverse FFT result to construct the actual wave vertex displacement and normal
+    constructWave();
 }
 
 void Render::WaveSpectrumTransformPass::updateWaveTime(float time)
@@ -94,10 +82,10 @@ void WaveSpectrumTransformPass::prepareCurrentFrameImagesForView()
     VkCommandBuffer cmd = mRenderer->getCurrentCommandBuffer();
     const FrameData& frame = mFrameData[mRenderer->getCurrentFrameIdx()];
 
-    VkImageMemoryBarrier heightImageBarrier =
-        makeImageMemoryBarrier(frame.mIsOutputToImage2 ? frame.mFftImage2.mImage : frame.mFftImage1.mImage,
-            VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_ASPECT_COLOR_BIT);
+    VkImageMemoryBarrier heightImageBarrier = makeImageMemoryBarrier(
+        frame.mIsOutputToImagePong ? frame.mTimedSpectrumPong.mImage : frame.mTimedSpectrumPing.mImage,
+        VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL,
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_ASPECT_COLOR_BIT);
     VkImageMemoryBarrier barriers[]{heightImageBarrier};
     vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
         VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 1, barriers);
@@ -106,7 +94,7 @@ void WaveSpectrumTransformPass::prepareCurrentFrameImagesForView()
 const AllocatedImage& WaveSpectrumTransformPass::getHeightImage() const
 {
     const FrameData& frame = mFrameData[mRenderer->getCurrentFrameIdx()];
-    return frame.mIsOutputToImage2 ? frame.mFftImage2 : frame.mFftImage1;
+    return frame.mIsOutputToImagePong ? frame.mTimedSpectrumPong : frame.mTimedSpectrumPing;
 }
 
 BunnyResult Render::WaveSpectrumTransformPass::initPipeline()
@@ -128,9 +116,10 @@ BunnyResult Render::WaveSpectrumTransformPass::initPipeline()
         buildComputePipeline(mFftShaderPath, &descLayouts, &pushConsts, &mPipelineLayout, &mPipeline))
 
     //  timed spectrum pipeline
+    std::vector<VkDescriptorSetLayout> specDescLayouts{mTimedSpectrumDescLayout};
     pushConst.size = sizeof(TimedSpectrumParams);
     BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(buildComputePipeline(
-        mTimedSpectrumShaderPath, &descLayouts, &pushConsts, &mSpectrumPipelineLayout, &mSpectrumPipeline))
+        mTimedSpectrumShaderPath, &specDescLayouts, &pushConsts, &mSpectrumPipelineLayout, &mSpectrumPipeline))
 
     return BUNNY_HAPPY;
 }
@@ -167,10 +156,28 @@ BunnyResult Render::WaveSpectrumTransformPass::initDataAndResources()
     //  create image for fft result
     for (FrameData& frame : mFrameData)
     {
-        frame.mFftImage1 =
+        frame.mTimedSpectrumPing =
             mVulkanResources->createImage(VkExtent3D{mFFTParams.mN, mFFTParams.mN, 1}, VK_FORMAT_R32G32_SFLOAT,
                 VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
-        frame.mFftImage2 =
+        frame.mTimedSpectrumPong =
+            mVulkanResources->createImage(VkExtent3D{mFFTParams.mN, mFFTParams.mN, 1}, VK_FORMAT_R32G32_SFLOAT,
+                VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
+        frame.mSlopeSpectrumPing =
+            mVulkanResources->createImage(VkExtent3D{mFFTParams.mN, mFFTParams.mN, 1}, VK_FORMAT_R32G32_SFLOAT,
+                VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
+        frame.mSlopeSpectrumPong =
+            mVulkanResources->createImage(VkExtent3D{mFFTParams.mN, mFFTParams.mN, 1}, VK_FORMAT_R32G32_SFLOAT,
+                VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
+        frame.mDisplaceSpectrumPing =
+            mVulkanResources->createImage(VkExtent3D{mFFTParams.mN, mFFTParams.mN, 1}, VK_FORMAT_R32G32_SFLOAT,
+                VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
+        frame.mDisplaceSpectrumPong =
+            mVulkanResources->createImage(VkExtent3D{mFFTParams.mN, mFFTParams.mN, 1}, VK_FORMAT_R32G32_SFLOAT,
+                VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
+        frame.mDisplaceSlopeSpectrumPing =
+            mVulkanResources->createImage(VkExtent3D{mFFTParams.mN, mFFTParams.mN, 1}, VK_FORMAT_R32G32_SFLOAT,
+                VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
+        frame.mDisplaceSlopeSpectrumPong =
             mVulkanResources->createImage(VkExtent3D{mFFTParams.mN, mFFTParams.mN, 1}, VK_FORMAT_R32G32_SFLOAT,
                 VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
     }
@@ -178,8 +185,14 @@ BunnyResult Render::WaveSpectrumTransformPass::initDataAndResources()
     mDeletionStack.AddFunction([this]() {
         for (FrameData& frame : mFrameData)
         {
-            mVulkanResources->destroyImage(frame.mFftImage1);
-            mVulkanResources->destroyImage(frame.mFftImage2);
+            mVulkanResources->destroyImage(frame.mTimedSpectrumPing);
+            mVulkanResources->destroyImage(frame.mTimedSpectrumPong);
+            mVulkanResources->destroyImage(frame.mSlopeSpectrumPing);
+            mVulkanResources->destroyImage(frame.mSlopeSpectrumPong);
+            mVulkanResources->destroyImage(frame.mDisplaceSpectrumPing);
+            mVulkanResources->destroyImage(frame.mDisplaceSpectrumPong);
+            mVulkanResources->destroyImage(frame.mDisplaceSlopeSpectrumPing);
+            mVulkanResources->destroyImage(frame.mDisplaceSlopeSpectrumPong);
         }
     });
 
@@ -194,6 +207,21 @@ BunnyResult Render::WaveSpectrumTransformPass::initDescriptorLayouts()
         0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_COMPUTE_BIT, nullptr};
 
     DescriptorLayoutBuilder builder;
+    builder.addBinding(descBinding); //  input spectrum
+    descBinding.binding = 1;
+    builder.addBinding(descBinding); //  timed spectrum
+    descBinding.binding = 2;
+    builder.addBinding(descBinding); //  slope spectrum
+    descBinding.binding = 3;
+    builder.addBinding(descBinding); //  displacement spectrum
+    descBinding.binding = 4;
+    builder.addBinding(descBinding); //  displacement slope spectrum
+    mTimedSpectrumDescLayout = builder.build(mVulkanResources->getDevice());
+
+    mDeletionStack.AddFunction(
+        [this]() { vkDestroyDescriptorSetLayout(mVulkanResources->getDevice(), mTimedSpectrumDescLayout, nullptr); });
+
+    DescriptorLayoutBuilder builder;
     builder.addBinding(descBinding);
     descBinding.binding = 1;
     builder.addBinding(descBinding);
@@ -203,6 +231,61 @@ BunnyResult Render::WaveSpectrumTransformPass::initDescriptorLayouts()
         [this]() { vkDestroyDescriptorSetLayout(mVulkanResources->getDevice(), mImageDescLayout, nullptr); });
 
     return BUNNY_HAPPY;
+}
+
+void WaveSpectrumTransformPass::computeTimedSpectrum() const
+{
+    VkCommandBuffer cmd = mRenderer->getCurrentCommandBuffer();
+    FrameData& frame = mFrameData[mRenderer->getCurrentFrameIdx()];
+    VkDevice device = mVulkanResources->getDevice();
+
+    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, mSpectrumPipeline);
+
+    VkDescriptorSet spectrumDescSet;
+    frame.mDescriptorAllocator.allocate(device, &mTimedSpectrumDescLayout, &spectrumDescSet, 1);
+    DescriptorWriter writer;
+    writer.writeImage(
+        0, frame.mSpectrumImage->mImageView, nullptr, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+    writer.writeImage(
+        1, frame.mTimedSpectrumPing.mImageView, nullptr, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+    writer.writeImage(
+        2, frame.mSlopeSpectrumPing.mImageView, nullptr, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+    writer.writeImage(3, frame.mDisplaceSlopeSpectrumPing.mImageView, nullptr, VK_IMAGE_LAYOUT_GENERAL,
+        VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+    writer.writeImage(4, frame.mDisplaceSlopeSpectrumPing.mImageView, nullptr, VK_IMAGE_LAYOUT_GENERAL,
+        VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+    writer.updateSet(device, spectrumDescSet);
+
+    constexpr static uint32_t spectrumComputeSizeX = 16;
+    constexpr static uint32_t spectrumComputeSizeY = 16;
+    {
+        VkImageMemoryBarrier spectrumImageBarrier =
+            makeImageMemoryBarrier(frame.mSpectrumImage->mImage, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+                VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_ASPECT_COLOR_BIT);
+        VkImageMemoryBarrier timedSpectrumImageBarrier = makeImageMemoryBarrier(frame.mTimedSpectrumPing.mImage,
+            VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
+            VK_IMAGE_ASPECT_COLOR_BIT);
+        VkImageMemoryBarrier slopeSpectrumImageBarrier = makeImageMemoryBarrier(frame.mSlopeSpectrumPing.mImage,
+            VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
+            VK_IMAGE_ASPECT_COLOR_BIT);
+        VkImageMemoryBarrier displacementSpectrumImageBarrier = makeImageMemoryBarrier(
+            frame.mDisplaceSpectrumPing.mImage, VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_SHADER_WRITE_BIT,
+            VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_ASPECT_COLOR_BIT);
+        VkImageMemoryBarrier displacementSlopeSpectrumImageBarrier = makeImageMemoryBarrier(
+            frame.mDisplaceSlopeSpectrumPing.mImage, VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_SHADER_WRITE_BIT,
+            VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_ASPECT_COLOR_BIT);
+        VkImageMemoryBarrier barriers[]{spectrumImageBarrier, timedSpectrumImageBarrier, slopeSpectrumImageBarrier,
+            displacementSpectrumImageBarrier, displacementSlopeSpectrumImageBarrier};
+        vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 5, barriers);
+    }
+
+    vkCmdBindDescriptorSets(
+        cmd, VK_PIPELINE_BIND_POINT_COMPUTE, mSpectrumPipelineLayout, 0, 1, &spectrumDescSet, 0, nullptr);
+    vkCmdPushConstants(cmd, mSpectrumPipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(TimedSpectrumParams),
+        &mTimedSpectrumParams);
+    vkCmdDispatch(
+        cmd, mTimedSpectrumParams.mN / spectrumComputeSizeX, mTimedSpectrumParams.mN / spectrumComputeSizeY, 1);
 }
 
 void Render::WaveSpectrumTransformPass::fastFourierTransform(const AllocatedImage& inputImage,
@@ -311,6 +394,10 @@ void Render::WaveSpectrumTransformPass::fastFourierTransformOneDir(const Allocat
 
         fftParams.iteration++;
     }
+}
+
+void WaveSpectrumTransformPass::constructWave() const
+{
 }
 
 } // namespace Bunny::Render

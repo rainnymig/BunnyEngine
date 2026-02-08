@@ -70,8 +70,7 @@ void calcVertex(uvec2 gridCoord, uint vertId)
 
     vec3 displacement = getWaveDisplacement(vertNormalizedWorldPosXZ);
     vec3 vertWorldNormal = getWaveNormal(vertNormalizedWorldPosXZ);
-    //  according to papers here it should minus the displacement
-    vec3 vertWorldPos = vec3(vertWorldPosXZ.x - displacement.x, displacement.y, vertWorldPosXZ.y - displacement.z); 
+    vec3 vertWorldPos = vec3(vertWorldPosXZ.x + displacement.x, displacement.y, vertWorldPosXZ.y + displacement.z); 
 
     gl_MeshVerticesEXT[vertId].gl_Position = mvpMatrix * vec4(vertWorldPos, 1);
     vertexNormal[vertId] = vertWorldNormal;

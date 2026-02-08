@@ -31,6 +31,7 @@ glslc.exe --target-env=vulkan1.3 ./lib/rendering/vulkan/shader/waveTimeSpectrum.
 glslc.exe --target-env=vulkan1.3 ./lib/rendering/vulkan/shader/fftBitReverse.comp       -o ./build/engine-next/Debug/fft_bit_reverse_comp.spv
 glslc.exe --target-env=vulkan1.3 ./lib/rendering/vulkan/shader/fftPingPong.comp         -o ./build/engine-next/Debug/fft_ping_pong_comp.spv
 glslc.exe --target-env=vulkan1.3 ./lib/rendering/vulkan/shader/waveSpectrumTransform.comp   -o ./build/engine-next/Debug/wave_spectrum_transform_comp.spv
+glslc.exe --target-env=vulkan1.3 ./lib/rendering/vulkan/shader/waveConstruct.comp       -o ./build/engine-next/Debug/wave_construct_comp.spv
 
 # glslc.exe --target-env=vulkan1.3 ./lib/rendering/vulkan/shader/wave.mesh                -o ./build/engine-next/Debug/wave_mesh.spv
 # glslc.exe --target-env=vulkan1.3 ./lib/rendering/vulkan/shader/wave.frag                -o ./build/engine-next/Debug/wave_frag.spv

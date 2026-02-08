@@ -56,14 +56,26 @@ class WaveSpectrumTransformPass : public PbrGraphicsPass
     {
         const AllocatedImage* mSpectrumImage;
 
-        AllocatedImage mFftImage1;
-        AllocatedImage mFftImage2;
+        AllocatedImage mTimedSpectrumPing;
+        AllocatedImage mTimedSpectrumPong;
+        AllocatedImage mSlopeSpectrumPing;
+        AllocatedImage mSlopeSpectrumPong;
+        AllocatedImage mDisplaceSpectrumPing;
+        AllocatedImage mDisplaceSpectrumPong;
+        AllocatedImage mDisplaceSlopeSpectrumPing;
+        AllocatedImage mDisplaceSlopeSpectrumPong;
 
-        bool mIsOutputToImage2;
+        AllocatedImage mWaveDisplacementImage;
+        AllocatedImage mWaveNormlImage;
+        //  self intersection image?
+
+        bool mIsOutputToImagePong; //  now all images have same dimension so can share the same mIsOutputToImagePong
         mutable DescriptorAllocator mDescriptorAllocator;
     };
 
     BunnyResult initDescriptorLayouts();
+
+    void computeTimedSpectrum() const;
 
     //  perform 2D fast fourier transform on input image
     //  isInverse: indicates whether to perform fft or inverse fft
@@ -79,6 +91,8 @@ class WaveSpectrumTransformPass : public PbrGraphicsPass
     void fastFourierTransformOneDir(const AllocatedImage& inputImage, const AllocatedImage& bufferImage, uint32_t N,
         uint32_t direction, bool isInverse, bool& isOutputToBuffer) const;
 
+    void constructWave() const;
+
     VkPipelineLayout mSpectrumPipelineLayout;
     VkPipeline mSpectrumPipeline;
     VkPipelineLayout mBitReversePipelineLayout;
@@ -90,6 +104,7 @@ class WaveSpectrumTransformPass : public PbrGraphicsPass
 
     mutable std::array<FrameData, MAX_FRAMES_IN_FLIGHT> mFrameData;
 
+    VkDescriptorSetLayout mTimedSpectrumDescLayout;
     VkDescriptorSetLayout mImageDescLayout;
 
     TimedSpectrumParams mTimedSpectrumParams;

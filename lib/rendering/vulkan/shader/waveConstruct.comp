@@ -1,0 +1,35 @@
+#version 460
+
+#include "complex.glsl"
+
+layout(set = 0, binding = 0, rg32f) uniform readonly image2D heightImage;
+layout(set = 0, binding = 1, rg32f) uniform readonly image2D slopeImage;
+layout(set = 0, binding = 2, rg32f) uniform readonly image2D displacementImage;
+layout(set = 0, binding = 3, rg32f) uniform readonly image2D displacementSlopeImage;
+layout(set = 0, binding = 4, rgba32f) uniform image2D waveDisplacementImage;
+layout(set = 0, binding = 5, rgba32f) uniform image2D waveNormalImage;
+
+layout(push_constant) uniform WaveParams
+{
+    float u;        //  displacement factor, should be >= 0
+};
+
+void main()
+{
+    ivec2 pos = ivec2(gl_GlobalInvocationID.xy);
+
+    float negative_u = -u;
+    
+    //  wave vertex displacement
+    float height = imageLoad(heightImage, pos).x;    //  only the real part matters
+    vec2 displacementXZ = imageLoad(displacementImage, pos).xy;   //  real (x): displacement x, imaginary (y): displacement z
+    vec4 waveDisplacement = vec4(displacementXZ.x * negative_u, height, displacementXZ.y * negative_u, 0);
+    imageStore(waveDisplacementImage, pos, waveDisplacement);
+
+    //  wave normal
+    vec2 slopeXZ = imageLoad(slopeImage, pos).xy;
+    vec2 displaceSlopeXZ = imageLoad(displacementSlopeImage, pos).xy;
+    vec2 slopeAfterDisplacement = slopeXZ / (1 + negative_u * displaceSlopeXZ);
+    vec3 waveNormal = normalize(vec3(-slopeAfterDisplacement.x, 1, -slopeAfterDisplacement.y));
+    imageStore(waveNormalImage, pos, vec4(waveNormal, 1.0));
+}
