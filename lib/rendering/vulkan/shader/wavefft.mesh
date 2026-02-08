@@ -31,8 +31,8 @@ layout(set = 0, binding = 1) uniform WorldParams
     float deltaTime;
 };
 
-layout(set = 2, binding = 0) uniform sampler2D waveDisplacementTex;
-layout(set = 2, binding = 1) uniform sampler2D waveNormalTex;
+layout(set = 2, binding = 0, rgba32f) uniform sampler2D waveDisplacementTex;
+layout(set = 2, binding = 1, rgba32f) uniform sampler2D waveNormalTex;
 //  layout(set = 1, binding = 2) uniform sampler2D waveOverlapTex;  //  need this or combine with other tex?
 
 layout(location = 0) out vec3 vertexNormal[];
