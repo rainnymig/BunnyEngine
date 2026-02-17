@@ -33,6 +33,16 @@ void OceanPass::draw() const
     VkCommandBuffer cmd = mRenderer->getCurrentCommandBuffer();
     const FrameData& frame = mFrameData[mRenderer->getCurrentFrameIdx()];
 
+    VkImageMemoryBarrier waveDisplacementImageBarrier = makeImageMemoryBarrier(frame.mVertexDisplacementImage->mImage,
+        VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        VK_IMAGE_ASPECT_COLOR_BIT);
+    VkImageMemoryBarrier waveNormalImageBarrier =
+        makeImageMemoryBarrier(frame.mVertexNormalImage->mImage, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+            VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_ASPECT_COLOR_BIT);
+    VkImageMemoryBarrier barriers[]{ waveDisplacementImageBarrier, waveNormalImageBarrier };
+    vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_MESH_SHADER_BIT_EXT,
+        VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 2, barriers);
+
     //  wait for rendering from other passes onto the render target is done
     VkImageMemoryBarrier renderTargetBarrier = makeImageMemoryBarrier(frame.mRenderTarget->mImage,
         VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
@@ -50,7 +60,7 @@ void OceanPass::draw() const
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipeline);
 
     vkCmdBindDescriptorSets(
-        cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout, 0, 2, &frame.mMeshDescSet, 0, nullptr);
+        cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout, 0, 3, &frame.mMeshDescSet, 0, nullptr);
 
     //  dispatch mesh pipeline
     vkCmdDrawMeshTasksEXT(cmd, GRID_SIZE / MESH_THREAD_COUNT_X, GRID_SIZE / MESH_THREAD_COUNT_Y, 1);

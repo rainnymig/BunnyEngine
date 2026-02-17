@@ -38,21 +38,13 @@ void Render::WaveSpectrumTransformPass::draw() const
     //  should not matter, but only one is setting the frame.mIsOutputToImagePong
     fastFourierTransform(
         frame.mTimedSpectrumPing, frame.mTimedSpectrumPong, mFFTParams.mN, true, frame.mIsOutputToImagePong);
-    {
-        bool dummyBool;
-        fastFourierTransform(frame.mSlopeSpectrumPing, frame.mSlopeSpectrumPong, mFFTParams.mN, true, dummyBool);
-    }
-    {
-        bool dummyBool;
-        fastFourierTransform(frame.mDisplaceSpectrumPing, frame.mDisplaceSpectrumPong, mFFTParams.mN, true, dummyBool);
-    }
-    {
-        bool dummyBool;
-        fastFourierTransform(
-            frame.mDisplaceSlopeSpectrumPing, frame.mDisplaceSlopeSpectrumPong, mFFTParams.mN, true, dummyBool);
-    }
+    bool dummyBool1, dummyBool2, dummyBool3;
+    fastFourierTransform(frame.mSlopeSpectrumPing, frame.mSlopeSpectrumPong, mFFTParams.mN, true, dummyBool1);
+    fastFourierTransform(frame.mDisplaceSpectrumPing, frame.mDisplaceSpectrumPong, mFFTParams.mN, true, dummyBool2);
+    fastFourierTransform(
+        frame.mDisplaceSlopeSpectrumPing, frame.mDisplaceSlopeSpectrumPong, mFFTParams.mN, true, dummyBool3);
 
-    //  use the inverse FFT result to construct the actual wave vertex displacement and normal
+    ////  use the inverse FFT result to construct the actual wave vertex displacement and normal
     constructWave();
 }
 
@@ -149,12 +141,12 @@ BunnyResult Render::WaveSpectrumTransformPass::initDescriptors()
     VkDevice device = mVulkanResources->getDevice();
 
     DescriptorAllocator::PoolSize poolSizes[] = {
-        {.mType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, .mRatio = 6},
+        {.mType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, .mRatio = 20},
     };
 
     for (FrameData& frame : mFrameData)
     {
-        frame.mDescriptorAllocator.init(device, 10, poolSizes);
+        frame.mDescriptorAllocator.init(device, 30, poolSizes);
     }
 
     //  all desc sets will be allocated and written to when drawing every frame
@@ -203,7 +195,7 @@ BunnyResult Render::WaveSpectrumTransformPass::initDataAndResources()
             mVulkanResources->createImage(VkExtent3D{mFFTParams.mN, mFFTParams.mN, 1}, VK_FORMAT_R32G32B32A32_SFLOAT,
                 VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
         frame.mWaveNormalImage =
-            mVulkanResources->createImage(VkExtent3D{mFFTParams.mN, mFFTParams.mN, 1}, VK_FORMAT_R32G32B32A32_SFLOAT,
+            mVulkanResources->createImage(VkExtent3D{mFFTParams.mN, mFFTParams.mN, 1}, VK_FORMAT_R8G8B8A8_UNORM,
                 VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
     }
 

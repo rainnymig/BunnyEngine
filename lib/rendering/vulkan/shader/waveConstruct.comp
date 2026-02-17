@@ -9,7 +9,7 @@ layout(set = 0, binding = 1, rg32f) uniform readonly image2D slopeImage;
 layout(set = 0, binding = 2, rg32f) uniform readonly image2D displacementImage;
 layout(set = 0, binding = 3, rg32f) uniform readonly image2D displacementSlopeImage;
 layout(set = 0, binding = 4, rgba32f) uniform image2D waveDisplacementImage;
-layout(set = 0, binding = 5, rgba32f) uniform image2D waveNormalImage;
+layout(set = 0, binding = 5, rgba8) uniform image2D waveNormalImage;
 
 layout(push_constant) uniform WaveParams
 {
@@ -33,5 +33,6 @@ void main()
     vec2 displaceSlopeXZ = imageLoad(displacementSlopeImage, pos).xy;
     vec2 slopeAfterDisplacement = slopeXZ / (1 + negative_u * displaceSlopeXZ);
     vec3 waveNormal = normalize(vec3(-slopeAfterDisplacement.x, 1, -slopeAfterDisplacement.y));
+    waveNormal = waveNormal * 0.5 + 0.5;    //  remap to 0~1
     imageStore(waveNormalImage, pos, vec4(waveNormal, 1.0));
 }

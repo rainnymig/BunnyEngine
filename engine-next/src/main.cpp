@@ -88,38 +88,6 @@ int main(void)
     textureBank.initialize();
     pbrMaterialBank.initialize();
 
-    // {
-    //     IdType texId;
-    //     textureBank.addTexture("./assets/texture/huaji.jpg", VK_FORMAT_R8G8B8A8_UNORM, texId);
-    //     textureBank.addTexture("./assets/texture/test_simplex.png", VK_FORMAT_R8G8B8A8_UNORM, texId);
-    //     textureBank.addTexture("./assets/texture/gaz/gltf_embedded_1.jpeg", VK_FORMAT_R8G8B8A8_UNORM, texId);
-    //     textureBank.addTexture("./assets/texture/j12.jpg", VK_FORMAT_R8G8B8A8_UNORM, texId);
-    //     textureBank.addTexture3d(
-    //         "./assets/texture/test_simplex_3d.png", VK_FORMAT_R8G8B8A8_UNORM, 128, 128, 128, texId);
-    // }
-
-    // {
-    //     IdType matInstId;
-    //     pbrMaterialBank.addMaterialInstance(
-    //         PbrMaterialParameters{
-    //             .mBaseColor = glm::vec4(0.8f, 0.8f, 0.5f, 1.0f),
-    //             .mEmissiveColor = glm::vec4(0, 0, 0, 0),
-    //             .mMetallic = 0.05f,
-    //             .mRoughness = 0.5f,
-    //             .mReflectance = 0.5f,
-    //         },
-    //         matInstId);
-    //     pbrMaterialBank.addMaterialInstance(
-    //         PbrMaterialParameters{
-    //             .mBaseColor = glm::vec4(0.5f, 0.8f, 0.9f, 1.0f),
-    //             .mEmissiveColor = glm::vec4(0, 0, 0, 0),
-    //             .mMetallic = 0.05f,
-    //             .mRoughness = 0.5f,
-    //             .mReflectance = 0.5f,
-    //         },
-    //         matInstId);
-    // }
-
     World bunnyWorld;
     WorldLoader worldLoader(&renderResources, &pbrMaterialBank, &meshBank, &textureBank);
     worldLoader.loadPbrTestWorldWithGltfMeshes(config.mModelFilePath, bunnyWorld);
@@ -141,7 +109,8 @@ int main(void)
     FinalOutputPass finalOutputPass(&renderResources, &renderer, &textureBank);
     DepthReducePass depthReducePass(&renderResources, &renderer);
     TexturePreviewPass texturePreviewPass(&renderResources, &renderer, &pbrMaterialBank, &meshBank, &textureBank);
-    // OceanPass oceanPass(&renderResources, &renderer);
+    OceanPass oceanPass(&renderResources, &renderer, &textureBank, waveSpectrumPrePass.getWidth(),
+        waveSpectrumPrePass.getWidth() / waveSpectrumPrePass.getGridN());
 
     waveSpectrumPrePass.initializePass();
     waveTransformPass.initializePass();
@@ -152,10 +121,10 @@ int main(void)
     finalOutputPass.initializePass();
     depthReducePass.initializePass();
     texturePreviewPass.initializePass();
-    // if (renderResources.getSupportMeshShader())
-    // {
-    //     oceanPass.initializePass();
-    // }
+    if (renderResources.getSupportMeshShader())
+    {
+        oceanPass.initializePass();
+    }
 
     pbrForwardPass.buildDrawCommands();
 
@@ -191,10 +160,10 @@ int main(void)
 
     waveTransformPass.updateSpectrumImage(&waveSpectrumPrePass.getSpectrumImage());
 
-    // if (renderResources.getSupportMeshShader())
-    // {
-    //     oceanPass.linkLightAndCameraData(worldTranslator.getPbrLightBuffer(), worldTranslator.getPbrCameraBuffer());
-    // }
+    if (renderResources.getSupportMeshShader())
+    {
+        oceanPass.linkLightAndCameraData(worldTranslator.getPbrLightBuffer(), worldTranslator.getPbrCameraBuffer());
+    }
 
     CameraSystem cameraSystem(&inputManager);
     ObjectRandomMovementSystem objRandMovSystem;
@@ -231,7 +200,7 @@ int main(void)
         }
         ImGui::End();
     };
-    ImguiHelper::get().registerCommand(showSpectrumDebug);
+    // ImguiHelper::get().registerCommand(showSpectrumDebug);
 
     timer.start();
     while (true)
@@ -275,10 +244,10 @@ int main(void)
             cullingPass.updateCullingData(cam.mCamera);
             skyPass.updateRenderParams(cam.mCamera, timer.getTime());
             waveTransformPass.updateWaveTime(timer.getTime());
-            // if (renderResources.getSupportMeshShader())
-            // {
-            //     oceanPass.updateWorldParams(cam.mCamera.getViewProjMatrix(), timer.getTime(), timer.getDeltaTime());
-            // }
+             if (renderResources.getSupportMeshShader())
+             {
+                 oceanPass.updateWorldParams(cam.mCamera.getViewProjMatrix(), timer.getTime(), timer.getDeltaTime());
+             }
         }
 
         texturePreviewPass.updateTextureForPreview();
@@ -288,32 +257,43 @@ int main(void)
 
         pbrForwardPass.prepareDrawCommandsForFrame();
 
-        if (shouldGenerateSpectrum && totalFrames > 2)
+        if (shouldGenerateSpectrum)
         {
             shouldGenerateSpectrum = false;
             waveSpectrumPrePass.draw();
-            waveTransformPass.draw();
-
-            waveSpectrumPrePass.prepareSpectrumImageForView();
-            waveTransformPass.prepareCurrentFrameImagesForView();
-
-            if (spectrumImageDebugId == BUNNY_INVALID_ID)
-            {
-                IdType texId;
-                textureBank.addAllocatedTexture(waveSpectrumPrePass.getSpectrumImage(), spectrumImageDebugId);
-                textureBank.addAllocatedTexture(waveTransformPass.getHeightImage(), texId);
-            }
         }
+
+        // if (shouldGenerateSpectrum && totalFrames > 2)
+        // {
+        //     shouldGenerateSpectrum = false;
+        //     waveSpectrumPrePass.draw();
+        //     waveTransformPass.draw();
+
+        //     waveSpectrumPrePass.prepareSpectrumImageForView();
+        //     waveTransformPass.prepareCurrentFrameImagesForView();
+
+        //     if (spectrumImageDebugId == BUNNY_INVALID_ID)
+        //     {
+        //         IdType texId;
+        //         textureBank.addAllocatedTexture(waveSpectrumPrePass.getSpectrumImage(), spectrumImageDebugId);
+        //         textureBank.addAllocatedTexture(waveTransformPass.getHeightImage(), texId);
+        //     }
+        // }
+
+        waveTransformPass.draw();
 
         cullingPass.dispatch();
         rtShadowPass.draw();
         pbrForwardPass.draw();
 
-        // if (renderResources.getSupportMeshShader())
-        // {
-        //     oceanPass.updateRenderTarget(&pbrForwardPass.getCurrentRenderTarget());
-        //     oceanPass.draw();
-        // }
+         if (renderResources.getSupportMeshShader())
+         {
+             oceanPass.updateWaveTextures(
+                 &waveTransformPass.getWaveDisplacementImage(), &waveTransformPass.getWaveNormalImage());
+             oceanPass.updateRenderTarget(&pbrForwardPass.getCurrentRenderTarget());
+             oceanPass.prepareFrameDescriptors();
+             oceanPass.draw();
+         }
 
         skyPass.updateFrameData();
         skyPass.draw();
@@ -338,7 +318,7 @@ int main(void)
     depthReducePass.cleanup();
     finalOutputPass.cleanup();
     skyPass.cleanup();
-    // oceanPass.cleanup();
+    oceanPass.cleanup();
     pbrForwardPass.cleanup();
     rtShadowPass.cleanup();
     acceStructBuilder.cleanup();
