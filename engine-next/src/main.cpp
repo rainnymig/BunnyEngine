@@ -244,10 +244,10 @@ int main(void)
             cullingPass.updateCullingData(cam.mCamera);
             skyPass.updateRenderParams(cam.mCamera, timer.getTime());
             waveTransformPass.updateWaveTime(timer.getTime());
-             if (renderResources.getSupportMeshShader())
-             {
-                 oceanPass.updateWorldParams(cam.mCamera.getViewProjMatrix(), timer.getTime(), timer.getDeltaTime());
-             }
+            if (renderResources.getSupportMeshShader())
+            {
+                oceanPass.updateWorldParams(cam.mCamera.getViewProjMatrix(), timer.getTime(), timer.getDeltaTime());
+            }
         }
 
         texturePreviewPass.updateTextureForPreview();
@@ -286,14 +286,21 @@ int main(void)
         rtShadowPass.draw();
         pbrForwardPass.draw();
 
-         if (renderResources.getSupportMeshShader())
-         {
-             oceanPass.updateWaveTextures(
-                 &waveTransformPass.getWaveDisplacementImage(), &waveTransformPass.getWaveNormalImage());
-             oceanPass.updateRenderTarget(&pbrForwardPass.getCurrentRenderTarget());
-             oceanPass.prepareFrameDescriptors();
-             oceanPass.draw();
-         }
+        if (spectrumImageDebugId == BUNNY_INVALID_ID)
+        {
+            IdType texId;
+            textureBank.addAllocatedTexture(waveTransformPass.getWaveDisplacementImage(), spectrumImageDebugId);
+            textureBank.addAllocatedTexture(waveTransformPass.getWaveNormalImage(), texId);
+        }
+
+        if (renderResources.getSupportMeshShader())
+        {
+            oceanPass.updateWaveTextures(
+                &waveTransformPass.getWaveDisplacementImage(), &waveTransformPass.getWaveNormalImage());
+            oceanPass.updateRenderTarget(&pbrForwardPass.getCurrentRenderTarget());
+            oceanPass.prepareFrameDescriptors();
+            oceanPass.draw();
+        }
 
         skyPass.updateFrameData();
         skyPass.draw();
