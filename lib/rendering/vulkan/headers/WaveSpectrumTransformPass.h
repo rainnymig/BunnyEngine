@@ -101,6 +101,8 @@ class WaveSpectrumTransformPass : public PbrGraphicsPass
 
     void constructWave() const;
 
+    void showImguiControlPanel();
+
     VkPipelineLayout mSpectrumPipelineLayout;
     VkPipeline mSpectrumPipeline;
     VkPipelineLayout mBitReversePipelineLayout;
@@ -121,6 +123,6 @@ class WaveSpectrumTransformPass : public PbrGraphicsPass
 
     TimedSpectrumParams mTimedSpectrumParams;
     mutable FFTParams mFFTParams{.mIsInverse = 1};
-    WaveParams mWaveParams{.mU = 10.0f};
+    WaveParams mWaveParams{.mU = 0.0f};
 };
 } // namespace Bunny::Render

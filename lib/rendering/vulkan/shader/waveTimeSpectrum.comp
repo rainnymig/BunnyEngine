@@ -68,8 +68,10 @@ void main()
     //  since they have same dimension and does not affect each other
 
     //  displacement spectrum
-    Complex ddkx = Complex(0, (pos.x == 0 || kIdx.x == 0) ? 0 : -kvec.x / kIdx.x);
-    Complex ddkz = Complex(0, (pos.y == 0 || kIdx.y == 0) ? 0 : -kvec.y / kIdx.y);
+    // Complex ddkx = Complex(0, (pos.x == 0 || kIdx.x == 0) ? 0 : -kvec.x / kIdx.x);
+    // Complex ddkz = Complex(0, (pos.y == 0 || kIdx.y == 0) ? 0 : -kvec.y / kIdx.y);
+    Complex ddkx = Complex(0, (pos.x == 0 || kIdx.x == 0) ? 0 : -kvec.x / k);
+    Complex ddkz = Complex(0, (pos.y == 0 || kIdx.y == 0) ? 0 : -kvec.y / k);
     Complex ddkx_h0kt = multiply(ddkx, h0kt);
     Complex ddkz_h0kt = multiply(ddkz, h0kt);
     Complex combinedDispSpec = add(ddkx_h0kt, multiply(Complex(0, 1), ddkz_h0kt));

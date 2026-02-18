@@ -3,7 +3,10 @@
 #include "VulkanRenderResources.h"
 #include "VulkanGraphicsRenderer.h"
 #include "Error.h"
-#include "ErrorCheck.h"
+#include "ImguiHelper.h"
+
+#include <imgui.h>
+#include <vector>
 
 namespace Bunny::Render
 {
@@ -216,6 +219,10 @@ BunnyResult Render::WaveSpectrumTransformPass::initDataAndResources()
     });
 
     //  the images will be linked to the descriptor set later after the spectrum image is set
+
+    //  set up imgui control here
+    //  might move to somewhere better later
+    Base::ImguiHelper::get().registerCommand([this]() { showImguiControlPanel(); });
 
     return BUNNY_HAPPY;
 }
@@ -496,6 +503,13 @@ void WaveSpectrumTransformPass::constructWave() const
     vkCmdPushConstants(
         cmd, mWaveConstructPipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(WaveParams), &mWaveParams);
     vkCmdDispatch(cmd, mTimedSpectrumParams.mN / waveComputeSizeX, mTimedSpectrumParams.mN / waveComputeSizeY, 1);
+}
+
+void WaveSpectrumTransformPass::showImguiControlPanel()
+{
+    ImGui::Begin("Wave Spectrum");
+    ImGui::SliderFloat("displacement scale", &mWaveParams.mU, 0.0f, 3.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+    ImGui::End();
 }
 
 } // namespace Bunny::Render
