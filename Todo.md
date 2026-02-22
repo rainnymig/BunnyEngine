@@ -13,6 +13,9 @@
 - [x] More dynamic scenes
 - [x] Make adding ImGui debug windows easier
 - [x] Add ImGui controls to tweak material, camera, light and object data in runtime
+- [x] FFT Waves
+- [ ] Better water shader
+- [ ] Better sky and atmosphere, fog
 - [ ] Optimize descriptor sets usage in culling pass (and other passes as well)
 - [ ] Image based lighting
 - [ ] More advanced ray tracing features
