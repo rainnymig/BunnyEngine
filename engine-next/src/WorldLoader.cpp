@@ -62,9 +62,9 @@ BunnyResult WorldLoader::loadPbrTestWorldWithGltfMeshes(std::string_view filePat
     //  camera
     {
         const auto cameraEntity = outWorld.mEntityRegistry.create();
-        Render::PhysicalCamera camera(glm::vec3{0, 5, 3}, glm::vec3{0, 0, 0});
+        Render::PhysicalCamera camera(glm::vec3{0, 5, 10}, glm::vec3{0, 0, 0});
         camera.setAperture(4);
-        camera.setShutterTime(1.0f / 1600);
+        camera.setShutterTime(1.0f / 2000);
         outWorld.mEntityRegistry.emplace<PbrCameraComponent>(cameraEntity, camera);
     }
 

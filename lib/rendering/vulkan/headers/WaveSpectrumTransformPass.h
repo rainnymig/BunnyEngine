@@ -123,7 +123,7 @@ class WaveSpectrumTransformPass : public PbrGraphicsPass
 
     TimedSpectrumParams mTimedSpectrumParams;
     mutable FFTParams mFFTParams{.mIsInverse = 1};
-    WaveParams mWaveParams{.mU = 0.0f};
+    WaveParams mWaveParams{.mU = 1.15f};
 
     bool mFreezeWaveTime = false;
 };

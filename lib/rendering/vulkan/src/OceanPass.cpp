@@ -17,10 +17,10 @@
 namespace Bunny::Render
 {
 constexpr static PbrMaterialParameters defaultWaveMaterial{
-    .mBaseColor = glm::vec4(0.35f, 0.75f, 1.0f, 1.0f),
+    .mBaseColor = glm::vec4(0.3f, 0.6f, 1.0f, 1.0f),
     .mEmissiveColor = glm::vec4(0, 0, 0, 0),
     .mMetallic = 0.75f,
-    .mRoughness = 0.05f,
+    .mRoughness = 0.35f,
     .mReflectance = 1.0f,
 };
 
