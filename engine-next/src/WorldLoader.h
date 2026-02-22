@@ -5,6 +5,8 @@
 #include "Vertex.h"
 #include "World.h"
 
+#include <fastgltf/tools.hpp>
+
 namespace Bunny::Render
 {
 class VulkanRenderResources;
@@ -24,6 +26,7 @@ class WorldLoader
 
   private:
     void postLoad(World& outWorld);
+    void loadWorldStructure(fastgltf::Asset& gltfAsset, World& outWorld);
 
     const Render::VulkanRenderResources* mVulkanResources;
     Render::PbrMaterialBank* mPbrMaterialBank;

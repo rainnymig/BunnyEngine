@@ -9,15 +9,14 @@
 
 #include <glm/mat4x4.hpp>
 #include <glm/ext/matrix_transform.hpp>
-#include <glm/gtx/euler_angles.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 #include <fastgltf/glm_element_traits.hpp>
-#include <fastgltf/core.hpp>
 #include <fastgltf/tools.hpp>
 #include <fastgltf/util.hpp>
 
-#include <random>
 #include <cassert>
+#include <variant>
 
 namespace Bunny::Engine
 {
@@ -57,39 +56,13 @@ BunnyResult WorldLoader::loadPbrTestWorldWithGltfMeshes(std::string_view filePat
     loadMeshFromGltf(mMeshBank, mPbrMaterialBank, mTextureBank, gltf);
     mMeshBank->buildMeshBuffers();
 
-    static constexpr float spawnAreaXMax = 10;
-    static constexpr float spawnAreaYMax = 10;
-    static constexpr float spawnAreaZMax = 5;
-    static constexpr uint32_t objectCount = 30;
-    static constexpr float scaleMax = 2.0f;
-    static constexpr float scaleMin = 0.8f;
-
-    static constexpr float intervalX = 3;
-    static constexpr float startX = -static_cast<float>(objectCount - 1) / 2 * intervalX;
-
-    // for (uint32_t i = 0; i < objectCount; i++)
-    // {
-    //     float offsetX = startX + i * intervalX;
-    //     Base::Transform nodeTransform({offsetX, 0, 0}, {0, 0, 0}, {1, 1, 1});
-
-    //     const auto nodeEntity = outWorld.mEntityRegistry.create();
-    //     outWorld.mEntityRegistry.emplace<TransformComponent>(nodeEntity, nodeTransform);
-    //     //  assign a random material instance from the pbr material bank instead of using the one from the mesh
-    //     outWorld.mEntityRegistry.emplace<MeshComponent>(
-    //         nodeEntity, mMeshBank->getRandomMeshId(), mPbrMaterialBank->giveMeAMaterialInstance());
-    // }
-
-    const auto nodeEntity = outWorld.mEntityRegistry.create();
-    Base::Transform nodeTransform({0, 10, 0}, {0, 0, 0}, {1, 1, 1});
-    outWorld.mEntityRegistry.emplace<TransformComponent>(nodeEntity, nodeTransform);
-    //  assign a random material instance from the pbr material bank instead of using the one from the mesh
-    outWorld.mEntityRegistry.emplace<MeshComponent>(
-        nodeEntity, mMeshBank->getRandomMeshId(), mPbrMaterialBank->giveMeAMaterialInstance());
+    //  load node transforms and scene structures
+    loadWorldStructure(gltf, outWorld);
 
     //  camera
     {
         const auto cameraEntity = outWorld.mEntityRegistry.create();
-        Render::PhysicalCamera camera(glm::vec3{0, 10.5, 3}, glm::vec3{-glm::pi<float>() / 16, 0, 0});
+        Render::PhysicalCamera camera(glm::vec3{0, 5, 3}, glm::vec3{0, 0, 0});
         camera.setAperture(4);
         camera.setShutterTime(1.0f / 1600);
         outWorld.mEntityRegistry.emplace<PbrCameraComponent>(cameraEntity, camera);
@@ -120,6 +93,36 @@ void Engine::WorldLoader::postLoad(World& outWorld)
     outWorld.mEntityRegistry.sort<MeshComponent>(
         [](const MeshComponent& lhs, const MeshComponent& rhs) { return lhs.mMeshId < rhs.mMeshId; });
     outWorld.mEntityRegistry.sort<TransformComponent, MeshComponent>();
+}
+
+void WorldLoader::loadWorldStructure(fastgltf::Asset& gltfAsset, World& outWorld)
+{
+    for (const fastgltf::Node& gltfNode : gltfAsset.nodes)
+    {
+        if (gltfNode.meshIndex.has_value())
+        {
+            const auto entity = outWorld.mEntityRegistry.create();
+            outWorld.mEntityRegistry.emplace<MeshComponent>(
+                entity, static_cast<Render::IdType>(gltfNode.meshIndex.value()), 0u);
+            std::visit(fastgltf::visitor{[&](fastgltf::math::fmat4x4 matrix) {
+                                             glm::mat4 matrixGLM(matrix[0][0], matrix[0][1], matrix[0][2], matrix[0][3],
+                                                 matrix[1][0], matrix[1][1], matrix[1][2], matrix[1][3], matrix[2][0],
+                                                 matrix[2][1], matrix[2][2], matrix[2][3], matrix[3][0], matrix[3][1],
+                                                 matrix[3][2], matrix[3][3]);
+                                             Base::Transform transform(matrixGLM);
+                                             outWorld.mEntityRegistry.emplace<TransformComponent>(entity, transform);
+                                         },
+                           [&](fastgltf::TRS trs) {
+                               glm::vec3 tl(trs.translation[0], trs.translation[1], trs.translation[2]);
+                               glm::quat rot(trs.rotation[3], trs.rotation[0], trs.rotation[1], trs.rotation[2]);
+                               glm::vec3 sc(trs.scale[0], trs.scale[1], trs.scale[2]);
+
+                               Base::Transform transform(tl, rot, sc);
+                               outWorld.mEntityRegistry.emplace<TransformComponent>(entity, transform);
+                           }},
+                gltfNode.transform);
+        }
+    }
 }
 
 } // namespace Bunny::Engine

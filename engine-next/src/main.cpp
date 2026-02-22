@@ -166,7 +166,7 @@ int main(void)
     }
 
     CameraSystem cameraSystem(&inputManager);
-    ObjectRandomMovementSystem objRandMovSystem;
+    // ObjectRandomMovementSystem objRandMovSystem;
 
     float accumulatedTime = 0;
     constexpr float interval = 0.5f;
@@ -215,7 +215,7 @@ int main(void)
 
         cameraSystem.update(&bunnyWorld, timer.getDeltaTime());
         //  update object transforms
-        objRandMovSystem.update(&bunnyWorld, timer.getDeltaTime(), timer.getTime());
+        // objRandMovSystem.update(&bunnyWorld, timer.getDeltaTime(), timer.getTime());
 
         //  update object data buffer
         worldTranslator.updateObjectData(&bunnyWorld);

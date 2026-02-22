@@ -11,6 +11,7 @@ struct Transform
     Transform() = default;
     explicit Transform(const glm::vec3& position, const glm::quat& rotationQuat, const glm::vec3& scale);
     explicit Transform(const glm::vec3& position, const glm::vec3& pitchYawRoll, const glm::vec3& scale);
+    explicit Transform(const glm::mat4& matrix);
 
     glm::mat4 mMatrix;
     glm::vec3 mScale;

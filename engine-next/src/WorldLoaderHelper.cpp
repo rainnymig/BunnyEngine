@@ -152,7 +152,7 @@ void loadMeshFromGltf(MeshBank<NormalVertex>* meshBank, PbrMaterialBank* materia
     std::vector<Render::NormalVertex> vertices;
     std::unordered_map<size_t, IdType> loadedMaterials; // if the material is loaded we don't load again
                                                         //  this is only valid for the current gltf file
-    for (fastgltf::Mesh& mesh : gltfAsset.meshes)
+    for (const fastgltf::Mesh& mesh : gltfAsset.meshes)
     {
         Render::MeshLite newMesh;
         newMesh.mName = mesh.name;
@@ -167,7 +167,7 @@ void loadMeshFromGltf(MeshBank<NormalVertex>* meshBank, PbrMaterialBank* materia
         uint32_t primitiveIdx = 0;
 
         //  create mesh surfaces
-        for (auto&& primitive : mesh.primitives)
+        for (const auto& primitive : mesh.primitives)
         {
             Render::SurfaceLite newSurface;
             newSurface.mFirstIndex = indices.size();
@@ -250,15 +250,6 @@ void loadMeshFromGltf(MeshBank<NormalVertex>* meshBank, PbrMaterialBank* materia
                     });
             }
 
-            //  load material
-
-            // //  for now all use default material
-            // newSurface.mMaterialId = materialBank->giveMeAMaterial();
-            // newSurface.mMaterialInstanceId =
-            //     newSurface.mMaterialId; //  now we only have 1 material (i.e. 1 pipeline) and the material id is
-            //                             //  actually material instance id
-
-            //  the real thing - load material from gltf
             //  load material params
             //  if there is texture, load them to texture bank and use them
             auto materialIdx = primitive.materialIndex;

@@ -1,4 +1,5 @@
 #include "Transform.h"
+#include "Transform.h"
 
 #include <glm/gtx/euler_angles.hpp>
 
@@ -22,6 +23,13 @@ Transform::Transform(const glm::vec3& position, const glm::vec3& pitchYawRoll, c
 
     mMatrix = tm * rm * sm;
     mScale = scale;
+}
+
+Transform::Transform(const glm::mat4& matrix)
+{
+    mMatrix = matrix;
+    mScale = glm::vec3(
+        glm::length(glm::vec3(matrix[0])), glm::length(glm::vec3(matrix[1])), glm::length(glm::vec3(matrix[2])));
 }
 
 } // namespace Bunny::Base
