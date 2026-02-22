@@ -59,15 +59,6 @@ BunnyResult WorldLoader::loadPbrTestWorldWithGltfMeshes(std::string_view filePat
     //  load node transforms and scene structures
     loadWorldStructure(gltf, outWorld);
 
-    //  camera
-    {
-        const auto cameraEntity = outWorld.mEntityRegistry.create();
-        Render::PhysicalCamera camera(glm::vec3{0, 5, 10}, glm::vec3{0, 0, 0});
-        camera.setAperture(4);
-        camera.setShutterTime(1.0f / 2000);
-        outWorld.mEntityRegistry.emplace<PbrCameraComponent>(cameraEntity, camera);
-    }
-
     //  light
     {
         const auto lightEntity = outWorld.mEntityRegistry.create();
@@ -99,28 +90,45 @@ void WorldLoader::loadWorldStructure(fastgltf::Asset& gltfAsset, World& outWorld
 {
     for (const fastgltf::Node& gltfNode : gltfAsset.nodes)
     {
-        if (gltfNode.meshIndex.has_value())
+        if (gltfNode.meshIndex.has_value() || gltfNode.cameraIndex.has_value())
         {
             const auto entity = outWorld.mEntityRegistry.create();
-            outWorld.mEntityRegistry.emplace<MeshComponent>(
-                entity, static_cast<Render::IdType>(gltfNode.meshIndex.value()), 0u);
+            Base::Transform transform;
+            glm::vec3 camPos;
+            glm::vec3 camEuler;
             std::visit(fastgltf::visitor{[&](fastgltf::math::fmat4x4 matrix) {
                                              glm::mat4 matrixGLM(matrix[0][0], matrix[0][1], matrix[0][2], matrix[0][3],
                                                  matrix[1][0], matrix[1][1], matrix[1][2], matrix[1][3], matrix[2][0],
                                                  matrix[2][1], matrix[2][2], matrix[2][3], matrix[3][0], matrix[3][1],
                                                  matrix[3][2], matrix[3][3]);
-                                             Base::Transform transform(matrixGLM);
-                                             outWorld.mEntityRegistry.emplace<TransformComponent>(entity, transform);
+                                             transform = Base::Transform(matrixGLM);
                                          },
                            [&](fastgltf::TRS trs) {
                                glm::vec3 tl(trs.translation[0], trs.translation[1], trs.translation[2]);
                                glm::quat rot(trs.rotation[3], trs.rotation[0], trs.rotation[1], trs.rotation[2]);
                                glm::vec3 sc(trs.scale[0], trs.scale[1], trs.scale[2]);
 
-                               Base::Transform transform(tl, rot, sc);
-                               outWorld.mEntityRegistry.emplace<TransformComponent>(entity, transform);
+                               camPos = tl;
+                               camEuler = glm::eulerAngles(rot);
+
+                               transform = Base::Transform(tl, rot, sc);
                            }},
                 gltfNode.transform);
+
+            if (gltfNode.meshIndex.has_value())
+            {
+                outWorld.mEntityRegistry.emplace<TransformComponent>(entity, transform);
+                outWorld.mEntityRegistry.emplace<MeshComponent>(
+                    entity, static_cast<Render::IdType>(gltfNode.meshIndex.value()), 0u);
+            }
+            else if (gltfNode.cameraIndex.has_value())
+            {
+                const auto cameraEntity = outWorld.mEntityRegistry.create();
+                Render::PhysicalCamera camera(camPos, camEuler);
+                camera.setAperture(4);
+                camera.setShutterTime(1.0f / 2000);
+                outWorld.mEntityRegistry.emplace<PbrCameraComponent>(cameraEntity, camera);
+            }
         }
     }
 }
