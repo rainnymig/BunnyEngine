@@ -22,8 +22,6 @@ class Camera;
 class OceanPass : public PbrGraphicsPass
 {
   public:
-    static constexpr uint32_t OCTAVE_COUNT = 4;
-    static constexpr uint32_t GRID_SIZE = 1024;
     static constexpr uint32_t MESH_THREAD_COUNT_X = 8;
     static constexpr uint32_t MESH_THREAD_COUNT_Y = 8;
 
@@ -42,7 +40,7 @@ class OceanPass : public PbrGraphicsPass
     };
 
     OceanPass(const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer,
-        const TextureBank* textureBank, float waveAreaWidth, float waveCellWidth,
+        const TextureBank* textureBank, float waveAreaWidth, uint32_t patternAreaGridCount, uint32_t totalGridCount,
         std::string_view meshShaderPath = "wave_fft_mesh.spv", std::string_view fragShaderPath = "wave_frag.spv");
 
     void draw() const override;
@@ -89,6 +87,7 @@ class OceanPass : public PbrGraphicsPass
 
     WaveFieldParams mWaveParams;
     WorldParams mWorldParams;
+    uint32_t mTotalWaveGridCount;
     AllocatedBuffer mWaveParamsBuffer;
     AllocatedBuffer mWorldParamsBuffer;
     const AllocatedBuffer* mLightDataBuffer;

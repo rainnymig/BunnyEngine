@@ -124,5 +124,7 @@ class WaveSpectrumTransformPass : public PbrGraphicsPass
     TimedSpectrumParams mTimedSpectrumParams;
     mutable FFTParams mFFTParams{.mIsInverse = 1};
     WaveParams mWaveParams{.mU = 0.0f};
+
+    bool mFreezeWaveTime = false;
 };
 } // namespace Bunny::Render

@@ -109,8 +109,7 @@ int main(void)
     FinalOutputPass finalOutputPass(&renderResources, &renderer, &textureBank);
     DepthReducePass depthReducePass(&renderResources, &renderer);
     TexturePreviewPass texturePreviewPass(&renderResources, &renderer, &pbrMaterialBank, &meshBank, &textureBank);
-    OceanPass oceanPass(&renderResources, &renderer, &textureBank, waveSpectrumPrePass.getWidth(),
-        waveSpectrumPrePass.getWidth() / waveSpectrumPrePass.getGridN());
+    OceanPass oceanPass(&renderResources, &renderer, &textureBank, waveSpectrumPrePass.getWidth(), 512, 4096);
 
     waveSpectrumPrePass.initializePass();
     waveTransformPass.initializePass();

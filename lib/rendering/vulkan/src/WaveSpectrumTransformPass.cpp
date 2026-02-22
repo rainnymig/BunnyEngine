@@ -53,7 +53,10 @@ void Render::WaveSpectrumTransformPass::draw() const
 
 void Render::WaveSpectrumTransformPass::updateWaveTime(float time)
 {
-    mTimedSpectrumParams.mTime = time;
+    if (!mFreezeWaveTime)
+    {
+        mTimedSpectrumParams.mTime = time;
+    }
 }
 
 void Render::WaveSpectrumTransformPass::updateWidth(uint32_t size, float width)
@@ -509,6 +512,11 @@ void WaveSpectrumTransformPass::showImguiControlPanel()
 {
     ImGui::Begin("Wave Spectrum");
     ImGui::SliderFloat("displacement scale", &mWaveParams.mU, 0.0f, 3.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+    ImGui::Separator();
+    if (ImGui::Button("Toggle freeze wave time"))
+    {
+        mFreezeWaveTime = !mFreezeWaveTime;
+    }
     ImGui::End();
 }
 

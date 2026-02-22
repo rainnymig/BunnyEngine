@@ -15,17 +15,18 @@
 namespace Bunny::Render
 {
 OceanPass::OceanPass(const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer,
-    const TextureBank* textureBank, float waveAreaWidth, float waveCellWidth, std::string_view meshShaderPath,
-    std::string_view fragShaderPath)
+    const TextureBank* textureBank, float waveAreaWidth, uint32_t patternAreaGridCount, uint32_t totalGridCount,
+    std::string_view meshShaderPath, std::string_view fragShaderPath)
     : super(vulkanResources, renderer, nullptr, nullptr),
       mMeshShaderPath(meshShaderPath),
       mFragShaderPath(fragShaderPath),
-      mTextureBank(textureBank)
+      mTextureBank(textureBank),
+      mTotalWaveGridCount(totalGridCount)
 {
     //  create wave field and world param data
     mWaveParams.mGridAreaWidth = waveAreaWidth;
-    mWaveParams.mGridCellWidth = waveCellWidth;
-    mWaveParams.mGridOrigin = glm::vec2(-mWaveParams.mGridCellWidth * GRID_SIZE / 2);
+    mWaveParams.mGridCellWidth = waveAreaWidth / patternAreaGridCount;
+    mWaveParams.mGridOrigin = glm::vec2(-mWaveParams.mGridCellWidth * mTotalWaveGridCount / 2);
 }
 
 void OceanPass::draw() const
@@ -34,12 +35,12 @@ void OceanPass::draw() const
     const FrameData& frame = mFrameData[mRenderer->getCurrentFrameIdx()];
 
     VkImageMemoryBarrier waveDisplacementImageBarrier = makeImageMemoryBarrier(frame.mVertexDisplacementImage->mImage,
-        VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-        VK_IMAGE_ASPECT_COLOR_BIT);
+        VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL,
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_ASPECT_COLOR_BIT);
     VkImageMemoryBarrier waveNormalImageBarrier =
         makeImageMemoryBarrier(frame.mVertexNormalImage->mImage, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
             VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_ASPECT_COLOR_BIT);
-    VkImageMemoryBarrier barriers[]{ waveDisplacementImageBarrier, waveNormalImageBarrier };
+    VkImageMemoryBarrier barriers[]{waveDisplacementImageBarrier, waveNormalImageBarrier};
     vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_MESH_SHADER_BIT_EXT,
         VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 2, barriers);
 
@@ -63,7 +64,7 @@ void OceanPass::draw() const
         cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout, 0, 3, &frame.mMeshDescSet, 0, nullptr);
 
     //  dispatch mesh pipeline
-    vkCmdDrawMeshTasksEXT(cmd, GRID_SIZE / MESH_THREAD_COUNT_X, GRID_SIZE / MESH_THREAD_COUNT_Y, 1);
+    vkCmdDrawMeshTasksEXT(cmd, mTotalWaveGridCount / MESH_THREAD_COUNT_X, mTotalWaveGridCount / MESH_THREAD_COUNT_Y, 1);
 
     mRenderer->finishRender();
 }
