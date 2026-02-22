@@ -166,7 +166,6 @@ int main(void)
     }
 
     CameraSystem cameraSystem(&inputManager);
-    // ObjectRandomMovementSystem objRandMovSystem;
 
     float accumulatedTime = 0;
     constexpr float interval = 0.5f;
@@ -178,8 +177,8 @@ int main(void)
         ImGui::Begin("Game Stats");
         ImGui::Text(fmt::format("FPS: {}", fps).c_str());
         ImGui::Separator();
-        ImGui::Text("W: forward S: backward A: left D: right");
-        ImGui::Text("E: up C: down");
+        ImGui::Text("Movement: W: forward S: backward A: left D: right E: up C: down");
+        ImGui::Text("Look: I: down K: up J: left L: right");
         ImGui::End();
     };
     ImguiHelper::get().registerCommand(showBasicInfo);
@@ -214,8 +213,6 @@ int main(void)
         }
 
         cameraSystem.update(&bunnyWorld, timer.getDeltaTime());
-        //  update object transforms
-        // objRandMovSystem.update(&bunnyWorld, timer.getDeltaTime(), timer.getTime());
 
         //  update object data buffer
         worldTranslator.updateObjectData(&bunnyWorld);

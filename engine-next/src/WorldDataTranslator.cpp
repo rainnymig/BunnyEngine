@@ -165,18 +165,23 @@ void WorldRenderDataTranslator::showImguiControlPanel(World* world)
     const auto camComps = world->mEntityRegistry.view<PbrCameraComponent>();
     if (!camComps.empty())
     {
-        ImGui::LabelText("CameraTitle", "Camera");
+        ImGui::Text("Camera Params");
         auto& cam = world->mEntityRegistry.get<PbrCameraComponent>(camComps.front());
         ImGui::DragFloat("Aperture", &cam.mCamera.mAperture, 0.02f, 1.0f, 22.0f, "%.1f");
         ImGui::InputFloat("Shutter Time", &cam.mCamera.mShutterTime, 0.00001f, 0.001f, "%.6f");
         ImGui::DragFloat("ISO", &cam.mCamera.mIso, 20, 100, 8000, "%.1f");
+        glm::vec3 pos = cam.mCamera.getPosition();
+        glm::vec3 pitchYawRoll = cam.mCamera.getRotation();
+        ImGui::Text("Position x: %.1f y: %.1f z: %.1f", pos.x, pos.y, pos.z);
+        ImGui::Text("Rotation pitch: %.1f yaw: %.1f roll: %.1f", glm::degrees(pitchYawRoll.x),
+            glm::degrees(pitchYawRoll.y), glm::degrees(pitchYawRoll.z));
         ImGui::Separator();
     }
 
     auto lightComps = world->mEntityRegistry.view<PbrLightComponent>();
     if (!lightComps.empty())
     {
-        ImGui::LabelText("LightsTitle", "Lights");
+        ImGui::Text("Lights");
         size_t idx = 0;
         for (auto [entity, light] : lightComps.each())
         {

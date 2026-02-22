@@ -3,8 +3,9 @@
 #include "World.h"
 #include "Camera.h"
 #include "WorldComponents.h"
-#include "Input.h"
+#include "ImguiHelper.h"
 
+#include <imgui.h>
 #include <entt/entt.hpp>
 
 namespace Bunny::Engine
@@ -13,6 +14,7 @@ Engine::CameraSystem::CameraSystem(Base::InputManager* inputManager)
 {
     inputManager->registerKeyboardCallback(
         [this](const std::string& keyName, Base::InputManager::KeyState state) { onKeyboardInput(keyName, state); });
+    Base::ImguiHelper::get().registerCommand([this]() { showImguiControlPanel(); });
 }
 
 void Engine::CameraSystem::update(World* world, float deltaTime)
@@ -26,6 +28,7 @@ void Engine::CameraSystem::update(World* world, float deltaTime)
 
         // camera.setDeltaRotation(glm::vec3(0, deltaTime * glm::pi<double>() / 16, 0));
         camera.setDeltaPosition(mMoveVector * mMoveVelocity * deltaTime);
+        camera.setDeltaRotation(mRotateVector * glm::radians(mRotateVelocity) * deltaTime);
     }
 }
 
@@ -57,6 +60,22 @@ void Engine::CameraSystem::onKeyboardInput(const std::string& keyName, Base::Inp
         {
             mMoveVector.y = -1;
         }
+        else if (keyName == "k")
+        {
+            mRotateVector.x = 1;
+        }
+        else if (keyName == "i")
+        {
+            mRotateVector.x = -1;
+        }
+        else if (keyName == "j")
+        {
+            mRotateVector.y = 1;
+        }
+        else if (keyName == "l")
+        {
+            mRotateVector.y = -1;
+        }
     }
     else if (state == Base::InputManager::KeyState::Release)
     {
@@ -72,7 +91,27 @@ void Engine::CameraSystem::onKeyboardInput(const std::string& keyName, Base::Inp
         {
             mMoveVector.y = 0;
         }
+        else if (keyName == "i" || keyName == "k")
+        {
+            mRotateVector.x = 0;
+        }
+        else if (keyName == "j" || keyName == "l")
+        {
+            mRotateVector.y = 0;
+        }
     }
+}
+
+void CameraSystem::showImguiControlPanel()
+{
+    ImGui::Begin("Camera and Lights");
+
+    ImGui::Text("Camera Control");
+    ImGui::DragFloat("Camera move speed", &mMoveVelocity, 1, 1, 1000, "%.1f");
+    ImGui::DragFloat("Camera rotation speed", &mRotateVelocity, 1, 1, 90, "%.1f");
+    ImGui::Separator();
+
+    ImGui::End();
 }
 
 void Engine::ObjectRandomMovementSystem::update(World* world, float deltaTime, float time)
