@@ -92,8 +92,6 @@ int main(void)
     WorldLoader worldLoader(&renderResources, &pbrMaterialBank, &meshBank, &textureBank);
     worldLoader.loadPbrTestWorldWithGltfMeshes(config.mModelFilePath, bunnyWorld);
 
-    pbrMaterialBank.recreateMaterialBuffer();
-
     AccelerationStructureBuilder acceStructBuilder(&renderResources, &renderer);
     acceStructBuilder.buildBottomLevelAccelerationStructures(
         meshBank.getBlasGeometryData(), VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR);
@@ -109,7 +107,10 @@ int main(void)
     FinalOutputPass finalOutputPass(&renderResources, &renderer, &textureBank);
     DepthReducePass depthReducePass(&renderResources, &renderer);
     TexturePreviewPass texturePreviewPass(&renderResources, &renderer, &pbrMaterialBank, &meshBank, &textureBank);
-    OceanPass oceanPass(&renderResources, &renderer, &textureBank, waveSpectrumPrePass.getWidth(), 512, 4096);
+    OceanPass oceanPass(&renderResources, &renderer, &textureBank, &pbrMaterialBank, &meshBank,
+        waveSpectrumPrePass.getWidth(), 512, 4096);
+
+    pbrMaterialBank.recreateMaterialBuffer();
 
     waveSpectrumPrePass.initializePass();
     waveTransformPass.initializePass();

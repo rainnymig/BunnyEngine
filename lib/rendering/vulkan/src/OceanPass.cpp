@@ -9,15 +9,26 @@
 #include "VulkanRenderResources.h"
 #include "VulkanGraphicsRenderer.h"
 #include "Helper.h"
+#include "MaterialBank.h"
+#include "MeshBank.h"
 
 #include <glm/gtx/euler_angles.hpp>
 
 namespace Bunny::Render
 {
+constexpr static PbrMaterialParameters defaultWaveMaterial{
+    .mBaseColor = glm::vec4(0.35f, 0.75f, 1.0f, 1.0f),
+    .mEmissiveColor = glm::vec4(0, 0, 0, 0),
+    .mMetallic = 0.75f,
+    .mRoughness = 0.05f,
+    .mReflectance = 1.0f,
+};
+
 OceanPass::OceanPass(const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer,
-    const TextureBank* textureBank, float waveAreaWidth, uint32_t patternAreaGridCount, uint32_t totalGridCount,
-    std::string_view meshShaderPath, std::string_view fragShaderPath)
-    : super(vulkanResources, renderer, nullptr, nullptr),
+    const TextureBank* textureBank, PbrMaterialBank* materialBank, const MeshBank<NormalVertex>* meshBank,
+    float waveAreaWidth, uint32_t patternAreaGridCount, uint32_t totalGridCount, std::string_view meshShaderPath,
+    std::string_view fragShaderPath)
+    : super(vulkanResources, renderer, materialBank, meshBank),
       mMeshShaderPath(meshShaderPath),
       mFragShaderPath(fragShaderPath),
       mTextureBank(textureBank),
@@ -27,6 +38,11 @@ OceanPass::OceanPass(const VulkanRenderResources* vulkanResources, const VulkanG
     mWaveParams.mGridAreaWidth = waveAreaWidth;
     mWaveParams.mGridCellWidth = waveAreaWidth / patternAreaGridCount;
     mWaveParams.mGridOrigin = glm::vec2(-mWaveParams.mGridCellWidth * mTotalWaveGridCount / 2);
+
+    //  add wave material to material bank
+    //  the materialBank param is not const so we can call this function here
+    //  maybe look for a cleaner solution
+    materialBank->addMaterialInstance(defaultWaveMaterial, mWavePushParams.mMaterialIdx);
 }
 
 void OceanPass::draw() const
@@ -61,7 +77,9 @@ void OceanPass::draw() const
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipeline);
 
     vkCmdBindDescriptorSets(
-        cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout, 0, 3, &frame.mMeshDescSet, 0, nullptr);
+        cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout, 0, 4, &frame.mMeshDescSet, 0, nullptr);
+
+    vkCmdPushConstants(cmd, mPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(WavePushParams), &mWavePushParams);
 
     //  dispatch mesh pipeline
     vkCmdDrawMeshTasksEXT(cmd, mTotalWaveGridCount / MESH_THREAD_COUNT_X, mTotalWaveGridCount / MESH_THREAD_COUNT_Y, 1);
@@ -82,8 +100,9 @@ void OceanPass::prepareFrameDescriptors()
     //  this is just an easy and lazy temp solution
 
     //  allocate descriptor sets
-    VkDescriptorSetLayout descLayouts[] = {mMeshDescLayout, mWaveImageDescLayout, mFragDescLayout};
-    frame.mDescriptorAllocator.allocate(device, descLayouts, &frame.mMeshDescSet, 3);
+    VkDescriptorSetLayout descLayouts[] = {
+        mMeshDescLayout, mWaveImageDescLayout, mFragDescLayout, mMaterialBank->getMaterialDescSetLayout()};
+    frame.mDescriptorAllocator.allocate(device, descLayouts, &frame.mMeshDescSet, 4);
 
     //  write the resources to the desc sets
     DescriptorWriter writer;
@@ -102,6 +121,8 @@ void OceanPass::prepareFrameDescriptors()
     writer.writeBuffer(0, mLightDataBuffer->mBuffer, sizeof(LightData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
     writer.writeBuffer(1, mCameraDataBuffer->mBuffer, sizeof(PbrCameraData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
     writer.updateSet(device, frame.mFragDescSet);
+
+    mMaterialBank->updateMaterialDescriptorSet(frame.mMaterialDescSet, mMeshBank);
 }
 
 void OceanPass::updateWorldParams(const glm::mat4& mvpMatrix, float elapsedTime, float deltaTime)
@@ -141,13 +162,19 @@ BunnyResult OceanPass::initPipeline()
     Shader meshShader(mMeshShaderPath, device);
     Shader fragShader(mFragShaderPath, device);
 
-    VkDescriptorSetLayout layouts[] = {mMeshDescLayout, mWaveImageDescLayout, mFragDescLayout};
+    VkDescriptorSetLayout layouts[] = {
+        mMeshDescLayout, mWaveImageDescLayout, mFragDescLayout, mMaterialBank->getMaterialDescSetLayout()};
+    std::vector<VkPushConstantRange> pushConsts;
+    VkPushConstantRange& pushConst = pushConsts.emplace_back();
+    pushConst.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    pushConst.offset = 0;
+    pushConst.size = sizeof(WavePushParams);
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 3;
+    pipelineLayoutInfo.setLayoutCount = 4;
     pipelineLayoutInfo.pSetLayouts = layouts;
-    pipelineLayoutInfo.pushConstantRangeCount = 0;
-    pipelineLayoutInfo.pPushConstantRanges = nullptr;
+    pipelineLayoutInfo.pushConstantRangeCount = pushConsts.size();
+    pipelineLayoutInfo.pPushConstantRanges = pushConsts.data();
 
     VK_CHECK_OR_RETURN_BUNNY_SAD(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &mPipelineLayout))
     mDeletionStack.AddFunction(
@@ -183,8 +210,10 @@ BunnyResult OceanPass::initDescriptors()
     VkDevice device = mVulkanResources->getDevice();
 
     DescriptorAllocator::PoolSize poolSizes[] = {
-        {.mType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         .mRatio = 4},
-        {.mType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .mRatio = 2},
+        {.mType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         .mRatio = 8                                       },
+        {.mType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .mRatio = PbrMaterialBank::TEXTURE_ARRAY_SIZE + 10},
+        {.mType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,         .mRatio = 6                                       },
+        {.mType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,          .mRatio = 2                                       },
     };
     for (FrameData& frame : mFrameData)
     {

@@ -39,8 +39,14 @@ class OceanPass : public PbrGraphicsPass
         float mDeltaTime;
     };
 
+    struct WavePushParams
+    {
+        uint32_t mMaterialIdx;
+    };
+
     OceanPass(const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer,
-        const TextureBank* textureBank, float waveAreaWidth, uint32_t patternAreaGridCount, uint32_t totalGridCount,
+        const TextureBank* textureBank, PbrMaterialBank* materialBank, const MeshBank<NormalVertex>* meshBank,
+        float waveAreaWidth, uint32_t patternAreaGridCount, uint32_t totalGridCount,
         std::string_view meshShaderPath = "wave_fft_mesh.spv", std::string_view fragShaderPath = "wave_frag.spv");
 
     void draw() const override;
@@ -65,6 +71,7 @@ class OceanPass : public PbrGraphicsPass
         VkDescriptorSet mMeshDescSet;
         VkDescriptorSet mWaveImageDescSet;
         VkDescriptorSet mFragDescSet;
+        VkDescriptorSet mMaterialDescSet;
 
         const AllocatedImage* mRenderTarget;
         const AllocatedImage* mVertexDisplacementImage;
@@ -87,6 +94,7 @@ class OceanPass : public PbrGraphicsPass
 
     WaveFieldParams mWaveParams;
     WorldParams mWorldParams;
+    WavePushParams mWavePushParams;
     uint32_t mTotalWaveGridCount;
     AllocatedBuffer mWaveParamsBuffer;
     AllocatedBuffer mWorldParamsBuffer;

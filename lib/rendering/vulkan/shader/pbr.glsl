@@ -2,14 +2,22 @@
 
 #include "pbrCommon.glsl"
 
+#ifndef WORLD_SET
+#define WORLD_SET 0
+#endif
+
+#ifndef MATERIAL_SET
+#define MATERIAL_SET 2
+#endif
+
 //  update every frame
-layout(set = 0, binding = 0) uniform LightData
+layout(set = WORLD_SET, binding = 0) uniform LightData
 {
     Light lights[MAX_LIGHT_COUNT];
     uint lightCount;
 };
 
-layout(set = 0, binding = 1) uniform CameraData
+layout(set = WORLD_SET, binding = 1) uniform CameraData
 {
     mat4 viewProj;
     mat4 inverseView;
@@ -22,22 +30,22 @@ layout(set = 0, binding = 1) uniform CameraData
 } cameraData;
 
 //  update irregularly, maybe only once at start if materials don't change
-layout(std430, set = 2, binding = 0) readonly buffer MaterialData
+layout(std430, set = MATERIAL_SET, binding = 0) readonly buffer MaterialData
 {
     PbrMaterial materialInstances[];
 };
 
-layout(std430, set = 2, binding = 1) readonly buffer MeshDataBuffer
+layout(std430, set = MATERIAL_SET, binding = 1) readonly buffer MeshDataBuffer
 {
     MeshData meshData[];
 };
 
-layout(std430, set = 2, binding = 2) readonly buffer SurfaceDataBuffer
+layout(std430, set = MATERIAL_SET, binding = 2) readonly buffer SurfaceDataBuffer
 {
     SurfaceData surfaceData[];
 };
 
-layout(set = 2, binding = 3) uniform sampler2D textures[];
+layout(set = MATERIAL_SET, binding = 3) uniform sampler2D textures[];
 
 //  normal distribution function (specular D)
 //  ndoth: normal dot halfway vector

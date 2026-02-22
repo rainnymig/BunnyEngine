@@ -511,7 +511,7 @@ void WaveSpectrumTransformPass::constructWave() const
 void WaveSpectrumTransformPass::showImguiControlPanel()
 {
     ImGui::Begin("Wave Spectrum");
-    ImGui::SliderFloat("displacement scale", &mWaveParams.mU, 0.0f, 3.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+    ImGui::SliderFloat("displacement scale", &mWaveParams.mU, 0.0f, 1.5f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
     ImGui::Separator();
     if (ImGui::Button("Toggle freeze wave time"))
     {
