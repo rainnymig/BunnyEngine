@@ -3,12 +3,11 @@
 #include "pbr.glsl"
 
 layout (location = 0) in vec3 normal;
-layout (location = 1) in vec3 color;
-layout (location = 2) in vec3 fragPos;
-layout (location = 3) in vec2 uv;
-layout (location = 4) flat in uint matId;
-layout (location = 5) in vec3 tangent;
-layout (location = 6) in vec3 bitangent;
+layout (location = 1) in vec3 fragPos;
+layout (location = 2) in vec2 uv;
+layout (location = 3) flat in uint matId;
+layout (location = 4) in vec3 tangent;
+layout (location = 5) in vec3 bitangent;
 
 layout (location = 0) out vec4 outColor;
 

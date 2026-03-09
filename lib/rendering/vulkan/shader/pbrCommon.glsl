@@ -70,7 +70,6 @@ struct Vertex
     vec3 position;
     vec3 normal;
     vec3 tangent;
-    vec4 color;
     vec3 texCoord;
     uint surfaceIdx;    //  the index of surface in the mesh (not in the surface data array)
 };

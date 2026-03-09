@@ -58,7 +58,6 @@ struct NormalVertex
     glm::vec3 mPosition;
     glm::vec3 mNormal;
     glm::vec3 mTangent;
-    glm::vec4 mColor;
     glm::vec3 mTexCoord;
     uint32_t mSurfaceIndex = 0;
 
@@ -69,9 +68,9 @@ struct NormalVertex
 
     bool operator==(const NormalVertex& rhs) const { return memcmp(this, &rhs, sizeof(NormalVertex)) == 0; }
 
-    static constexpr std::array<VkVertexInputAttributeDescription, 6> getAttributeDescriptions()
+    static constexpr std::array<VkVertexInputAttributeDescription, 5> getAttributeDescriptions()
     {
-        std::array<VkVertexInputAttributeDescription, 6> attributeDescriptions{};
+        std::array<VkVertexInputAttributeDescription, 5> attributeDescriptions{};
 
         attributeDescriptions[0].binding = 0;
         attributeDescriptions[0].location = 0;
@@ -90,18 +89,13 @@ struct NormalVertex
 
         attributeDescriptions[3].binding = 0;
         attributeDescriptions[3].location = 3;
-        attributeDescriptions[3].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-        attributeDescriptions[3].offset = offsetof(NormalVertex, mColor);
+        attributeDescriptions[3].format = VK_FORMAT_R32G32B32_SFLOAT;
+        attributeDescriptions[3].offset = offsetof(NormalVertex, mTexCoord);
 
         attributeDescriptions[4].binding = 0;
         attributeDescriptions[4].location = 4;
-        attributeDescriptions[4].format = VK_FORMAT_R32G32B32_SFLOAT;
-        attributeDescriptions[4].offset = offsetof(NormalVertex, mTexCoord);
-
-        attributeDescriptions[5].binding = 0;
-        attributeDescriptions[5].location = 5;
-        attributeDescriptions[5].format = VK_FORMAT_R32_UINT;
-        attributeDescriptions[5].offset = offsetof(NormalVertex, mSurfaceIndex);
+        attributeDescriptions[4].format = VK_FORMAT_R32_UINT;
+        attributeDescriptions[4].offset = offsetof(NormalVertex, mSurfaceIndex);
 
         return attributeDescriptions;
     }

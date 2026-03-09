@@ -19,7 +19,6 @@ void addVertex(const glm::vec3& position, const glm::vec3& normal, const glm::ve
     NormalVertex newVertex{.mPosition = position,
         .mNormal = normal,
         .mTangent = tangent,
-        .mColor = color,
         .mTexCoord = glm::vec3(texCoord.x, texCoord.y, 0)};
 
     const auto verIdxPair = vertexToIndexMap.find(newVertex);
@@ -196,7 +195,6 @@ void loadMeshFromGltf(MeshBank<NormalVertex>* meshBank, PbrMaterialBank* materia
                         newVertex.mPosition = vec;
                         newVertex.mNormal = {0, 0, 1};
                         newVertex.mTangent = {1, 0, 0};
-                        newVertex.mColor = {0.8f, 0.8f, 0.8f, 1.0f};
                         newVertex.mTexCoord = {0, 0, 0};
                         newVertex.mSurfaceIndex = primitiveIdx;
                         vertices[initialVtx + idx] = newVertex;
@@ -231,13 +229,13 @@ void loadMeshFromGltf(MeshBank<NormalVertex>* meshBank, PbrMaterialBank* materia
             }
 
             //  load vertex color
-            auto colorAttr = primitive.findAttribute("COLOR_0");
-            if (colorAttr != primitive.attributes.end())
-            {
-                fastgltf::Accessor& colorAccessor = gltfAsset.accessors[colorAttr->accessorIndex];
-                fastgltf::iterateAccessorWithIndex<glm::vec4>(gltfAsset, colorAccessor,
-                    [&vertices, initialVtx](glm::vec4 col, size_t idx) { vertices[initialVtx + idx].mColor = col; });
-            }
+            // auto colorAttr = primitive.findAttribute("COLOR_0");
+            // if (colorAttr != primitive.attributes.end())
+            // {
+            //     fastgltf::Accessor& colorAccessor = gltfAsset.accessors[colorAttr->accessorIndex];
+            //     fastgltf::iterateAccessorWithIndex<glm::vec4>(gltfAsset, colorAccessor,
+            //         [&vertices, initialVtx](glm::vec4 col, size_t idx) { vertices[initialVtx + idx].mColor = col; });
+            // }
 
             //  load vertex texcoord
             auto TexCoordAttr = primitive.findAttribute("TEXCOORD_0");

@@ -251,23 +251,6 @@ int main(void)
             waveSpectrumPrePass.draw();
         }
 
-        // if (shouldGenerateSpectrum && totalFrames > 2)
-        // {
-        //     shouldGenerateSpectrum = false;
-        //     waveSpectrumPrePass.draw();
-        //     waveTransformPass.draw();
-
-        //     waveSpectrumPrePass.prepareSpectrumImageForView();
-        //     waveTransformPass.prepareCurrentFrameImagesForView();
-
-        //     if (spectrumImageDebugId == BUNNY_INVALID_ID)
-        //     {
-        //         IdType texId;
-        //         textureBank.addAllocatedTexture(waveSpectrumPrePass.getSpectrumImage(), spectrumImageDebugId);
-        //         textureBank.addAllocatedTexture(waveTransformPass.getHeightImage(), texId);
-        //     }
-        // }
-
         waveTransformPass.draw();
 
         cullingPass.dispatch();
