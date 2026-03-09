@@ -55,9 +55,9 @@ struct ScreenQuadVertex
 
 struct NormalVertex
 {
-    glm::vec3 mPosition;
-    glm::vec3 mNormal;
-    glm::vec3 mTangent;
+    glm::vec4 mPosition;
+    glm::vec4 mNormal;
+    glm::vec4 mTangent;
     glm::vec3 mTexCoord;
     uint32_t mSurfaceIndex = 0;
 
@@ -74,17 +74,17 @@ struct NormalVertex
 
         attributeDescriptions[0].binding = 0;
         attributeDescriptions[0].location = 0;
-        attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+        attributeDescriptions[0].format = VK_FORMAT_R32G32B32A32_SFLOAT;
         attributeDescriptions[0].offset = offsetof(NormalVertex, mPosition);
 
         attributeDescriptions[1].binding = 0;
         attributeDescriptions[1].location = 1;
-        attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+        attributeDescriptions[1].format = VK_FORMAT_R32G32B32A32_SFLOAT;
         attributeDescriptions[1].offset = offsetof(NormalVertex, mNormal);
 
         attributeDescriptions[2].binding = 0;
         attributeDescriptions[2].location = 2;
-        attributeDescriptions[2].format = VK_FORMAT_R32G32B32_SFLOAT;
+        attributeDescriptions[2].format = VK_FORMAT_R32G32B32A32_SFLOAT;
         attributeDescriptions[2].offset = offsetof(NormalVertex, mTangent);
 
         attributeDescriptions[3].binding = 0;

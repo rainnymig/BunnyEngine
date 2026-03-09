@@ -67,9 +67,9 @@ struct MeshData
 
 struct Vertex
 {
-    vec3 position;
-    vec3 normal;
-    vec3 tangent;
+    vec4 position;
+    vec4 normal;
+    vec4 tangent;
     vec3 texCoord;
     uint surfaceIdx;    //  the index of surface in the mesh (not in the surface data array)
 };

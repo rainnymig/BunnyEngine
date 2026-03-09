@@ -16,9 +16,9 @@ void addVertex(const glm::vec3& position, const glm::vec3& normal, const glm::ve
     const glm::vec2& texCoord, std::vector<uint32_t>& indices, std::vector<NormalVertex>& vertices,
     std::unordered_map<NormalVertex, uint32_t, NormalVertex::Hash>& vertexToIndexMap)
 {
-    NormalVertex newVertex{.mPosition = position,
-        .mNormal = normal,
-        .mTangent = tangent,
+    NormalVertex newVertex{.mPosition = glm::vec4(position, 1.0f),
+        .mNormal = glm::vec4(normal, 0.0f),
+        .mTangent = glm::vec4(tangent, 0.0f),
         .mTexCoord = glm::vec3(texCoord.x, texCoord.y, 0)};
 
     const auto verIdxPair = vertexToIndexMap.find(newVertex);
@@ -192,9 +192,9 @@ void loadMeshFromGltf(MeshBank<NormalVertex>* meshBank, PbrMaterialBank* materia
                 fastgltf::iterateAccessorWithIndex<glm::vec3>(gltfAsset, posAccessor,
                     [&vertices, &minCorner, &maxCorner, initialVtx, primitiveIdx](glm::vec3 vec, size_t idx) {
                         Render::NormalVertex newVertex;
-                        newVertex.mPosition = vec;
-                        newVertex.mNormal = {0, 0, 1};
-                        newVertex.mTangent = {1, 0, 0};
+                        newVertex.mPosition = glm::vec4(vec, 1.0f);
+                        newVertex.mNormal = {0, 0, 1, 0};
+                        newVertex.mTangent = {1, 0, 0, 0};
                         newVertex.mTexCoord = {0, 0, 0};
                         newVertex.mSurfaceIndex = primitiveIdx;
                         vertices[initialVtx + idx] = newVertex;
@@ -213,8 +213,10 @@ void loadMeshFromGltf(MeshBank<NormalVertex>* meshBank, PbrMaterialBank* materia
             if (normalAttr != primitive.attributes.end())
             {
                 fastgltf::Accessor& normalAccessor = gltfAsset.accessors[normalAttr->accessorIndex];
-                fastgltf::iterateAccessorWithIndex<glm::vec3>(gltfAsset, normalAccessor,
-                    [&vertices, initialVtx](glm::vec3 norm, size_t idx) { vertices[initialVtx + idx].mNormal = norm; });
+                fastgltf::iterateAccessorWithIndex<glm::vec3>(
+                    gltfAsset, normalAccessor, [&vertices, initialVtx](glm::vec3 norm, size_t idx) {
+                        vertices[initialVtx + idx].mNormal = glm::vec4(norm, 0.0f);
+                    });
             }
 
             //  load vertex tangent
@@ -224,7 +226,7 @@ void loadMeshFromGltf(MeshBank<NormalVertex>* meshBank, PbrMaterialBank* materia
                 fastgltf::Accessor& tangentAccessor = gltfAsset.accessors[tangentAttr->accessorIndex];
                 fastgltf::iterateAccessorWithIndex<glm::vec4>(
                     gltfAsset, tangentAccessor, [&vertices, initialVtx](glm::vec4 tangent, size_t idx) {
-                        vertices[initialVtx + idx].mTangent = tangent;
+                        vertices[initialVtx + idx].mTangent = glm::vec4(tangent.x, tangent.y, tangent.z, 0.0f);
                     });
             }
 

@@ -20,9 +20,9 @@ layout(std430, set = 1, binding = 1) buffer InstanceToObjectId
 };
 
 /*  input layouts   */
-layout (location = 0) in vec3 position;
-layout (location = 1) in vec3 normal;
-layout (location = 2) in vec3 tangent;
+layout (location = 0) in vec4 position;
+layout (location = 1) in vec4 normal;
+layout (location = 2) in vec4 tangent;
 layout (location = 3) in vec3 uv;
 layout (location = 4) in uint surfaceIndex;
 
@@ -36,19 +36,17 @@ layout (location = 5) out vec3 outBitangent;
 
 void main()
 {
-    vec4 pos = vec4(position, 1);
-
     ObjectData objData = objectData[instToObj[gl_InstanceIndex]];
     MeshData mesh = meshData[objData.meshId];
     SurfaceData surface = surfaceData[mesh.firstSurface + surfaceIndex];
 
-    outNormal = normalize((objData.invTransModel * vec4(normal, 0)).xyz);
-    vec4 worldPos = objData.model * pos;
+    outNormal = normalize((objData.invTransModel * normal).xyz);
+    vec4 worldPos = objData.model * position;
     outFragPos = worldPos.xyz;
     outUV = uv.xy;
     outMatId = surface.materialId;
 
-    outTangent = normalize((objData.invTransModel * vec4(tangent, 0)).xyz);
+    outTangent = normalize((objData.invTransModel * tangent).xyz);
     outBitangent = normalize(cross(outNormal, outTangent));
 
     gl_Position = cameraData.viewProj * worldPos;

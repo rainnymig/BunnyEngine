@@ -56,10 +56,10 @@ void main()
     Vertex v2 = vertices.v[i2];
 
     const vec3 barycentrics = vec3(1.0 - hitAttributes.x - hitAttributes.y, hitAttributes.x, hitAttributes.y);
-    const vec3 pos = v0.position * barycentrics.x + v1.position * barycentrics.y + v2.position * barycentrics.z;
+    const vec3 pos = v0.position.xyz * barycentrics.x + v1.position.xyz * barycentrics.y + v2.position.xyz * barycentrics.z;
     const vec3 worldPos = vec3(gl_ObjectToWorldEXT * vec4(pos, 1.0));
 
-    const vec3 normal = v0.normal * barycentrics.x + v1.normal * barycentrics.y + v2.normal * barycentrics.z;
+    const vec3 normal = v0.normal.xyz * barycentrics.x + v1.normal.xyz * barycentrics.y + v2.normal.xyz * barycentrics.z;
     const vec3 worldNormal = normalize(vec3(normal * gl_WorldToObjectEXT)); //  equal to inverse transposed objToWorld multiply normal vec
 
     //  trace a ray to each light
