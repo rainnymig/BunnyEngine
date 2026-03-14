@@ -46,23 +46,27 @@ void DepthReducePass::cleanup()
 
     vkDestroySampler(mVulkanResources->getDevice(), mDepthReduceSampler, nullptr);
 
-    for (int idx = 0; idx < mDepthImageViewMips.size(); idx++)
+    for (FrameData& frame : mFrameData)
     {
-        if (mDepthImageViewMips[idx] != nullptr)
+        for (int idx = 0; idx < frame.mDepthImageViewMips.size(); idx++)
         {
-            vkDestroyImageView(mVulkanResources->getDevice(), mDepthImageViewMips[idx], nullptr);
-            mDepthImageViewMips[idx] = nullptr;
+            if (frame.mDepthImageViewMips[idx] != nullptr)
+            {
+                vkDestroyImageView(mVulkanResources->getDevice(), frame.mDepthImageViewMips[idx], nullptr);
+                frame.mDepthImageViewMips[idx] = nullptr;
+            }
         }
-    }
 
-    mVulkanResources->destroyImage(mdepthHierarchyImage);
+        mVulkanResources->destroyImage(frame.mdepthHierarchyImage);
+    }
 }
 
 void DepthReducePass::dispatch()
 {
     VkCommandBuffer cmd = mRenderer->getCurrentCommandBuffer();
+    const FrameData& frame = mFrameData[mRenderer->getCurrentFrameIdx()];
 
-    const AllocatedImage& depthImage = mRenderer->getDepthImage();
+    const AllocatedImage& depthImage = mRenderer->getDepthImageResolved();
 
     //  wait for the previous pass to finish writing to the depth image
     VkImageMemoryBarrier depthWriteFinishBarrier = makeImageMemoryBarrier(depthImage.mImage,
@@ -77,8 +81,8 @@ void DepthReducePass::dispatch()
 
     for (int32_t idx = 0; idx < mDepthHierarchyLevels; idx++)
     {
-        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, mPipelineLayout, 0, 1,
-            &mDepthDescSets[mRenderer->getCurrentFrameIdx()][idx], 0, nullptr);
+        vkCmdBindDescriptorSets(
+            cmd, VK_PIPELINE_BIND_POINT_COMPUTE, mPipelineLayout, 0, 1, &frame.mDepthDescSet[idx], 0, nullptr);
 
         uint32_t levelWidth = mDepthWidth >> idx;
         uint32_t levelHeight = mDepthHeight >> idx;
@@ -98,8 +102,8 @@ void DepthReducePass::dispatch()
 
         //  wait for compute shader to finish one round of reduce before proceeding to the next
         VkImageMemoryBarrier reduceBarrier =
-            makeImageMemoryBarrier(mdepthHierarchyImage.mImage, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
-                VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_ASPECT_COLOR_BIT);
+            makeImageMemoryBarrier(frame.mdepthHierarchyImage.mImage, VK_ACCESS_SHADER_WRITE_BIT,
+                VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_ASPECT_COLOR_BIT);
 
         vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
             VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 1, &reduceBarrier);
@@ -115,10 +119,22 @@ void DepthReducePass::dispatch()
         VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 1, &depthReadFinishBarrier);
 }
 
+const std::array<const AllocatedImage*, MAX_FRAMES_IN_FLIGHT> DepthReducePass::getDepthHierarchyImages() const
+{
+    std::array<const AllocatedImage*, MAX_FRAMES_IN_FLIGHT> images;
+    for (auto idx = 0; idx < MAX_FRAMES_IN_FLIGHT; idx++)
+    {
+        const FrameData& frame = mFrameData[idx];
+        images[idx] = &frame.mdepthHierarchyImage;
+    }
+
+    return images;
+}
+
 void DepthReducePass::createDepthHierarchy()
 {
     //  build hierarchical z image from the depth image
-    const AllocatedImage& depthImage = mRenderer->getDepthImage();
+    const AllocatedImage& depthImage = mRenderer->getDepthImageResolved(0);
 
     mDepthWidth = findPreviousPow2(depthImage.mExtent.width);
     mDepthHeight = findPreviousPow2(depthImage.mExtent.height);
@@ -131,29 +147,29 @@ void DepthReducePass::createDepthHierarchy()
 
     VkExtent3D hierarchyImageExtent = {static_cast<uint32_t>(mDepthWidth), static_cast<uint32_t>(mDepthHeight), 1};
 
-    //  build the depth hierarchy image
-    mdepthHierarchyImage = mVulkanResources->createImage(hierarchyImageExtent, VK_FORMAT_R32_SFLOAT,
-        VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-        VK_IMAGE_ASPECT_COLOR_BIT, false, VK_IMAGE_LAYOUT_UNDEFINED, mDepthHierarchyLevels);
-
-    BunnyResult result = mVulkanResources->immediateTransitionImageLayout(mdepthHierarchyImage.mImage,
-        mdepthHierarchyImage.mFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, mDepthHierarchyLevels);
-
-    //  build the image view for each mip level
-    for (int32_t idx = 0; idx < mDepthHierarchyLevels; idx++)
+    for (FrameData& frame : mFrameData)
     {
-        VkImageViewCreateInfo viewCreateInfo = {.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
-        viewCreateInfo.pNext = nullptr;
-        viewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        viewCreateInfo.image = mdepthHierarchyImage.mImage;
-        viewCreateInfo.format = mdepthHierarchyImage.mFormat;
-        viewCreateInfo.subresourceRange.baseMipLevel = idx;
-        viewCreateInfo.subresourceRange.levelCount = 1;
-        viewCreateInfo.subresourceRange.baseArrayLayer = 0;
-        viewCreateInfo.subresourceRange.layerCount = 1;
-        viewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        //  build the depth hierarchy image
+        frame.mdepthHierarchyImage = mVulkanResources->createImage(hierarchyImageExtent, VK_FORMAT_R32_SFLOAT,
+            VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+            VK_IMAGE_ASPECT_COLOR_BIT, false, VK_IMAGE_LAYOUT_GENERAL, mDepthHierarchyLevels);
 
-        vkCreateImageView(mVulkanResources->getDevice(), &viewCreateInfo, nullptr, &mDepthImageViewMips[idx]);
+        //  build the image view for each mip level
+        for (int32_t idx = 0; idx < mDepthHierarchyLevels; idx++)
+        {
+            VkImageViewCreateInfo viewCreateInfo = {.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
+            viewCreateInfo.pNext = nullptr;
+            viewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+            viewCreateInfo.image = frame.mdepthHierarchyImage.mImage;
+            viewCreateInfo.format = frame.mdepthHierarchyImage.mFormat;
+            viewCreateInfo.subresourceRange.baseMipLevel = idx;
+            viewCreateInfo.subresourceRange.levelCount = 1;
+            viewCreateInfo.subresourceRange.baseArrayLayer = 0;
+            viewCreateInfo.subresourceRange.layerCount = 1;
+            viewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+
+            vkCreateImageView(mVulkanResources->getDevice(), &viewCreateInfo, nullptr, &frame.mDepthImageViewMips[idx]);
+        }
     }
 }
 
@@ -201,21 +217,22 @@ void DepthReducePass::initDescriptorSets()
         {.mType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,          .mRatio = 2},
         {.mType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .mRatio = 2}
     };
-    mDescriptorAllocator.init(mVulkanResources->getDevice(), MAX_DEPTH_HIERARCHY_LEVELS, poolSizes);
+    mDescriptorAllocator.init(mVulkanResources->getDevice(), 2 * MAX_DEPTH_HIERARCHY_LEVELS, poolSizes);
 
-    const AllocatedImage& depthImage = mRenderer->getDepthImage();
-
-    //  allocate and link descriptor sets
-    for (auto& frameDepthDescSets : mDepthDescSets)
+    for (uint32_t frameIdx = 0; frameIdx < MAX_FRAMES_IN_FLIGHT; frameIdx++)
     {
+        FrameData& frame = mFrameData[frameIdx];
+
+        const AllocatedImage& depthImage = mRenderer->getDepthImageResolved(frameIdx);
+
         for (int32_t idx = 0; idx < mDepthHierarchyLevels; idx++)
         {
             mDescriptorAllocator.allocate(
-                mVulkanResources->getDevice(), &mDepthDescLayout, &frameDepthDescSets[idx], 1, nullptr);
+                mVulkanResources->getDevice(), &mDepthDescLayout, &frame.mDepthDescSet[idx], 1, nullptr);
 
             //  link depth images
             DescriptorWriter writer;
-            writer.writeImage(0, mDepthImageViewMips[idx], mDepthReduceSampler, VK_IMAGE_LAYOUT_GENERAL,
+            writer.writeImage(0, frame.mDepthImageViewMips[idx], mDepthReduceSampler, VK_IMAGE_LAYOUT_GENERAL,
                 VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
             if (idx == 0)
             {
@@ -224,10 +241,10 @@ void DepthReducePass::initDescriptorSets()
             }
             else
             {
-                writer.writeImage(1, mDepthImageViewMips[idx - 1], mDepthReduceSampler, VK_IMAGE_LAYOUT_GENERAL,
+                writer.writeImage(1, frame.mDepthImageViewMips[idx - 1], mDepthReduceSampler, VK_IMAGE_LAYOUT_GENERAL,
                     VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
             }
-            writer.updateSet(mVulkanResources->getDevice(), frameDepthDescSets[idx]);
+            writer.updateSet(mVulkanResources->getDevice(), frame.mDepthDescSet[idx]);
         }
     }
 }

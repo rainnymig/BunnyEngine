@@ -39,8 +39,17 @@ class VulkanGraphicsRenderer
     VkCommandBuffer getCurrentCommandBuffer() const { return mFrameResources.at(mCurrentFrameId).mCommandBuffer; }
     uint32_t getCurrentFrameIdx() const { return mCurrentFrameId; }
     VkFormat getSwapChainImageFormat() const { return mSwapChainImageFormat; }
-    VkFormat getDepthImageFormat() const { return mDepthImage.mFormat; }
-    const AllocatedImage& getDepthImage() const { return mDepthImage; }
+    VkFormat getDepthImageFormat() const { return mDepthImageFormat; }
+    const AllocatedImage& getDepthImageResolved() const { return mFrameResources[mCurrentFrameId].mDepthImageResolved; }
+    const AllocatedImage& getDepthImageResolved(uint32_t frameId) const
+    {
+        return mFrameResources[frameId].mDepthImageResolved;
+    }
+    const AllocatedImage& getMultiSampledColorImage() const
+    {
+        return mFrameResources[mCurrentFrameId].mMultiSampledColorImage;
+    }
+    const AllocatedImage& getColorImageResolved() const { return mFrameResources[mCurrentFrameId].mColorImageResolved; }
     VkExtent2D getSwapChainExtent() const { return mSwapChainExtent; }
     VkSampleCountFlagBits getRenderMultiSampleCount() const { return mRenderMultiSampleCount; }
 
@@ -52,16 +61,25 @@ class VulkanGraphicsRenderer
         VkSemaphore mSwapchainImageSemaphore;
         VkSemaphore mRenderFinishSemaphore;
         VkFence mFrameInflightFence;
+
+        AllocatedImage mMultiSampledColorImage;
+        AllocatedImage mColorImageResolved;
+        AllocatedImage mDepthImage;
+        AllocatedImage mDepthImageResolved;
     };
 
     BunnyResult initSwapChain();
     BunnyResult initFrameResources();
+    BunnyResult initColorResources();
     BunnyResult initDepthResource();
     BunnyResult initImgui();
 
     BunnyResult createSwapChain();
     BunnyResult recreateSwapChain();
     void destroySwapChain();
+
+    BunnyResult createColorResources();
+    void destroyColorResources();
 
     BunnyResult createDepthResource();
     void destroyDepthResource();
@@ -81,8 +99,8 @@ class VulkanGraphicsRenderer
     std::vector<VkImageView> mSwapChainImageViews;
     VkFormat mSwapChainImageFormat;
     VkExtent2D mSwapChainExtent;
-    AllocatedImage mDepthImage;
     uint32_t mSwapchainImageIndex = 0;
+    VkFormat mDepthImageFormat;
 
     VkSampleCountFlagBits mMaxSupportedSampleCount = VK_SAMPLE_COUNT_1_BIT;
     VkSampleCountFlagBits mRenderMultiSampleCount = VK_SAMPLE_COUNT_4_BIT;

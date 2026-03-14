@@ -28,14 +28,14 @@ void PbrForwardPass::draw() const
     const FrameData& frame = mFrameData[mRenderer->getCurrentFrameIdx()];
 
     //  transition the render target image layout back to color attachment optimal
-    VkImageMemoryBarrier renderTargetBarrier = makeImageMemoryBarrier(frame.mSceneRenderTarget.mImage,
+    VkImageMemoryBarrier renderTargetBarrier = makeImageMemoryBarrier(frame.mSceneRenderTarget->mImage,
         VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_ASPECT_COLOR_BIT);
     vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
         VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 1, &renderTargetBarrier);
 
     std::vector<VkImageView> colorAttachmentViews;
-    colorAttachmentViews.push_back(frame.mSceneRenderTarget.mImageView);
+    colorAttachmentViews.push_back(frame.mSceneRenderTarget->mImageView);
     mRenderer->beginRender(colorAttachmentViews, updateDepth);
 
     //  bind mesh vertex and index buffers
@@ -174,14 +174,15 @@ void PbrForwardPass::linkShadowData(std::array<VkImageView, MAX_FRAMES_IN_FLIGHT
     }
 }
 
+void PbrForwardPass::updateRenderTarget(const AllocatedImage* renderTarget)
+{
+    FrameData& frame = mFrameData[mRenderer->getCurrentFrameIdx()];
+    frame.mSceneRenderTarget = renderTarget;
+}
+
 const size_t PbrForwardPass::getDrawCommandBufferSize() const
 {
     return getContainerDataSize(mDrawCommandsData);
-}
-
-const AllocatedImage& PbrForwardPass::getCurrentRenderTarget() const
-{
-    return mFrameData[mRenderer->getCurrentFrameIdx()].mSceneRenderTarget;
 }
 
 BunnyResult PbrForwardPass::initPipeline()
@@ -251,23 +252,6 @@ BunnyResult PbrForwardPass::initDescriptors()
 
 BunnyResult PbrForwardPass::initDataAndResources()
 {
-    VkExtent2D swapchainExtent = mRenderer->getSwapChainExtent();
-    //  create render target texture for frames
-    for (FrameData& frame : mFrameData)
-    {
-        frame.mSceneRenderTarget =
-            mVulkanResources->createImage(VkExtent3D{swapchainExtent.width, swapchainExtent.height, 1},
-                mRenderer->getSwapChainImageFormat(), VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                VK_IMAGE_ASPECT_COLOR_BIT, false, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-    }
-
-    mDeletionStack.AddFunction([this]() {
-        for (FrameData& frame : mFrameData)
-        {
-            mVulkanResources->destroyImage(frame.mSceneRenderTarget);
-        }
-    });
-
     return BUNNY_HAPPY;
 }
 } // namespace Bunny::Render

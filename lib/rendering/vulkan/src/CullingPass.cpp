@@ -121,17 +121,29 @@ void CullingPass::linkObjectData(const AllocatedBuffer& objectBuffer, size_t buf
     }
 }
 
-void CullingPass::linkCullingData(const AllocatedImage& depthHierarchyImage, VkSampler sampler)
+void CullingPass::linkCullingData(
+    const std::array<const AllocatedImage*, MAX_FRAMES_IN_FLIGHT>& depthHierarchyImages, VkSampler sampler)
 {
+    mDepthHierarchyImages = depthHierarchyImages;
+
     //  link culling data buffer
     DescriptorWriter writer;
     VkDeviceSize bufferSize = sizeof(ViewFrustum);
-    writer.writeBuffer(0, mCullingDataBuffer.mBuffer, bufferSize, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-    writer.writeImage(
-        1, depthHierarchyImage.mImageView, sampler, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-    for (VkDescriptorSet set : mCullDataDescSets)
+
+    for (uint32_t idx = 0; idx < MAX_FRAMES_IN_FLIGHT; idx++)
     {
-        writer.updateSet(mVulkanResources->getDevice(), set);
+        //  note that the depth hierarchy image of the same frame idx is used for each frame
+        //  this means that the depth hierarchy used in the culling is not of the previous frame
+        //  but of MAX_FRAMES_IN_FLIGHT frames earlier
+        //  this should not be a big issue
+        //  if want to use the previous 1 frame we should use (idx-1)%MAX_FRAMES_IN_FLIGHT
+
+        writer.clear();
+        writer.writeBuffer(0, mCullingDataBuffer.mBuffer, bufferSize, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+        writer.writeImage(1, depthHierarchyImages[idx]->mImageView, sampler, VK_IMAGE_LAYOUT_GENERAL,
+            VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+
+        writer.updateSet(mVulkanResources->getDevice(), mCullDataDescSets[idx]);
     }
 }
 
@@ -197,6 +209,15 @@ void CullingPass::dispatch()
         cmd, VK_PIPELINE_BIND_POINT_COMPUTE, mPipelineLayout, 4, 1, &mDebugDataDescSets[currentFrameIdx], 0, nullptr);
 
     vkCmdPushConstants(cmd, mPipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uint32_t), &mObjectCount);
+
+    {
+        //  barrier for depth hierarchy image write
+        VkImageMemoryBarrier depthHierarchyBarrier = makeImageMemoryBarrier(
+            mDepthHierarchyImages[currentFrameIdx]->mImage, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+            VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_ASPECT_COLOR_BIT);
+        vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0,
+            nullptr, 0, nullptr, 1, &depthHierarchyBarrier);
+    }
 
     //  dispatch culling compute shader
     constexpr static uint32_t computeSizeX = 256;

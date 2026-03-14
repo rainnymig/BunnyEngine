@@ -22,13 +22,23 @@ class DepthReducePass
     void cleanup();
     void dispatch();
 
-    const AllocatedImage& getDepthHierarchyImage() const { return mdepthHierarchyImage; }
+    const std::array<const AllocatedImage*, MAX_FRAMES_IN_FLIGHT> getDepthHierarchyImages() const;
     VkSampler getDepthReduceSampler() const { return mDepthReduceSampler; }
     uint32_t getDepthImageWidth() const { return mDepthWidth; }
     uint32_t getDepthImageHeight() const { return mDepthHeight; }
     uint32_t getDepthHierarchyLevels() const { return mDepthHierarchyLevels; }
 
   private:
+    static constexpr size_t MAX_DEPTH_HIERARCHY_LEVELS = 16;
+
+    struct FrameData
+    {
+        AllocatedImage mdepthHierarchyImage;
+        std::array<VkImageView, MAX_DEPTH_HIERARCHY_LEVELS> mDepthImageViewMips{VK_NULL_HANDLE};
+
+        std::array<VkDescriptorSet, MAX_DEPTH_HIERARCHY_LEVELS> mDepthDescSet;
+    };
+
     void createDepthHierarchy();
     void createDepthReduceSampler();
     void initDescriptorSets();
@@ -37,6 +47,8 @@ class DepthReducePass
     uint32_t findHierarchyLevels(uint32_t width, uint32_t height) const;
     uint32_t getGroupCount(uint32_t threadCount, uint32_t localSize) const;
 
+    std::array<FrameData, MAX_FRAMES_IN_FLIGHT> mFrameData;
+
     const VulkanRenderResources* mVulkanResources = nullptr;
     const VulkanGraphicsRenderer* mRenderer = nullptr;
 
@@ -44,11 +56,7 @@ class DepthReducePass
     VkPipelineLayout mPipelineLayout;
     VkDescriptorSetLayout mDepthDescLayout;
 
-    static constexpr size_t MAX_DEPTH_HIERARCHY_LEVELS = 16;
-    AllocatedImage mdepthHierarchyImage;
-    std::array<VkImageView, MAX_DEPTH_HIERARCHY_LEVELS> mDepthImageViewMips{nullptr};
     VkSampler mDepthReduceSampler;
-    std::array<std::array<VkDescriptorSet, MAX_DEPTH_HIERARCHY_LEVELS>, MAX_FRAMES_IN_FLIGHT> mDepthDescSets;
 
     uint32_t mDepthWidth;
     uint32_t mDepthHeight;

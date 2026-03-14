@@ -147,7 +147,7 @@ int main(void)
     pbrForwardPass.linkObjectData(worldTranslator.getObjectBuffer(), worldTranslator.getObjectBufferSize());
     pbrForwardPass.linkShadowData(rtShadowPass.getOutImageViews());
 
-    cullingPass.linkCullingData(depthReducePass.getDepthHierarchyImage(), depthReducePass.getDepthReduceSampler());
+    cullingPass.linkCullingData(depthReducePass.getDepthHierarchyImages(), depthReducePass.getDepthReduceSampler());
     cullingPass.linkMeshData();
     cullingPass.linkObjectData(worldTranslator.getObjectBuffer(), worldTranslator.getObjectBufferSize());
     cullingPass.linkDrawData(pbrForwardPass.getDrawCommandBuffer(), pbrForwardPass.getDrawCommandBufferSize(),
@@ -255,6 +255,8 @@ int main(void)
 
         cullingPass.dispatch();
         rtShadowPass.draw();
+
+        pbrForwardPass.updateRenderTarget(&renderer.getColorImageResolved());
         pbrForwardPass.draw();
 
         if (spectrumImageDebugId == BUNNY_INVALID_ID)
@@ -268,7 +270,7 @@ int main(void)
         {
             oceanPass.updateWaveTextures(
                 &waveTransformPass.getWaveDisplacementImage(), &waveTransformPass.getWaveNormalImage());
-            oceanPass.updateRenderTarget(&pbrForwardPass.getCurrentRenderTarget());
+            oceanPass.updateRenderTarget(&renderer.getColorImageResolved());
             oceanPass.prepareFrameDescriptors();
             oceanPass.draw();
         }
@@ -277,7 +279,7 @@ int main(void)
         skyPass.draw();
 
         finalOutputPass.updateInputTextures(&skyPass.getCurrentCloudTexture(), &skyPass.getCurrentFogShadowTexture(),
-            &pbrForwardPass.getCurrentRenderTarget());
+            &renderer.getColorImageResolved());
         finalOutputPass.draw();
 
         depthReducePass.dispatch();

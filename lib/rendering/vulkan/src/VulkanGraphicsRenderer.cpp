@@ -27,6 +27,7 @@ BunnyResult VulkanGraphicsRenderer::initialize()
 
     BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(initSwapChain());
     BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(initFrameResources());
+    BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(initColorResources());
     BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(initDepthResource());
     BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(initImgui());
 
@@ -98,7 +99,7 @@ void VulkanGraphicsRenderer::beginRenderFrame()
     VkRenderingAttachmentInfo colorAttachment =
         makeColorAttachmentInfo(mSwapChainImageViews[mSwapchainImageIndex], &colorClearValue);
     VkRenderingAttachmentInfo depthAttachment =
-        makeDepthAttachmentInfo(mDepthImage.mImageView, &depthStencilClearValue);
+        makeDepthAttachmentInfo(currentFrame.mDepthImageResolved.mImageView, &depthStencilClearValue);
     VkRenderingInfo renderInfo = makeRenderingInfo(mSwapChainExtent, 1, &colorAttachment, &depthAttachment);
 
     vkCmdBeginRendering(cmdBuf, &renderInfo);
@@ -165,7 +166,8 @@ void VulkanGraphicsRenderer::beginRender(bool updateDepth) const
 {
     VkRenderingAttachmentInfo colorAttachment =
         makeColorAttachmentInfo(mSwapChainImageViews[mSwapchainImageIndex], nullptr);
-    VkRenderingAttachmentInfo depthAttachment = makeDepthAttachmentInfo(mDepthImage.mImageView, nullptr);
+    VkRenderingAttachmentInfo depthAttachment =
+        makeDepthAttachmentInfo(mFrameResources[mCurrentFrameId].mDepthImageResolved.mImageView, nullptr);
     VkRenderingInfo renderInfo =
         makeRenderingInfo(mSwapChainExtent, 1, &colorAttachment, updateDepth ? &depthAttachment : nullptr);
     vkCmdBeginRendering(getCurrentCommandBuffer(), &renderInfo);
@@ -190,7 +192,8 @@ void VulkanGraphicsRenderer::beginRender(
         [&colorClearValue, clearColor](VkImageView imageView) {
             return makeColorAttachmentInfo(imageView, clearColor ? &colorClearValue : nullptr);
         });
-    VkRenderingAttachmentInfo depthAttachment = makeDepthAttachmentInfo(mDepthImage.mImageView, nullptr);
+    VkRenderingAttachmentInfo depthAttachment =
+        makeDepthAttachmentInfo(mFrameResources[mCurrentFrameId].mDepthImageResolved.mImageView, nullptr);
     VkRenderingInfo renderInfo = makeRenderingInfo(
         mSwapChainExtent, colorAttachments.size(), colorAttachments.data(), updateDepth ? &depthAttachment : nullptr);
     vkCmdBeginRendering(getCurrentCommandBuffer(), &renderInfo);
@@ -271,6 +274,13 @@ BunnyResult VulkanGraphicsRenderer::initFrameResources()
         });
     }
 
+    return BUNNY_HAPPY;
+}
+
+BunnyResult VulkanGraphicsRenderer::initColorResources()
+{
+    BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(createColorResources())
+    mDeletionStack.AddFunction([this]() { destroyColorResources(); });
     return BUNNY_HAPPY;
 }
 
@@ -368,9 +378,11 @@ BunnyResult VulkanGraphicsRenderer::recreateSwapChain()
     vkDeviceWaitIdle(mRenderResources->getDevice());
 
     destroyDepthResource();
+    destroyColorResources();
     destroySwapChain();
 
     BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(createSwapChain())
+    BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(createColorResources())
     BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(createDepthResource())
 
     return BUNNY_HAPPY;
@@ -385,6 +397,32 @@ void VulkanGraphicsRenderer::destroySwapChain()
     vkDestroySwapchainKHR(mRenderResources->getDevice(), mSwapChain, nullptr);
 }
 
+BunnyResult VulkanGraphicsRenderer::createColorResources()
+{
+    for (FrameRenderObject& frame : mFrameResources)
+    {
+        frame.mMultiSampledColorImage =
+            mRenderResources->createImage({mSwapChainExtent.width, mSwapChainExtent.height, 1}, mSwapChainImageFormat,
+                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_IMAGE_ASPECT_COLOR_BIT, false,
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1, mRenderMultiSampleCount);
+
+        frame.mColorImageResolved = mRenderResources->createImage({mSwapChainExtent.width, mSwapChainExtent.height, 1},
+            mSwapChainImageFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+            VK_IMAGE_ASPECT_COLOR_BIT, false, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    }
+
+    return BUNNY_HAPPY;
+}
+
+void VulkanGraphicsRenderer::destroyColorResources()
+{
+    for (FrameRenderObject& frame : mFrameResources)
+    {
+        mRenderResources->destroyImage(frame.mMultiSampledColorImage);
+        mRenderResources->destroyImage(frame.mColorImageResolved);
+    }
+}
+
 BunnyResult VulkanGraphicsRenderer::createDepthResource()
 {
     VkFormat depthFormat = findDepthFormat();
@@ -393,21 +431,30 @@ BunnyResult VulkanGraphicsRenderer::createDepthResource()
         PRINT_AND_RETURN_VALUE("Can not find suitable depth image format", BUNNY_SAD)
     }
 
-    //  add usage sampled for depth image for creating hierarchical-z map for occlusion culling
-    mDepthImage = mRenderResources->createImage({mSwapChainExtent.width, mSwapChainExtent.height, 1}, depthFormat,
-        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_DEPTH_BIT, false,
-        VK_IMAGE_LAYOUT_UNDEFINED, 1, mRenderMultiSampleCount);
+    mDepthImageFormat = depthFormat;
 
-    //  transition the depth image layout
-    BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(mRenderResources->immediateTransitionImageLayout(mDepthImage.mImage,
-        mDepthImage.mFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL))
+    for (FrameRenderObject& frame : mFrameResources)
+    {
+        frame.mDepthImage = mRenderResources->createImage({mSwapChainExtent.width, mSwapChainExtent.height, 1},
+            depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_IMAGE_ASPECT_DEPTH_BIT, false,
+            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1, mRenderMultiSampleCount);
+
+        //  add usage sampled for depth image for creating hierarchical-z map for occlusion culling
+        frame.mDepthImageResolved = mRenderResources->createImage({mSwapChainExtent.width, mSwapChainExtent.height, 1},
+            depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+            VK_IMAGE_ASPECT_DEPTH_BIT, false, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+    }
 
     return BUNNY_HAPPY;
 }
 
 void VulkanGraphicsRenderer::destroyDepthResource()
 {
-    mRenderResources->destroyImage(mDepthImage);
+    for (FrameRenderObject& frame : mFrameResources)
+    {
+        mRenderResources->destroyImage(frame.mDepthImage);
+        mRenderResources->destroyImage(frame.mDepthImageResolved);
+    }
 }
 
 void VulkanGraphicsRenderer::beginImguiFrame()

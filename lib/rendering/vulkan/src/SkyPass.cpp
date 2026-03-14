@@ -213,8 +213,9 @@ BunnyResult SkyPass::initDataAndResources()
     VkDevice device = mVulkanResources->getDevice();
 
     //  create output textures
-    for (FrameData& frame : mFrameData)
+    for (uint32_t idx = 0; idx < MAX_FRAMES_IN_FLIGHT; idx++)
     {
+        FrameData& frame = mFrameData[idx];
         frame.mCloudTexture1 = mVulkanResources->createImage(renderImageExtent, VK_FORMAT_R32G32B32A32_SFLOAT,
             VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT, false,
             VK_IMAGE_LAYOUT_GENERAL);
@@ -224,7 +225,7 @@ BunnyResult SkyPass::initDataAndResources()
         frame.mFogShadowTexture = mVulkanResources->createImage(renderImageExtent, VK_FORMAT_R32G32B32A32_SFLOAT,
             VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT, false,
             VK_IMAGE_LAYOUT_GENERAL);
-        frame.mDepthTexture = &mRenderer->getDepthImage();
+        frame.mDepthTexture = &mRenderer->getDepthImageResolved(idx);
     }
 
     mDeletionStack.AddFunction([this]() {
