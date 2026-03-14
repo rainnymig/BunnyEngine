@@ -317,7 +317,8 @@ AllocatedBuffer VulkanRenderResources::createBuffer(VkDeviceSize size, VkBufferU
 }
 
 AllocatedImage VulkanRenderResources::createImage(VkExtent3D size, VkFormat format, VkImageUsageFlags usage,
-    VkImageAspectFlags aspectFlags, bool is3d, VkImageLayout layout, uint32_t mipCount) const
+    VkImageAspectFlags aspectFlags, bool is3d, VkImageLayout layout, uint32_t mipCount,
+    VkSampleCountFlagBits sampleCount) const
 {
     AllocatedImage newImage;
     newImage.mFormat = format;
@@ -332,7 +333,7 @@ AllocatedImage VulkanRenderResources::createImage(VkExtent3D size, VkFormat form
     imgCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
     imgCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     imgCreateInfo.usage = usage;
-    imgCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    imgCreateInfo.samples = sampleCount;
     imgCreateInfo.pNext = nullptr;
 
     VmaAllocationCreateInfo allocCreateInfo = {};
@@ -507,11 +508,12 @@ VkFormat VulkanRenderResources::findSupportedFormat(
     return VK_FORMAT_UNDEFINED;
 }
 
-void VulkanRenderResources::getPhysicalDeviceProperties(void* properties) const
+VkPhysicalDeviceProperties VulkanRenderResources::getPhysicalDeviceProperties(void* properties) const
 {
     VkPhysicalDeviceProperties2 physicalDeviceProp2{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2};
     physicalDeviceProp2.pNext = properties;
     vkGetPhysicalDeviceProperties2(mPhysicalDevice, &physicalDeviceProp2);
+    return physicalDeviceProp2.properties;
 }
 
 VulkanRenderResources::~VulkanRenderResources()

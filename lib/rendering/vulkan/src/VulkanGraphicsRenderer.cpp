@@ -23,6 +23,7 @@ VulkanGraphicsRenderer::VulkanGraphicsRenderer(VulkanRenderResources* renderReso
 
 BunnyResult VulkanGraphicsRenderer::initialize()
 {
+    queryMaxSupportedSampleCount();
 
     BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(initSwapChain());
     BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(initFrameResources());
@@ -346,7 +347,6 @@ BunnyResult VulkanGraphicsRenderer::createSwapChain()
         swapchainBuilder.set_desired_format(surfaceFormat)
             .set_desired_present_mode(presentMode)
             .set_desired_extent(extent.width, extent.height)
-            //   .add_image_usage_flags(VK_IMAGE_USAGE_TRANSFER_DST_BIT) //  transfer destination
             .add_image_usage_flags(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) //  direct render into swapchain image
             .build()
             .value();
@@ -395,7 +395,8 @@ BunnyResult VulkanGraphicsRenderer::createDepthResource()
 
     //  add usage sampled for depth image for creating hierarchical-z map for occlusion culling
     mDepthImage = mRenderResources->createImage({mSwapChainExtent.width, mSwapChainExtent.height, 1}, depthFormat,
-        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_DEPTH_BIT);
+        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_DEPTH_BIT, false,
+        VK_IMAGE_LAYOUT_UNDEFINED, 1, mRenderMultiSampleCount);
 
     //  transition the depth image layout
     BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(mRenderResources->immediateTransitionImageLayout(mDepthImage.mImage,
@@ -436,6 +437,44 @@ void VulkanGraphicsRenderer::finishImguiFrame(VkCommandBuffer commandBuffer, VkI
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
 
     vkCmdEndRendering(commandBuffer);
+}
+
+void VulkanGraphicsRenderer::queryMaxSupportedSampleCount()
+{
+    const auto property = mRenderResources->getPhysicalDeviceProperties(nullptr);
+    VkSampleCountFlags counts =
+        property.limits.framebufferColorSampleCounts && property.limits.framebufferDepthSampleCounts;
+
+    if (counts & VK_SAMPLE_COUNT_64_BIT)
+    {
+        mMaxSupportedSampleCount = VK_SAMPLE_COUNT_64_BIT;
+    }
+    if (counts & VK_SAMPLE_COUNT_32_BIT)
+    {
+        mMaxSupportedSampleCount = VK_SAMPLE_COUNT_32_BIT;
+    }
+    if (counts & VK_SAMPLE_COUNT_16_BIT)
+    {
+        mMaxSupportedSampleCount = VK_SAMPLE_COUNT_16_BIT;
+    }
+    if (counts & VK_SAMPLE_COUNT_8_BIT)
+    {
+        mMaxSupportedSampleCount = VK_SAMPLE_COUNT_8_BIT;
+    }
+    if (counts & VK_SAMPLE_COUNT_4_BIT)
+    {
+        mMaxSupportedSampleCount = VK_SAMPLE_COUNT_4_BIT;
+    }
+    if (counts & VK_SAMPLE_COUNT_2_BIT)
+    {
+        mMaxSupportedSampleCount = VK_SAMPLE_COUNT_2_BIT;
+    }
+    mMaxSupportedSampleCount = VK_SAMPLE_COUNT_1_BIT;
+
+    if (mRenderMultiSampleCount > mMaxSupportedSampleCount)
+    {
+        mRenderMultiSampleCount = mMaxSupportedSampleCount;
+    }
 }
 
 SwapChainSupportDetails VulkanGraphicsRenderer::querySwapChainSupport(

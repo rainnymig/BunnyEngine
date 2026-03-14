@@ -68,7 +68,7 @@ class VulkanRenderResources
         VmaAllocationCreateFlags vmaCreateFlags, VmaMemoryUsage vmaUsage, VkDeviceSize minAlignment = 0) const;
     AllocatedImage createImage(VkExtent3D size, VkFormat format, VkImageUsageFlags usage,
         VkImageAspectFlags aspectFlags, bool is3d = false, VkImageLayout layout = VK_IMAGE_LAYOUT_UNDEFINED,
-        uint32_t mipCount = 1) const;
+        uint32_t mipCount = 1, VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT) const;
     void destroyBuffer(AllocatedBuffer& buffer) const;
     void destroyImage(AllocatedImage& image) const;
     void copyBuffer(VkCommandBuffer cmd, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) const;
@@ -91,7 +91,7 @@ class VulkanRenderResources
     //  query physical device properties
     //  should pass in a pointer to physical device property struct
     //  https://registry.khronos.org/vulkan/specs/latest/man/html/VkPhysicalDeviceProperties2.html#VUID-VkPhysicalDeviceProperties2-pNext-pNext
-    void getPhysicalDeviceProperties(void* properties) const;
+    VkPhysicalDeviceProperties getPhysicalDeviceProperties(void* properties) const;
 
     bool getSupportMeshShader() const { return mSupportMeshShader; }
 
