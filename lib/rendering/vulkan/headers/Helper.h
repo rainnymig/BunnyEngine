@@ -25,10 +25,8 @@ VkSubmitInfo2 makeSubmitInfo2(VkCommandBufferSubmitInfo* cmdBufferSubmit, VkSema
 VkPipelineShaderStageCreateInfo makeShaderStageCreateInfo(
     VkShaderStageFlagBits stage, VkShaderModule shaderModule, const char* entryPoint = "main");
 VkRayTracingShaderGroupCreateInfoKHR makeRayTracingShaderGroupCreateInfoKHR();
-VkRenderingAttachmentInfo makeColorAttachmentInfo(
-    VkImageView view, VkClearValue* clearValue, VkImageLayout layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-VkRenderingAttachmentInfo makeDepthAttachmentInfo(
-    VkImageView view, VkClearValue* clearValue, VkImageLayout layout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+VkRenderingAttachmentInfo makeAttachmentInfo(VkImageView view, VkImageLayout layout, VkClearValue* clearValue = nullptr,
+    VkImageView resolveView = VK_NULL_HANDLE);
 VkRenderingInfo makeRenderingInfo(VkExtent2D renderExtent, uint32_t colorAttachmentCount,
     VkRenderingAttachmentInfo* colorAttachments, VkRenderingAttachmentInfo* depthAttachment);
 VkBufferMemoryBarrier makeBufferMemoryBarrier(VkBuffer buffer, uint32_t queueIndex);

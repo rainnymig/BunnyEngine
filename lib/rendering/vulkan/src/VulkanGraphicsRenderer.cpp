@@ -96,10 +96,10 @@ void VulkanGraphicsRenderer::beginRenderFrame()
     VkClearValue depthStencilClearValue = {
         .depthStencil = {.depth = 1.0f, .stencil = 0}
     };
-    VkRenderingAttachmentInfo colorAttachment =
-        makeColorAttachmentInfo(mSwapChainImageViews[mSwapchainImageIndex], &colorClearValue);
-    VkRenderingAttachmentInfo depthAttachment =
-        makeDepthAttachmentInfo(currentFrame.mDepthImageResolved.mImageView, &depthStencilClearValue);
+    VkRenderingAttachmentInfo colorAttachment = makeAttachmentInfo(
+        mSwapChainImageViews[mSwapchainImageIndex], VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, &colorClearValue);
+    VkRenderingAttachmentInfo depthAttachment = makeAttachmentInfo(
+        currentFrame.mDepthImageResolved.mImageView, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, &depthStencilClearValue);
     VkRenderingInfo renderInfo = makeRenderingInfo(mSwapChainExtent, 1, &colorAttachment, &depthAttachment);
 
     vkCmdBeginRendering(cmdBuf, &renderInfo);
@@ -165,9 +165,9 @@ void VulkanGraphicsRenderer::finishRenderFrame()
 void VulkanGraphicsRenderer::beginRender(bool updateDepth) const
 {
     VkRenderingAttachmentInfo colorAttachment =
-        makeColorAttachmentInfo(mSwapChainImageViews[mSwapchainImageIndex], nullptr);
-    VkRenderingAttachmentInfo depthAttachment =
-        makeDepthAttachmentInfo(mFrameResources[mCurrentFrameId].mDepthImageResolved.mImageView, nullptr);
+        makeAttachmentInfo(mSwapChainImageViews[mSwapchainImageIndex], VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    VkRenderingAttachmentInfo depthAttachment = makeAttachmentInfo(
+        mFrameResources[mCurrentFrameId].mDepthImageResolved.mImageView, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
     VkRenderingInfo renderInfo =
         makeRenderingInfo(mSwapChainExtent, 1, &colorAttachment, updateDepth ? &depthAttachment : nullptr);
     vkCmdBeginRendering(getCurrentCommandBuffer(), &renderInfo);
@@ -190,10 +190,11 @@ void VulkanGraphicsRenderer::beginRender(
     colorAttachments.reserve(colorAttachmentViews.size());
     std::transform(colorAttachmentViews.begin(), colorAttachmentViews.end(), std::back_inserter(colorAttachments),
         [&colorClearValue, clearColor](VkImageView imageView) {
-            return makeColorAttachmentInfo(imageView, clearColor ? &colorClearValue : nullptr);
+            return makeAttachmentInfo(
+                imageView, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, clearColor ? &colorClearValue : nullptr);
         });
-    VkRenderingAttachmentInfo depthAttachment =
-        makeDepthAttachmentInfo(mFrameResources[mCurrentFrameId].mDepthImageResolved.mImageView, nullptr);
+    VkRenderingAttachmentInfo depthAttachment = makeAttachmentInfo(
+        mFrameResources[mCurrentFrameId].mDepthImageResolved.mImageView, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
     VkRenderingInfo renderInfo = makeRenderingInfo(
         mSwapChainExtent, colorAttachments.size(), colorAttachments.data(), updateDepth ? &depthAttachment : nullptr);
     vkCmdBeginRendering(getCurrentCommandBuffer(), &renderInfo);
@@ -222,6 +223,11 @@ void VulkanGraphicsRenderer::cleanup()
 VulkanGraphicsRenderer::~VulkanGraphicsRenderer()
 {
     cleanup();
+}
+
+VulkanGraphicsRenderer::RenderHelper VulkanGraphicsRenderer::getRenderHelper() const
+{
+    return RenderHelper(this, CARROT);
 }
 
 BunnyResult VulkanGraphicsRenderer::initSwapChain()
@@ -476,7 +482,7 @@ void VulkanGraphicsRenderer::finishImguiFrame(VkCommandBuffer commandBuffer, VkI
     ImGui::Render();
 
     VkRenderingAttachmentInfo colorAttachment =
-        makeColorAttachmentInfo(targetImageView, nullptr, VK_IMAGE_LAYOUT_GENERAL);
+        makeAttachmentInfo(targetImageView, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     VkRenderingInfo renderInfo = makeRenderingInfo(mSwapChainExtent, 1, &colorAttachment, nullptr);
 
     vkCmdBeginRendering(commandBuffer, &renderInfo);
@@ -616,6 +622,91 @@ VkFormat Bunny::Render::VulkanGraphicsRenderer::findDepthFormat() const
     std::array<VkFormat, 3> candidates{VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT};
     return mRenderResources->findSupportedFormat(
         candidates, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+}
+
+VulkanGraphicsRenderer::RenderHelper::RenderHelper(
+    const VulkanGraphicsRenderer* renderer, Base::BunnyGuard<VulkanGraphicsRenderer> guard)
+    : mRenderer(renderer)
+{
+}
+
+VulkanGraphicsRenderer::RenderHelper::~RenderHelper()
+{
+    if (mRenderBeginned)
+    {
+        finishRender();
+    }
+}
+
+void VulkanGraphicsRenderer::RenderHelper::beginRender()
+{
+    std::vector<VkRenderingAttachmentInfo> colorAttachments;
+    if (mColorAttachmentViews.empty())
+    {
+        colorAttachments.emplace_back(
+            makeAttachmentInfo(mRenderer->mSwapChainImageViews[mRenderer->mSwapchainImageIndex],
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, mClearColor ? &mColorClearValue : nullptr));
+    }
+    else
+    {
+        colorAttachments.reserve(mColorAttachmentViews.size());
+        std::transform(mColorAttachmentViews.begin(), mColorAttachmentViews.end(), std::back_inserter(colorAttachments),
+            [this](VkImageView imageView) {
+                return makeAttachmentInfo(
+                    imageView, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, mClearColor ? &mColorClearValue : nullptr);
+            });
+    }
+
+    VkRenderingAttachmentInfo depthAttachment =
+        makeAttachmentInfo(mRenderer->mFrameResources[mRenderer->mCurrentFrameId].mDepthImageResolved.mImageView,
+            VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, nullptr);
+    VkRenderingInfo renderInfo = makeRenderingInfo(mRenderer->mSwapChainExtent, colorAttachments.size(),
+        colorAttachments.data(), mUpdateDepth ? &depthAttachment : nullptr);
+
+    vkCmdBeginRendering(mRenderer->getCurrentCommandBuffer(), &renderInfo);
+
+    mRenderBeginned = true;
+}
+
+void VulkanGraphicsRenderer::RenderHelper::finishRender()
+{
+    vkCmdEndRendering(mRenderer->getCurrentCommandBuffer());
+
+    mRenderBeginned = false;
+}
+
+VulkanGraphicsRenderer::RenderHelper& VulkanGraphicsRenderer::RenderHelper::setColorAttachments(
+    const std::vector<VkImageView>& colorAttachments)
+{
+    mColorAttachmentViews = colorAttachments;
+    return *this;
+}
+
+VulkanGraphicsRenderer::RenderHelper& VulkanGraphicsRenderer::RenderHelper::setUpdateDepth(bool updateDepth)
+{
+    mUpdateDepth = updateDepth;
+    return *this;
+}
+
+VulkanGraphicsRenderer::RenderHelper& VulkanGraphicsRenderer::RenderHelper::setClearColor(bool clearColor)
+{
+    mClearColor = clearColor;
+    return *this;
+}
+
+VulkanGraphicsRenderer::RenderHelper& VulkanGraphicsRenderer::RenderHelper::setClearColorValue(
+    const VkClearValue& clearValue)
+{
+    mColorClearValue = clearValue;
+    return *this;
+}
+
+VulkanGraphicsRenderer::RenderHelper& VulkanGraphicsRenderer::RenderHelper::setMultiSample(
+    bool multiSample, bool resolve)
+{
+    mMultiSample = multiSample;
+    mResolveMultiSample = resolve;
+    return *this;
 }
 
 } // namespace Bunny::Render

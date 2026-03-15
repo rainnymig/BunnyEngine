@@ -4,6 +4,7 @@
 #include "Fundamentals.h"
 #include "FunctionStack.h"
 #include "SwapChainSupportDetails.h"
+#include "BunnyGuard.h"
 
 #include <volk.h>
 
@@ -18,6 +19,36 @@ class VulkanRenderResources;
 class VulkanGraphicsRenderer
 {
   public:
+    class RenderHelper
+    {
+      public:
+        RenderHelper(const VulkanGraphicsRenderer* renderer, Base::BunnyGuard<VulkanGraphicsRenderer> guard);
+        ~RenderHelper();
+        void beginRender();
+        void finishRender();
+
+        RenderHelper& setColorAttachments(const std::vector<VkImageView>& colorAttachments);
+        RenderHelper& setUpdateDepth(bool updateDepth);
+        RenderHelper& setClearColor(bool clearColor);
+        RenderHelper& setClearColorValue(const VkClearValue& clearValue);
+        RenderHelper& setMultiSample(bool multiSample, bool resolve);
+
+      private:
+        std::vector<VkImageView> mColorAttachmentViews;
+        bool mUpdateDepth = true;
+        bool mClearColor = true;
+        VkClearValue mColorClearValue = {
+            .color = {0.0f, 0.0f, 0.0f, 1.0f}
+        };
+        bool mMultiSample = false;
+        bool mResolveMultiSample = false;
+
+        bool mRenderBeginned = false;
+
+        const VulkanGraphicsRenderer* mRenderer = nullptr;
+    };
+    friend class RenderHelper;
+
     VulkanGraphicsRenderer(VulkanRenderResources* renderResources);
 
     BunnyResult initialize();
@@ -35,6 +66,8 @@ class VulkanGraphicsRenderer
     void waitForRenderFinish();
     void cleanup();
     ~VulkanGraphicsRenderer();
+
+    [[nodiscard]] RenderHelper getRenderHelper() const;
 
     VkCommandBuffer getCurrentCommandBuffer() const { return mFrameResources.at(mCurrentFrameId).mCommandBuffer; }
     uint32_t getCurrentFrameIdx() const { return mCurrentFrameId; }

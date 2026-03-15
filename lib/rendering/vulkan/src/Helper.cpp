@@ -76,40 +76,36 @@ VkRayTracingShaderGroupCreateInfoKHR makeRayTracingShaderGroupCreateInfoKHR()
     return createInfo;
 }
 
-VkRenderingAttachmentInfo makeColorAttachmentInfo(VkImageView view, VkClearValue* clearValue, VkImageLayout layout)
+VkRenderingAttachmentInfo makeAttachmentInfo(
+    VkImageView view, VkImageLayout layout, VkClearValue* clearValue, VkImageView resolveView)
 {
-    VkRenderingAttachmentInfo colorAttachment{};
-    colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-    colorAttachment.pNext = nullptr;
+    bool shouldClear = clearValue != VK_NULL_HANDLE;
+    bool shouldResolve = resolveView != VK_NULL_HANDLE;
 
-    colorAttachment.imageView = view;
-    colorAttachment.imageLayout = layout;
-    colorAttachment.loadOp = clearValue ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
-    colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    if (clearValue)
+    VkRenderingAttachmentInfo attachmentInfo{};
+    attachmentInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+    attachmentInfo.pNext = nullptr;
+
+    attachmentInfo.imageView = view;
+    attachmentInfo.imageLayout = layout;
+
+    if (shouldResolve)
     {
-        colorAttachment.clearValue = *clearValue;
+        attachmentInfo.resolveImageView = resolveView;
+        //  for now use the same layout as the main image
+        //  maybe they can be different later
+        attachmentInfo.resolveImageLayout = layout;
+        attachmentInfo.resolveMode = VK_RESOLVE_MODE_AVERAGE_BIT;
     }
 
-    return colorAttachment;
-}
-
-VkRenderingAttachmentInfo makeDepthAttachmentInfo(VkImageView view, VkClearValue* clearValue, VkImageLayout layout)
-{
-    VkRenderingAttachmentInfo depthAttachment{};
-    depthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-    depthAttachment.pNext = nullptr;
-
-    depthAttachment.imageView = view;
-    depthAttachment.imageLayout = layout;
-    depthAttachment.loadOp = clearValue ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
-    depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    if (clearValue)
+    if (shouldClear)
     {
-        depthAttachment.clearValue = *clearValue;
+        attachmentInfo.clearValue = *clearValue;
+        attachmentInfo.loadOp = shouldClear ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
     }
+    attachmentInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 
-    return depthAttachment;
+    return attachmentInfo;
 }
 
 VkRenderingInfo makeRenderingInfo(VkExtent2D renderExtent, uint32_t colorAttachmentCount,
