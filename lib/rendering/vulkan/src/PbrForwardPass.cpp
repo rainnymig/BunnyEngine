@@ -37,7 +37,9 @@ void PbrForwardPass::draw() const
     auto renderHelper = mRenderer->getRenderHelper()
                             .setColorAttachments(colorAttachmentViews)
                             .setClearColor(true)
+                            .setClearDepth(true)
                             .setUpdateDepth(true)
+                            .setMultiSample(mRenderer->isMultiSampleEnabled(), false)
                             .beginRender();
 
     //  bind mesh vertex and index buffers
@@ -209,7 +211,14 @@ BunnyResult PbrForwardPass::initPipeline()
     builder.setInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
     builder.setPolygonMode(VK_POLYGON_MODE_FILL);
     builder.setCulling(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
-    builder.setMultisamplingNone();
+    if (mRenderer->isMultiSampleEnabled())
+    {
+        builder.setMultiSamplingCount(mRenderer->getRenderMultiSampleCount());
+    }
+    else
+    {
+        builder.setMultisamplingNone();
+    }
     builder.disableBlending(); //  opaque pipeline
     builder.enableDepthTest(VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL);
     std::vector<VkFormat> colorFormats{mRenderer->getSwapChainImageFormat()};

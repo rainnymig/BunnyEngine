@@ -111,21 +111,6 @@ void VulkanGraphicsRenderer::beginRenderFrame()
 
     mRenderResources->transitionImageLayout(cmdBuf, mSwapChainImages[mSwapchainImageIndex], mSwapChainImageFormat,
         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-
-    VkClearValue colorClearValue = {
-        .color = {0.0f, 0.0f, 0.0f, 1.0f}
-    };
-    VkClearValue depthStencilClearValue = {
-        .depthStencil = {.depth = 1.0f, .stencil = 0}
-    };
-    VkRenderingAttachmentInfo colorAttachment = makeAttachmentInfo(
-        mSwapChainImageViews[mSwapchainImageIndex], VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, &colorClearValue);
-    VkRenderingAttachmentInfo depthAttachment = makeAttachmentInfo(
-        currentFrame.mDepthImageResolved.mImageView, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, &depthStencilClearValue);
-    VkRenderingInfo renderInfo = makeRenderingInfo(mSwapChainExtent, 1, &colorAttachment, &depthAttachment);
-
-    vkCmdBeginRendering(cmdBuf, &renderInfo);
-    vkCmdEndRendering(cmdBuf);
 }
 
 void VulkanGraphicsRenderer::finishRenderFrame()
@@ -207,6 +192,14 @@ VulkanGraphicsRenderer::~VulkanGraphicsRenderer()
 VulkanGraphicsRenderer::RenderHelper VulkanGraphicsRenderer::getRenderHelper() const
 {
     return RenderHelper(this, CARROT);
+}
+
+VkImageMemoryBarrier VulkanGraphicsRenderer::getResolvedColorBarrier() const
+{
+    //  temp quick helper, will update later
+    return makeImageMemoryBarrier(mFrameResources[mCurrentFrameId].mColorImageResolved.mImage,
+        VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_ASPECT_COLOR_BIT);
 }
 
 BunnyResult VulkanGraphicsRenderer::initSwapChain()
@@ -475,33 +468,14 @@ void VulkanGraphicsRenderer::initMultiSampleParams()
 {
     const auto property = mRenderResources->getPhysicalDeviceProperties(nullptr);
     VkSampleCountFlags counts =
-        property.limits.framebufferColorSampleCounts && property.limits.framebufferDepthSampleCounts;
+        property.limits.framebufferColorSampleCounts & property.limits.framebufferDepthSampleCounts;
 
-    if (counts & VK_SAMPLE_COUNT_64_BIT)
+    VkSampleCountFlagBits countBit = VK_SAMPLE_COUNT_64_BIT;
+    while (!(counts & countBit) && countBit != VK_SAMPLE_COUNT_1_BIT)
     {
-        mMaxSupportedSampleCount = VK_SAMPLE_COUNT_64_BIT;
+        countBit = static_cast<VkSampleCountFlagBits>(static_cast<uint32_t>(countBit) >> 1);
     }
-    if (counts & VK_SAMPLE_COUNT_32_BIT)
-    {
-        mMaxSupportedSampleCount = VK_SAMPLE_COUNT_32_BIT;
-    }
-    if (counts & VK_SAMPLE_COUNT_16_BIT)
-    {
-        mMaxSupportedSampleCount = VK_SAMPLE_COUNT_16_BIT;
-    }
-    if (counts & VK_SAMPLE_COUNT_8_BIT)
-    {
-        mMaxSupportedSampleCount = VK_SAMPLE_COUNT_8_BIT;
-    }
-    if (counts & VK_SAMPLE_COUNT_4_BIT)
-    {
-        mMaxSupportedSampleCount = VK_SAMPLE_COUNT_4_BIT;
-    }
-    if (counts & VK_SAMPLE_COUNT_2_BIT)
-    {
-        mMaxSupportedSampleCount = VK_SAMPLE_COUNT_2_BIT;
-    }
-    mMaxSupportedSampleCount = VK_SAMPLE_COUNT_1_BIT;
+    mMaxSupportedSampleCount = countBit;
 
     if (mRenderMultiSampleCount > mMaxSupportedSampleCount)
     {
@@ -651,7 +625,7 @@ VulkanGraphicsRenderer::RenderHelper& VulkanGraphicsRenderer::RenderHelper::begi
     {
         depthAttachment = makeAttachmentInfo(
             mRenderer->mFrameResources[mRenderer->mCurrentFrameId].mDepthImage.mImageView,
-            VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, nullptr,
+            VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, mClearDepth ? &mDepthClearValue : nullptr,
             mResolveMultiSample ? mRenderer->mFrameResources[mRenderer->mCurrentFrameId].mDepthImageResolved.mImageView
                                 : nullptr);
     }
@@ -659,7 +633,7 @@ VulkanGraphicsRenderer::RenderHelper& VulkanGraphicsRenderer::RenderHelper::begi
     {
         depthAttachment =
             makeAttachmentInfo(mRenderer->mFrameResources[mRenderer->mCurrentFrameId].mDepthImageResolved.mImageView,
-                VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+                VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, mClearDepth ? &mDepthClearValue : nullptr);
     }
 
     VkRenderingInfo renderInfo = makeRenderingInfo(mRenderer->mSwapChainExtent, colorAttachments.size(),
@@ -703,6 +677,19 @@ VulkanGraphicsRenderer::RenderHelper& VulkanGraphicsRenderer::RenderHelper::setC
     const VkClearValue& clearValue)
 {
     mColorClearValue = clearValue;
+    return *this;
+}
+
+VulkanGraphicsRenderer::RenderHelper& VulkanGraphicsRenderer::RenderHelper::setClearDepth(bool clearDepth)
+{
+    mClearDepth = clearDepth;
+    return *this;
+}
+
+VulkanGraphicsRenderer::RenderHelper& VulkanGraphicsRenderer::RenderHelper::setClearDepthValue(
+    const VkClearValue& clearValue)
+{
+    mDepthClearValue = clearValue;
     return *this;
 }
 

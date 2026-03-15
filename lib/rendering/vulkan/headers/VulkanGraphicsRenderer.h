@@ -30,6 +30,8 @@ class VulkanGraphicsRenderer
         RenderHelper& setUpdateDepth(bool updateDepth);
         RenderHelper& setClearColor(bool clearColor);
         RenderHelper& setClearColorValue(const VkClearValue& clearValue);
+        RenderHelper& setClearDepth(bool clearDepth);
+        RenderHelper& setClearDepthValue(const VkClearValue& clearValue);
         RenderHelper& setMultiSample(bool multiSample, bool resolve);
 
       private:
@@ -38,6 +40,10 @@ class VulkanGraphicsRenderer
         bool mClearColor = false;
         VkClearValue mColorClearValue = {
             .color = {0.0f, 0.0f, 0.0f, 1.0f}
+        };
+        bool mClearDepth = false;
+        VkClearValue mDepthClearValue = {
+            .depthStencil = {.depth = 1.0f, .stencil = 0}
         };
         bool mMultiSample = false;
         bool mResolveMultiSample = false;
@@ -81,6 +87,8 @@ class VulkanGraphicsRenderer
     VkExtent2D getSwapChainExtent() const { return mSwapChainExtent; }
     VkSampleCountFlagBits getRenderMultiSampleCount() const { return mRenderMultiSampleCount; }
     bool isMultiSampleEnabled() const { return mRenderMultiSampleCount != VK_SAMPLE_COUNT_1_BIT; }
+
+    VkImageMemoryBarrier getResolvedColorBarrier() const;
 
   private:
     struct FrameRenderObject

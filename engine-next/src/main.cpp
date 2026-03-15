@@ -257,7 +257,8 @@ int main(void)
         cullingPass.dispatch();
         rtShadowPass.draw();
 
-        pbrForwardPass.updateRenderTarget(&renderer.getColorImageResolved());
+        pbrForwardPass.updateRenderTarget(renderer.isMultiSampleEnabled() ? &renderer.getMultiSampledColorImage()
+                                                                          : &renderer.getColorImageResolved());
         pbrForwardPass.draw();
 
         if (spectrumImageDebugId == BUNNY_INVALID_ID)
@@ -271,7 +272,8 @@ int main(void)
         {
             oceanPass.updateWaveTextures(
                 &waveTransformPass.getWaveDisplacementImage(), &waveTransformPass.getWaveNormalImage());
-            oceanPass.updateRenderTarget(&renderer.getColorImageResolved());
+            oceanPass.updateRenderTarget(renderer.isMultiSampleEnabled() ? &renderer.getMultiSampledColorImage()
+                                                                         : &renderer.getColorImageResolved());
             oceanPass.prepareFrameDescriptors();
             oceanPass.draw();
         }

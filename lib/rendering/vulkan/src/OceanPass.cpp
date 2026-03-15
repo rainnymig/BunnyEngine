@@ -56,22 +56,30 @@ void OceanPass::draw() const
     VkImageMemoryBarrier waveNormalImageBarrier =
         makeImageMemoryBarrier(frame.mVertexNormalImage->mImage, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
             VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_ASPECT_COLOR_BIT);
-    VkImageMemoryBarrier barriers[]{waveDisplacementImageBarrier, waveNormalImageBarrier};
-    vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_MESH_SHADER_BIT_EXT,
-        VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 2, barriers);
+    {
+        VkImageMemoryBarrier barriers[]{waveDisplacementImageBarrier, waveNormalImageBarrier};
+        vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_MESH_SHADER_BIT_EXT,
+            VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 2, barriers);
+    }
 
     //  wait for rendering from other passes onto the render target is done
     VkImageMemoryBarrier renderTargetBarrier = makeImageMemoryBarrier(frame.mRenderTarget->mImage,
         VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_ASPECT_COLOR_BIT);
-    vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-        VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 1, &renderTargetBarrier);
+    {
+        VkImageMemoryBarrier barriers[]{renderTargetBarrier, mRenderer->getResolvedColorBarrier()};
+        vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 2, barriers);
+    }
 
     //  render
     std::vector<VkImageView> colorAttachmentViews;
     colorAttachmentViews.push_back(frame.mRenderTarget->mImageView);
-    auto renderHelper =
-        mRenderer->getRenderHelper().setColorAttachments(colorAttachmentViews).setUpdateDepth(true).beginRender();
+    auto renderHelper = mRenderer->getRenderHelper()
+                            .setColorAttachments(colorAttachmentViews)
+                            .setUpdateDepth(true)
+                            .setMultiSample(mRenderer->isMultiSampleEnabled(), true)
+                            .beginRender();
 
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipeline);
 
@@ -184,7 +192,14 @@ BunnyResult OceanPass::initPipeline()
     pipelineBuilder.addShaderStage(fragShader.getShaderModule(), VK_SHADER_STAGE_FRAGMENT_BIT);
     pipelineBuilder.setPolygonMode(VK_POLYGON_MODE_FILL);
     pipelineBuilder.setCulling(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
-    pipelineBuilder.setMultisamplingNone();
+    if (mRenderer->isMultiSampleEnabled())
+    {
+        pipelineBuilder.setMultiSamplingCount(mRenderer->getRenderMultiSampleCount());
+    }
+    else
+    {
+        pipelineBuilder.setMultisamplingNone();
+    }
     pipelineBuilder.disableBlending(); //  opaque pipeline
     pipelineBuilder.enableDepthTest(VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL);
     std::vector<VkFormat> colorFormats{mRenderer->getSwapChainImageFormat()};

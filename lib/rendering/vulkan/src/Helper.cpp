@@ -101,9 +101,10 @@ VkRenderingAttachmentInfo makeAttachmentInfo(
     if (shouldClear)
     {
         attachmentInfo.clearValue = *clearValue;
-        attachmentInfo.loadOp = shouldClear ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
     }
-    attachmentInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+
+    attachmentInfo.loadOp = shouldClear ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
+    attachmentInfo.storeOp = shouldResolve ? VK_ATTACHMENT_STORE_OP_DONT_CARE : VK_ATTACHMENT_STORE_OP_STORE;
 
     return attachmentInfo;
 }
