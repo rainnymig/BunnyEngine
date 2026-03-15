@@ -48,7 +48,7 @@ void FinalOutputPass::draw() const
     vkCmdPipelineBarrier(cmdBuf, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
         VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 1, sceneBarriers);
 
-    mRenderer->beginRender(false);
+    auto renderHelper = mRenderer->getRenderHelper().setUpdateDepth(false).beginRender();
 
     //  bind pipeline and resources
     vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipeline);
@@ -65,7 +65,7 @@ void FinalOutputPass::draw() const
     //  draw
     vkCmdDrawIndexed(cmdBuf, 6, 1, 0, 0, 0);
 
-    mRenderer->finishRender();
+    renderHelper.finishRender();
 }
 
 void FinalOutputPass::updateInputTextures(const AllocatedImage* cloudTexture, const AllocatedImage* fogShadowTexture,

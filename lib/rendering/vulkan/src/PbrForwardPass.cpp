@@ -22,8 +22,6 @@ PbrForwardPass::PbrForwardPass(const VulkanRenderResources* vulkanResources, con
 
 void PbrForwardPass::draw() const
 {
-    static constexpr bool updateDepth = true;
-
     VkCommandBuffer cmd = mRenderer->getCurrentCommandBuffer();
     const FrameData& frame = mFrameData[mRenderer->getCurrentFrameIdx()];
 
@@ -36,7 +34,11 @@ void PbrForwardPass::draw() const
 
     std::vector<VkImageView> colorAttachmentViews;
     colorAttachmentViews.push_back(frame.mSceneRenderTarget->mImageView);
-    mRenderer->beginRender(colorAttachmentViews, updateDepth);
+    auto renderHelper = mRenderer->getRenderHelper()
+                            .setColorAttachments(colorAttachmentViews)
+                            .setClearColor(true)
+                            .setUpdateDepth(true)
+                            .beginRender();
 
     //  bind mesh vertex and index buffers
     mMeshBank->bindMeshBuffers(cmd);
@@ -52,7 +54,7 @@ void PbrForwardPass::draw() const
     vkCmdDrawIndexedIndirect(
         cmd, mDrawCommandsBuffer.mBuffer, 0, mDrawCommandsData.size(), sizeof(VkDrawIndexedIndirectCommand));
 
-    mRenderer->finishRender();
+    renderHelper.finishRender();
 }
 
 void PbrForwardPass::buildDrawCommands()

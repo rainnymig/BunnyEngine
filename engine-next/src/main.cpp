@@ -54,11 +54,12 @@ int main(void)
     fmt::print("This is RELEASE build.\n");
 #endif
 
-    Config config;
-    config.loadConfigFile("./assets/config.ini");
+    Config::setup();
+    Config::get().loadConfigFile("./assets/config.ini");
 
     Bunny::Base::Window window;
-    window.initialize(config.mWindowWidth, config.mWindowHeight, config.mIsFullScreen, config.mWindowName);
+    window.initialize(Config::get().mWindowWidth, Config::get().mWindowHeight, Config::get().mIsFullScreen,
+        Config::get().mWindowName);
 
     Bunny::Base::InputManager inputManager;
     inputManager.setupWithWindow(window);
@@ -72,7 +73,7 @@ int main(void)
 
     VulkanGraphicsRenderer renderer(&renderResources);
 
-    if (!BUNNY_SUCCESS(renderer.initialize()))
+    if (!BUNNY_SUCCESS(renderer.initialize(Config::get().mMultiSampleCount)))
     {
         PRINT_AND_ABORT("Fail to initialize graphics renderer.")
     }
@@ -90,7 +91,7 @@ int main(void)
 
     World bunnyWorld;
     WorldLoader worldLoader(&renderResources, &pbrMaterialBank, &meshBank, &textureBank);
-    worldLoader.loadPbrTestWorldWithGltfMeshes(config.mModelFilePath, bunnyWorld);
+    worldLoader.loadPbrTestWorldWithGltfMeshes(Config::get().mModelFilePath, bunnyWorld);
 
     AccelerationStructureBuilder acceStructBuilder(&renderResources, &renderer);
     acceStructBuilder.buildBottomLevelAccelerationStructures(

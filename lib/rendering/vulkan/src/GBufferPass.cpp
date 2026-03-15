@@ -159,7 +159,8 @@ void GBufferPass::draw()
     std::vector<VkImageView> attachmentImageViews{mColorMaps[currentFrameIdx].mImageView,
         mFragPosMaps[currentFrameIdx].mImageView, mNormalTexCoordMaps[currentFrameIdx].mImageView};
 
-    mRenderer->beginRender(attachmentImageViews, true);
+    auto renderHelper =
+        mRenderer->getRenderHelper().setColorAttachments(attachmentImageViews).setUpdateDepth(true).beginRender();
 
     mMeshBank->bindMeshBuffers(cmd);
 
@@ -180,7 +181,7 @@ void GBufferPass::draw()
 
     vkCmdDrawIndexedIndirect(cmd, mDrawCommandsBuffer.mBuffer, 0, 1, sizeof(VkDrawIndexedIndirectCommand));
 
-    mRenderer->finishRender();
+    renderHelper.finishRender();
 }
 
 void GBufferPass::cleanup()

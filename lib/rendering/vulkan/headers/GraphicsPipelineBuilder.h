@@ -28,6 +28,7 @@ class GraphicsPipelineBuilder
         const VkVertexInputBindingDescription* pBindingDesc, uint32_t bindingDescCount);
     void setPolygonMode(VkPolygonMode mode);
     void setCulling(VkCullModeFlags cullMode, VkFrontFace frontFace);
+    void setMultiSamplingCount(VkSampleCountFlagBits sampleCount);
     void setMultisamplingNone();
     void disableBlending();
     void enableBlendingAdditive();

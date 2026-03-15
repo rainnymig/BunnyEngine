@@ -70,9 +70,8 @@ void OceanPass::draw() const
     //  render
     std::vector<VkImageView> colorAttachmentViews;
     colorAttachmentViews.push_back(frame.mRenderTarget->mImageView);
-    static constexpr bool updateDepth = true;
-    static constexpr bool clearColor = false;
-    mRenderer->beginRender(colorAttachmentViews, updateDepth, clearColor);
+    auto renderHelper =
+        mRenderer->getRenderHelper().setColorAttachments(colorAttachmentViews).setUpdateDepth(true).beginRender();
 
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipeline);
 
@@ -84,7 +83,7 @@ void OceanPass::draw() const
     //  dispatch mesh pipeline
     vkCmdDrawMeshTasksEXT(cmd, mTotalWaveGridCount / MESH_THREAD_COUNT_X, mTotalWaveGridCount / MESH_THREAD_COUNT_Y, 1);
 
-    mRenderer->finishRender();
+    renderHelper.finishRender();
 }
 
 void OceanPass::prepareFrameDescriptors()

@@ -23,8 +23,7 @@ class VulkanGraphicsRenderer
     {
       public:
         RenderHelper(const VulkanGraphicsRenderer* renderer, Base::BunnyGuard<VulkanGraphicsRenderer> guard);
-        ~RenderHelper();
-        void beginRender();
+        RenderHelper& beginRender();
         void finishRender();
 
         RenderHelper& setColorAttachments(const std::vector<VkImageView>& colorAttachments);
@@ -36,7 +35,7 @@ class VulkanGraphicsRenderer
       private:
         std::vector<VkImageView> mColorAttachmentViews;
         bool mUpdateDepth = true;
-        bool mClearColor = true;
+        bool mClearColor = false;
         VkClearValue mColorClearValue = {
             .color = {0.0f, 0.0f, 0.0f, 1.0f}
         };
@@ -51,14 +50,10 @@ class VulkanGraphicsRenderer
 
     VulkanGraphicsRenderer(VulkanRenderResources* renderResources);
 
-    BunnyResult initialize();
+    BunnyResult initialize(int multiSampleCount = 1);
 
     void beginRenderFrame();
     void finishRenderFrame();
-    void beginRender(bool updateDepth) const;
-    void beginRender(
-        const std::vector<VkImageView>& colorAttachmentViews, bool updateDepth, bool clearColor = true) const;
-    void finishRender() const;
     void beginImguiFrame();
     void finishImguiFrame();
     void finishImguiFrame(VkCommandBuffer commandBuffer, VkImageView targetImageView);
@@ -85,6 +80,7 @@ class VulkanGraphicsRenderer
     const AllocatedImage& getColorImageResolved() const { return mFrameResources[mCurrentFrameId].mColorImageResolved; }
     VkExtent2D getSwapChainExtent() const { return mSwapChainExtent; }
     VkSampleCountFlagBits getRenderMultiSampleCount() const { return mRenderMultiSampleCount; }
+    bool isMultiSampleEnabled() const { return mRenderMultiSampleCount != VK_SAMPLE_COUNT_1_BIT; }
 
   private:
     struct FrameRenderObject
@@ -117,7 +113,7 @@ class VulkanGraphicsRenderer
     BunnyResult createDepthResource();
     void destroyDepthResource();
 
-    void queryMaxSupportedSampleCount();
+    void initMultiSampleParams();
     SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface) const;
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) const;
     VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) const;

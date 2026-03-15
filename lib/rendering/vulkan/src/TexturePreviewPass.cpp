@@ -68,7 +68,7 @@ void TexturePreviewPass::draw() const
     VkCommandBuffer cmd = mRenderer->getCurrentCommandBuffer();
     uint32_t currentFrameIdx = mRenderer->getCurrentFrameIdx();
 
-    mRenderer->beginRender(false);
+    auto renderHelper = mRenderer->getRenderHelper().setUpdateDepth(false).beginRender();
 
     //  bind pipeline and resources
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipeline);
@@ -88,7 +88,7 @@ void TexturePreviewPass::draw() const
     //  draw
     vkCmdDrawIndexed(cmd, 6, 1, 0, 0, 0);
 
-    mRenderer->finishRender();
+    renderHelper.finishRender();
 }
 
 void TexturePreviewPass::showImguiControls()

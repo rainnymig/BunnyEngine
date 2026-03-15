@@ -124,6 +124,11 @@ void GraphicsPipelineBuilder::setCulling(VkCullModeFlags cullMode, VkFrontFace f
     mRasterizer.frontFace = frontFace;
 }
 
+void GraphicsPipelineBuilder::setMultiSamplingCount(VkSampleCountFlagBits sampleCount)
+{
+    mMultisampling.rasterizationSamples = sampleCount;
+}
+
 void GraphicsPipelineBuilder::setMultisamplingNone()
 {
     mMultisampling.sampleShadingEnable = VK_FALSE;

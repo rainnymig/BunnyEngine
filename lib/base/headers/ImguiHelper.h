@@ -12,8 +12,6 @@ class ImguiHelper : public Singleton<ImguiHelper>
   public:
     using ImguiCommand = std::function<void()>;
 
-    static void setup();
-
     void registerCommand(ImguiCommand command);
     void render() const;
 
