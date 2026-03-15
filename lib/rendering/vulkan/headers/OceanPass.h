@@ -55,6 +55,7 @@ class OceanPass : public PbrGraphicsPass
 
     void updateWorldParams(const glm::mat4& mvpMatrix, float elapsedTime, float deltaTime);
     void linkLightAndCameraData(const AllocatedBuffer& lightData, const AllocatedBuffer& cameraData);
+    void linkSceneAccelerationStructure(VkAccelerationStructureKHR acceStruct);
     void updateRenderTarget(const AllocatedImage* renderTarget);
     void updateWaveTextures(const AllocatedImage* vertexDisplacementTex, const AllocatedImage* vertexNormalTex);
 
@@ -72,6 +73,7 @@ class OceanPass : public PbrGraphicsPass
         VkDescriptorSet mWaveImageDescSet;
         VkDescriptorSet mFragDescSet;
         VkDescriptorSet mMaterialDescSet;
+        VkDescriptorSet mAcceStructDescSet;
 
         const AllocatedImage* mRenderTarget;
         const AllocatedImage* mVertexDisplacementImage;
@@ -91,6 +93,7 @@ class OceanPass : public PbrGraphicsPass
     VkDescriptorSetLayout mMeshDescLayout;
     VkDescriptorSetLayout mWaveImageDescLayout;
     VkDescriptorSetLayout mFragDescLayout;
+    VkDescriptorSetLayout mAcceStructDescLayout;
 
     WaveFieldParams mWaveParams;
     WorldParams mWorldParams;
@@ -100,5 +103,6 @@ class OceanPass : public PbrGraphicsPass
     AllocatedBuffer mWorldParamsBuffer;
     const AllocatedBuffer* mLightDataBuffer;
     const AllocatedBuffer* mCameraDataBuffer;
+    VkAccelerationStructureKHR mSceneAcceStruct;
 };
 } // namespace Bunny::Render

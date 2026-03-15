@@ -84,7 +84,7 @@ void OceanPass::draw() const
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipeline);
 
     vkCmdBindDescriptorSets(
-        cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout, 0, 4, &frame.mMeshDescSet, 0, nullptr);
+        cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout, 0, 5, &frame.mMeshDescSet, 0, nullptr);
 
     vkCmdPushConstants(cmd, mPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(WavePushParams), &mWavePushParams);
 
@@ -107,9 +107,9 @@ void OceanPass::prepareFrameDescriptors()
     //  this is just an easy and lazy temp solution
 
     //  allocate descriptor sets
-    VkDescriptorSetLayout descLayouts[] = {
-        mMeshDescLayout, mWaveImageDescLayout, mFragDescLayout, mMaterialBank->getMaterialDescSetLayout()};
-    frame.mDescriptorAllocator.allocate(device, descLayouts, &frame.mMeshDescSet, 4);
+    VkDescriptorSetLayout descLayouts[] = {mMeshDescLayout, mWaveImageDescLayout, mFragDescLayout,
+        mMaterialBank->getMaterialDescSetLayout(), mAcceStructDescLayout};
+    frame.mDescriptorAllocator.allocate(device, descLayouts, &frame.mMeshDescSet, 5);
 
     //  write the resources to the desc sets
     DescriptorWriter writer;
@@ -130,6 +130,10 @@ void OceanPass::prepareFrameDescriptors()
     writer.updateSet(device, frame.mFragDescSet);
 
     mMaterialBank->updateMaterialDescriptorSet(frame.mMaterialDescSet, mMeshBank);
+
+    writer.clear();
+    writer.writeAccelerationStructure(0, mSceneAcceStruct);
+    writer.updateSet(device, frame.mAcceStructDescSet);
 }
 
 void OceanPass::updateWorldParams(const glm::mat4& mvpMatrix, float elapsedTime, float deltaTime)
@@ -146,6 +150,11 @@ void OceanPass::linkLightAndCameraData(const AllocatedBuffer& lightData, const A
 {
     mLightDataBuffer = &lightData;
     mCameraDataBuffer = &cameraData;
+}
+
+void OceanPass::linkSceneAccelerationStructure(VkAccelerationStructureKHR acceStruct)
+{
+    mSceneAcceStruct = acceStruct;
 }
 
 void OceanPass::updateRenderTarget(const AllocatedImage* renderTarget)
@@ -169,8 +178,8 @@ BunnyResult OceanPass::initPipeline()
     Shader meshShader(mMeshShaderPath, device);
     Shader fragShader(mFragShaderPath, device);
 
-    VkDescriptorSetLayout layouts[] = {
-        mMeshDescLayout, mWaveImageDescLayout, mFragDescLayout, mMaterialBank->getMaterialDescSetLayout()};
+    VkDescriptorSetLayout layouts[] = {mMeshDescLayout, mWaveImageDescLayout, mFragDescLayout,
+        mMaterialBank->getMaterialDescSetLayout(), mAcceStructDescLayout};
     std::vector<VkPushConstantRange> pushConsts;
     VkPushConstantRange& pushConst = pushConsts.emplace_back();
     pushConst.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -178,7 +187,7 @@ BunnyResult OceanPass::initPipeline()
     pushConst.size = sizeof(WavePushParams);
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 4;
+    pipelineLayoutInfo.setLayoutCount = 5;
     pipelineLayoutInfo.pSetLayouts = layouts;
     pipelineLayoutInfo.pushConstantRangeCount = pushConsts.size();
     pipelineLayoutInfo.pPushConstantRanges = pushConsts.data();
@@ -224,14 +233,15 @@ BunnyResult OceanPass::initDescriptors()
     VkDevice device = mVulkanResources->getDevice();
 
     DescriptorAllocator::PoolSize poolSizes[] = {
-        {.mType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         .mRatio = 8                                       },
-        {.mType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .mRatio = PbrMaterialBank::TEXTURE_ARRAY_SIZE + 10},
-        {.mType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,         .mRatio = 6                                       },
-        {.mType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,          .mRatio = 2                                       },
+        {.mType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,             .mRatio = 8                                       },
+        {.mType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,     .mRatio = PbrMaterialBank::TEXTURE_ARRAY_SIZE + 10},
+        {.mType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,             .mRatio = 6                                       },
+        {.mType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,              .mRatio = 2                                       },
+        {.mType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, .mRatio = 2                                       }
     };
     for (FrameData& frame : mFrameData)
     {
-        frame.mDescriptorAllocator.init(device, 4, poolSizes);
+        frame.mDescriptorAllocator.init(device, 10, poolSizes);
     }
 
     //  descriptors will be allocated every frame when wave textures are updated
@@ -295,10 +305,18 @@ BunnyResult OceanPass::initDescriptorLayouts()
     builder.addBinding(descBinding); //  camera data
     mFragDescLayout = builder.build(device);
 
+    builder.clear();
+    descBinding.binding = 0;
+    descBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    descBinding.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+    builder.addBinding(descBinding); //  top level acce struct for ray traced shadow
+    mAcceStructDescLayout = builder.build(device);
+
     mDeletionStack.AddFunction([this]() {
         vkDestroyDescriptorSetLayout(mVulkanResources->getDevice(), mMeshDescLayout, nullptr);
         vkDestroyDescriptorSetLayout(mVulkanResources->getDevice(), mWaveImageDescLayout, nullptr);
         vkDestroyDescriptorSetLayout(mVulkanResources->getDevice(), mFragDescLayout, nullptr);
+        vkDestroyDescriptorSetLayout(mVulkanResources->getDevice(), mAcceStructDescLayout, nullptr);
     });
 
     return BUNNY_HAPPY;

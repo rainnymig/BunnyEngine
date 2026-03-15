@@ -164,6 +164,7 @@ int main(void)
     if (renderResources.getSupportMeshShader())
     {
         oceanPass.linkLightAndCameraData(worldTranslator.getPbrLightBuffer(), worldTranslator.getPbrCameraBuffer());
+        oceanPass.linkSceneAccelerationStructure(acceStructBuilder.getTopLevelAccelerationStructure().mAcceStruct);
     }
 
     CameraSystem cameraSystem(&inputManager);
