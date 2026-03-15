@@ -191,6 +191,15 @@ void WorldRenderDataTranslator::showImguiControlPanel(World* world)
             //  (need proper handling to normalize direction)
             ImGui::DragFloat("Intensity", &pbrLight.mIntensity, 10, 0, 200000, "%.1f");
             ImGui::DragFloat3("Color", &pbrLight.mColor.x, 0.01f, 0, 1, "%.2f");
+            if (pbrLight.mType == Render::LightType::Directional)
+            {
+                ImGui::DragFloat3("Direction", &pbrLight.mDirOrPos.x, 0.01f);
+                pbrLight.mDirOrPos = glm::normalize(pbrLight.mDirOrPos);
+            }
+            else
+            {
+                ImGui::DragFloat3("Position", &pbrLight.mDirOrPos.x, 0.1f);
+            }
             ImGui::Separator();
             ImGui::PopID();
             idx++;
