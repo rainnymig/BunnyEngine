@@ -10,6 +10,7 @@ target_sources(Base
         headers/FunctionStack.h
         headers/ImguiHelper.h
         headers/Input.h
+        headers/Queue.h
         headers/Singleton.h
         headers/Timer.h
         headers/Transform.h
