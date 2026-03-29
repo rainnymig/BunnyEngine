@@ -62,7 +62,7 @@ class Camera
     float getFov() const { return mFov; }
     float getAspectRatio() const { return mAspectRatio; }
     static constexpr float NearPlaneDistance = 1.0f;
-    static constexpr float FarPlaneDistance = 10000.0f;
+    static constexpr float FarPlaneDistance = 20000.0f;
 
   protected:
     void updateMatrices();
