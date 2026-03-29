@@ -34,17 +34,13 @@ layout(set = 1, binding = 0) uniform sampler2D waveDisplacementTex;
 layout(set = 1, binding = 1) uniform sampler2D waveNormalTex;
 //  layout(set = 1, binding = 2) uniform sampler2D waveOverlapTex;  //  need this or combine with other tex?
 
-layout(location = 0) out vec3 vertexNormal[];
+// layout(location = 0) out vec3 vertexNormal[];
+layout(location = 0) out vec2 texCoord[];
 layout(location = 1) out vec3 vertexPosition[];
 
 uint uvec2ToIdx(uvec2 v, uint rowSize)
 {
     return v.y * rowSize + v.x;
-}
-
-float dispersion(float k)
-{
-    return sqrt(GRAVITY * k);
 }
 
 vec3 getWaveDisplacement(vec2 normalizedWorldPosXZ)
@@ -69,11 +65,14 @@ void calcVertex(uvec2 gridCoord, uint vertId)
     vec2 vertNormalizedWorldPosXZ = (vertWorldPosXZ - gridOrigin) / gridAreaWidth;
 
     vec3 displacement = getWaveDisplacement(vertNormalizedWorldPosXZ);
-    vec3 vertWorldNormal = getWaveNormal(vertNormalizedWorldPosXZ);
-    vec3 vertWorldPos = vec3(vertWorldPosXZ.x + displacement.x, displacement.y, vertWorldPosXZ.y + displacement.z); 
+    // vec3 vertWorldNormal = getWaveNormal(vertNormalizedWorldPosXZ);
+    vec3 vertWorldPos = vec3(vertWorldPosXZ.x + displacement.x, displacement.y, vertWorldPosXZ.y + displacement.z);
+    // vec3 vertWorldPos = vec3(vertWorldPosXZ.x + displacement.x, 0, vertWorldPosXZ.y + displacement.z);
 
     gl_MeshVerticesEXT[vertId].gl_Position = mvpMatrix * vec4(vertWorldPos, 1);
-    vertexNormal[vertId] = vertWorldNormal;
+
+    texCoord[vertId] = vertNormalizedWorldPosXZ;
+    // vertexNormal[vertId] = vertWorldNormal;
     vertexPosition[vertId] = vertWorldPos;
 }
 
@@ -81,11 +80,24 @@ void main()
 {
     SetMeshOutputsEXT(VERTEX_COUNT, PRIMITIVE_COUNT);
 
+    const vec2 debugColors[4] = {vec2(1, 0), vec2(0, 1), vec2(1, 1), vec2(0, 0)};
+
     uvec2 globalId = gl_GlobalInvocationID.xy;
     uvec2 localId = gl_LocalInvocationID.xy;
 
     uint vertId = uvec2ToIdx(localId, THREAD_SIZE_X);
     calcVertex(globalId, vertId);
+
+    // uvec2 ids = gl_WorkGroupID.xy % 2;
+    // uvec2 idv = gl_LocalInvocationID.xy % 2;
+    // if (idv.x+idv.y == 1)
+    // {
+    //     texCoord[vertId] = debugColors[ids.x+ids.y];
+    // }
+    // else
+    // {
+    //     texCoord[vertId] = debugColors[ids.x+ids.y] * 0.8;
+    // }
 
     if ((localId.x < (THREAD_SIZE_X - 1)) && (localId.y < (THREAD_SIZE_Y - 1)))
     {

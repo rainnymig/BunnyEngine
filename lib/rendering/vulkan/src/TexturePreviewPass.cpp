@@ -104,18 +104,30 @@ void TexturePreviewPass::showImguiControls()
             mIsPreview3d ? mTextureBank->getAllTextures3d() : mTextureBank->getAllTextures();
         if (!textures.empty())
         {
-            //  hack: currently only limited number in the list due to id array size
-            //  can be fixed once we have actual names for textures
-            int numberOfOptions = std::min(textures.size(), textureIdArray.size());
-            if (mIsPreview3d)
+
+            if (ImGui::BeginListBox("Select texture to preview"))
             {
-                ImGui::ListBox(
-                    "Select texture 3D to preview", &mTex3dIdToPreview, textureIdArray.data(), numberOfOptions, 5);
-            }
-            else
-            {
-                ImGui::ListBox(
-                    "Select texture 2D to preview", &mTex2dIdToPreview, textureIdArray.data(), numberOfOptions, 5);
+                for (int idx = 0; idx < textures.size(); idx++)
+                {
+                    bool isSelected = idx == (mIsPreview3d ? mTex3dIdToPreview : mTex2dIdToPreview);
+                    if (ImGui::Selectable(fmt::format("tex{}", idx).c_str(), isSelected))
+                    {
+                        if (mIsPreview3d)
+                        {
+                            mTex3dIdToPreview = idx;
+                        }
+                        else
+                        {
+                            mTex2dIdToPreview = idx;
+                        }
+                    }
+
+                    if (isSelected)
+                    {
+                        ImGui::SetItemDefaultFocus();
+                    }
+                }
+                ImGui::EndListBox();
             }
         }
 

@@ -6,10 +6,14 @@
 #define MATERIAL_SET 3
 #include "pbr.glsl"
 
+layout(set = 1, binding = 0) uniform sampler2D waveDisplacementTex;
+layout(set = 1, binding = 1) uniform sampler2D waveNormalTex;
+
 //  top level acceleration structure for ray traced shadow
 layout(set = 4, binding = 0) uniform accelerationStructureEXT topLevelAcceStruct;
 
-layout(location = 0) in vec3 normal;
+// layout(location = 0) in vec3 normal;
+layout(location = 0) in vec2 texCoord;
 layout(location = 1) in vec3 fragPos;
 
 layout(location = 0) out vec4 outColor;
@@ -19,9 +23,25 @@ layout(push_constant) uniform WavePushParams
     uint materialIdx;
 };
 
+vec3 getWaveDisplacement(vec2 normalizedWorldPosXZ)
+{
+    return texture(waveDisplacementTex, normalizedWorldPosXZ).xyz;
+}
+
+vec3 getWaveNormal(vec2 normalizedWorldPosXZ)
+{
+    vec3 norm = texture(waveNormalTex, normalizedWorldPosXZ).xyz;
+    return norm * 2.0 - 1.0;
+    // return norm;
+}
+
 void main()
 {
     vec3 lightResult = vec3(0, 0, 0);
+
+    vec3 normal = getWaveNormal(texCoord);
+    // outColor = vec4(normal, 1.0);
+    // outColor = vec4(texCoord.x, texCoord.y, 0, 1);
 
     for (uint i = 0; i < 1; i++)
     {

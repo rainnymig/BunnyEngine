@@ -289,7 +289,7 @@ BunnyResult OceanPass::initDescriptorLayouts()
 
     builder.clear();
     descBinding.binding = 0;
-    descBinding.stageFlags = VK_SHADER_STAGE_MESH_BIT_EXT;
+    descBinding.stageFlags = VK_SHADER_STAGE_MESH_BIT_EXT | VK_SHADER_STAGE_FRAGMENT_BIT;
     descBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     builder.addBinding(descBinding); //  wave vertex displacement texture
     descBinding.binding = 1;
