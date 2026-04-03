@@ -24,9 +24,10 @@ void main()
 
     for (uint i = 0; i < lightCountCapped; i++)
     {
-        float shadowCoef = (lightShadowInfo.r & (shadowBit << i)) > 0 ? 0.2 : 1.0;
-        lightResult += shadowCoef * calculateLighting(materialInstances[matId], lights[i], fragPos, 
+        float shadowCoef = (lightShadowInfo.r & (shadowBit << i)) > 0 ? 0.5 : 1.0;
+        vec4 pbrLightCalcResult = calculateLighting(materialInstances[matId], lights[i], fragPos, 
                                             normalize(cameraData.position - fragPos), normal, tbnMat, uv);
+        lightResult += shadowCoef * pbrLightCalcResult.xyz;
     }
     lightResult *= cameraData.exposure;
     outColor = vec4(lightResult, 1);

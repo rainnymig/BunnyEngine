@@ -127,23 +127,16 @@ float getSquareFalloffAttenuation(vec3 posToLight, float invRadius)
 }
 
 //  mostly based on the implementation in Filament: https://google.github.io/filament/Filament.html
-vec3 calculateLighting(PbrMaterial material, Light light, vec3 fragPos, vec3 viewDir, vec3 normalFromVtx, mat3 tbnMatrix, vec2 texCoord)
+vec4 calculateLighting(PbrMaterial material, Light light, vec3 fragPos, vec3 viewDir, vec3 normalFromVtx, mat3 tbnMatrix, vec2 texCoord)
 {
-    vec4 baseColor;
-    vec4 emissiveColor;
-    vec3 normal;
-    float metallic;
-    float roughness;
-    float reflectance;
-    float ambientOcclusion;
+    vec4 baseColor = material.baseColor;
+    vec4 emissiveColor = material.emissiveColor;
+    vec3 normal = normalFromVtx;
+    float metallic = material.metallic;
+    float roughness = material.roughness;
+    float reflectance = material.reflectance;
+    float ambientOcclusion = material.ambientOcclusion;
 
-    baseColor = material.baseColor;
-    emissiveColor = material.emissiveColor;
-    normal = normalFromVtx;
-    metallic = material.metallic;
-    roughness = material.roughness;
-    reflectance = material.reflectance;
-    ambientOcclusion = material.ambientOcclusion;
     if (material.normalTexId != INVALID_ID)
     {
         vec3 normalFromTex = texture(textures[material.normalTexId], texCoord).xyz;
@@ -189,5 +182,5 @@ vec3 calculateLighting(PbrMaterial material, Light light, vec3 fragPos, vec3 vie
     }
 
     //  camera exposure will be applied with all light results combined
-    return outLuminance;
+    return vec4(outLuminance, baseColor.a);
 }

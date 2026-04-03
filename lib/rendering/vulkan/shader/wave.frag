@@ -85,12 +85,13 @@ void main()
 
             if (rayQueryGetIntersectionTypeEXT(rayQuery, true)
                     == gl_RayQueryCommittedIntersectionTriangleEXT) {
-                shadowCoef = 0.2; // occluded
+                shadowCoef = 0.5; // occluded
             }
         }
 
-        lightResult += shadowCoef * calculateLighting(materialInstances[materialIdx], lights[i], fragPos, 
+        vec4 pbrLightCalcResult = calculateLighting(materialInstances[materialIdx], lights[i], fragPos, 
                                             normalize(cameraData.position - fragPos), normal, mat3(1.0), vec2(0, 0));
+        lightResult += shadowCoef * pbrLightCalcResult.xyz;
     }
 
     lightResult *= cameraData.exposure;
