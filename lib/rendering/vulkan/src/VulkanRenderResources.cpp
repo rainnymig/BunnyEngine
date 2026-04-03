@@ -24,13 +24,8 @@ BunnyResult VulkanRenderResources::initialize(Base::Window* window)
     //  make the vulkan instance, with basic debug features
     auto instanceBuildResult = builder.set_app_name("BunnyEngine")
                                    .require_api_version(1, 3, 0)
-#if defined(_DEBUG) && !defined(USE_NSIGHT_DEBUG)
-                                   .request_validation_layers(true)
-                                   .enable_validation_layers(true)
+#ifdef _DEBUG
                                    .use_default_debug_messenger()
-#else
-                                   .request_validation_layers(false)
-                                   .enable_validation_layers(false)
 #endif
                                    .build();
 
