@@ -125,7 +125,7 @@ void OceanPass::prepareFrameDescriptors()
     writer.updateSet(device, frame.mWaveImageDescSet);
 
     writer.clear();
-    writer.writeBuffer(0, mLightDataBuffer->mBuffer, sizeof(LightData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+    writer.writeBuffer(0, mLightDataBuffer->mBuffer, sizeof(PbrLightData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
     writer.writeBuffer(1, mCameraDataBuffer->mBuffer, sizeof(PbrCameraData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
     writer.updateSet(device, frame.mFragDescSet);
 

@@ -42,8 +42,9 @@ void main()
     vec3 normal = getWaveNormal(texCoord);
     // outColor = vec4(normal, 1.0);
     // outColor = vec4(texCoord.x, texCoord.y, 0, 1);
+    uint lightCountCapped = min(lightCount, MAX_LIGHT_COUNT);
 
-    for (uint i = 0; i < 1; i++)
+    for (uint i = 0; i < lightCountCapped; i++)
     {
         float shadowCoef = 1.0;
         
