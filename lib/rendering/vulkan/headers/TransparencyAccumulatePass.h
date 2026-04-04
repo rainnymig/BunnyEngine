@@ -41,6 +41,7 @@ class TransparencyAccumulatePass : public PbrGraphicsPass
     const AllocatedBuffer* mDrawCommandsBuffer;
 
     std::array<FrameData, MAX_FRAMES_IN_FLIGHT> mFrameData;
+    DescriptorAllocator mDescriptorAllocator;
 
     std::string_view mVertexShaderPath;
     std::string_view mFragmentShaderPath;
