@@ -16,6 +16,7 @@ float remap(float v, float x0, float y0, float x1, float y1)
 void main()
 {
     vec3 sceneTex = texture(renderedSceneTexture, uv).xyz;
+
     vec4 cloudTex = texture(cloudTexture, uv);
     vec2 fogShadowTex = texture(fogShadowTexture, uv).xy;
     float shadowCoef = remap(fogShadowTex.y, 0, 1, 0.75, 1);
@@ -25,10 +26,4 @@ void main()
 
     // outColor = vec4(col/(col+1.0), 1.0);
     outColor = vec4(col, 1.0);
-    // outColor = cloudTex;
-
-    // outColor = cloudTex;
-
-    // outColor = texture(renderedSceneTexture, uv);
-
 }

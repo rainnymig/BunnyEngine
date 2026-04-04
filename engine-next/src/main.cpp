@@ -152,7 +152,8 @@ int main(void)
     cullingPass.linkMeshData();
     cullingPass.linkObjectData(worldTranslator.getObjectBuffer(), worldTranslator.getObjectBufferSize());
     cullingPass.linkDrawData(pbrForwardPass.getDrawCommandBuffer(), pbrForwardPass.getDrawCommandBufferSize(),
-        pbrForwardPass.getInstanceObjectBuffer(), pbrForwardPass.getInstanceObjectBufferSize());
+        pbrForwardPass.getInstanceObjectBuffer(), pbrForwardPass.getInstanceObjectBufferSize(),
+        pbrForwardPass.getSurfaceToCommandMapBuffer());
     cullingPass.setObjectCount(worldTranslator.getObjectCount());
     cullingPass.setDepthImageSizes(depthReducePass.getDepthImageWidth(), depthReducePass.getDepthImageHeight(),
         depthReducePass.getDepthHierarchyLevels());

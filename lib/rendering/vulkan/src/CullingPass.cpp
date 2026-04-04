@@ -72,6 +72,7 @@ void CullingPass::cleanup()
 
     mDrawCommandBuffer = nullptr;
     mInstanceObjectBuffer = nullptr;
+    mSurfaceToCommandMapBuffer = nullptr;
     mVulkanResources->destroyBuffer(mCullingDataBuffer);
     mVulkanResources->destroyBuffer(mDebugDataBuffer);
 }
@@ -85,17 +86,20 @@ void CullingPass::createBuffers()
 }
 
 void CullingPass::linkDrawData(const AllocatedBuffer& drawCommandBuffer, size_t drawbufferSize,
-    const AllocatedBuffer& instObjectBuffer, size_t instBufferSize)
+    const AllocatedBuffer& instObjectBuffer, size_t instBufferSize, const AllocatedBuffer& surfaceToCommandMapBuffer)
 {
     DescriptorWriter writer;
     writer.writeBuffer(0, drawCommandBuffer.mBuffer, drawbufferSize, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     writer.writeBuffer(1, instObjectBuffer.mBuffer, instBufferSize, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    writer.writeBuffer(
+        2, surfaceToCommandMapBuffer.mBuffer, surfaceToCommandMapBuffer.mSize, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     for (VkDescriptorSet set : mDrawCommandDescSets)
     {
         writer.updateSet(mVulkanResources->getDevice(), set);
     }
     mDrawCommandBuffer = &drawCommandBuffer;
     mInstanceObjectBuffer = &instObjectBuffer;
+    mSurfaceToCommandMapBuffer = &surfaceToCommandMapBuffer;
 }
 
 void CullingPass::linkMeshData()
@@ -287,6 +291,9 @@ void CullingPass::initDescriptorSets()
     layoutBuilder.addBinding(storageBufferBinding);
     //  instance to obj id
     storageBufferBinding.binding = 1;
+    layoutBuilder.addBinding(storageBufferBinding);
+    //  surface to command map
+    storageBufferBinding.binding = 2;
     layoutBuilder.addBinding(storageBufferBinding);
     mDrawDataLayout = layoutBuilder.build(mVulkanResources->getDevice());
 

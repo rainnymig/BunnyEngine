@@ -66,32 +66,6 @@ BunnyResult PbrMaterialBank::addMaterialInstance(const PbrMaterialParameters& ma
 {
     outId = BUNNY_INVALID_ID;
 
-    // PbrMaterialParameters materialInstance{materialParams.mBaseColor, materialParams.mEmissiveColor,
-    //     materialParams.mMetallic, materialParams.mRoughness, materialParams.mReflectance,
-    //     materialParams.mAmbientOcclusion, BUNNY_INVALID_ID, BUNNY_INVALID_ID, BUNNY_INVALID_ID, BUNNY_INVALID_ID};
-
-    // //  may need to review the image format later
-    // if (!materialParams.mColorTexPath.empty())
-    // {
-    //     BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(mTextureBank->addTexture(
-    //         materialParams.mColorTexPath.c_str(), VK_FORMAT_R8G8B8A8_SRGB, materialInstance.mColorTexId))
-    // }
-    // if (!materialParams.mNormalTexPath.empty())
-    // {
-    //     BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(mTextureBank->addTexture(
-    //         materialParams.mNormalTexPath.c_str(), VK_FORMAT_R32G32B32_SFLOAT, materialInstance.mNormalTexId))
-    // }
-    // if (!materialParams.mEmissiveTexPath.empty())
-    // {
-    //     BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(mTextureBank->addTexture(
-    //         materialParams.mEmissiveTexPath.c_str(), VK_FORMAT_R8G8B8A8_SRGB, materialInstance.mEmissiveTexId))
-    // }
-    // if (!materialParams.mMetRouRflAmbTexPath.empty())
-    // {
-    //     BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(mTextureBank->addTexture(materialParams.mMetRouRflAmbTexPath.c_str(),
-    //         VK_FORMAT_R8G8B8A8_UNORM, materialInstance.mMetalRoughnessTexId))
-    // }
-
     outId = mMaterialInstances.size();
     mMaterialInstances.push_back(materialParams);
 

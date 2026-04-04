@@ -39,11 +39,6 @@ layout(std430, set = 1, binding = 0) buffer ObjectDataBuffer
     ObjectData objectData[];
 };
 
-// layout(std430, set = 2, binding = 0) buffer Bounds
-// {
-//     BoundingSphere boundingSpheres[];
-// };
-
 layout(std430, set = 2, binding = 0) readonly buffer MeshDataBuffer
 {
     MeshData meshData[];
@@ -62,6 +57,11 @@ layout(std430, set = 3, binding = 0) buffer DrawCommandBuffer
 layout(std430, set = 3, binding = 1) buffer InstanceToObjectId
 {
     uint instToObj[];
+};
+
+layout(std430, set = 3, binding = 2) buffer SurfaceToCommandMapBuffer
+{
+    uint surfaceToCommand[];
 };
 
 layout(std430, set = 4, binding = 0) buffer DebugBuffer
@@ -213,8 +213,9 @@ void main()
         for (uint surfaceIdx = mesh.firstSurface; surfaceIdx < lastSurfacePlusOne; surfaceIdx++)
         {
             //  the instanceCount and firstInstance should be the same for all surfaces of the same mesh
-            instCount = atomicAdd(commands[surfaceIdx].instanceCount, 1);
-            instanceId = commands[surfaceIdx].firstInstance + instCount;
+            uint commandIdx = surfaceToCommand[surfaceIdx];
+            instCount = atomicAdd(commands[commandIdx].instanceCount, 1);
+            instanceId = commands[commandIdx].firstInstance + instCount;
         }
 
         instToObj[instanceId] = objId;

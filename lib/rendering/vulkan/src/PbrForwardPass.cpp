@@ -22,6 +22,12 @@ PbrForwardPass::PbrForwardPass(const VulkanRenderResources* vulkanResources, con
 
 void PbrForwardPass::draw() const
 {
+    //  only draw opaque surfaces, skip if none
+    if (mMeshBank->getOpaqueSurfaceCount() == 0)
+    {
+        return;
+    }
+
     VkCommandBuffer cmd = mRenderer->getCurrentCommandBuffer();
     const FrameData& frame = mFrameData[mRenderer->getCurrentFrameIdx()];
 
@@ -53,8 +59,9 @@ void PbrForwardPass::draw() const
     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout, 0, 4,
         &mFrameData[mRenderer->getCurrentFrameIdx()].mWorldDescSet, 0, nullptr);
 
+    //  only draw the opaque surfaces
     vkCmdDrawIndexedIndirect(
-        cmd, mDrawCommandsBuffer.mBuffer, 0, mDrawCommandsData.size(), sizeof(VkDrawIndexedIndirectCommand));
+        cmd, mDrawCommandsBuffer.mBuffer, 0, mMeshBank->getOpaqueSurfaceCount(), sizeof(VkDrawIndexedIndirectCommand));
 
     renderHelper.finishRender();
 }
@@ -63,13 +70,42 @@ void PbrForwardPass::buildDrawCommands()
 {
     const std::vector<MeshLite>& meshes = mMeshBank->getMeshes();
     mDrawCommandsData.clear();
+    mSurfaceToCommandMapData.clear();
 
+    //  build the draw indirect commands
+    //  the commands for all the opaque surfaces will be in front
+    //  and the commands for all the transparent surfaces will be in the back
+    //  this way we can easily draw the opaque and transparent surfaces with two draw calls
+    //  at the same time a buffer for a mapping from surface to command is built
+    //  so that in the culling pass the instance count of a surface
+    //  can be correctly updated in its corresponding draw command
+
+    //  add a draw indirect command for each opaque surface in the mesh
     for (const MeshLite& mesh : meshes)
     {
         for (const SurfaceLite& surface : mesh.mSurfaces)
         {
-            //  add a draw indirect command for each surface in the mesh
-            mDrawCommandsData.emplace_back(surface.mIndexCount, 0, surface.mFirstIndex, surface.mVertexOffset, 0);
+            uint32_t& sufToComIdx = mSurfaceToCommandMapData.emplace_back();
+            if (surface.mTransparency == SurfaceTransparency::Opaque)
+            {
+                sufToComIdx = mDrawCommandsData.size();
+                mDrawCommandsData.emplace_back(surface.mIndexCount, 0, surface.mFirstIndex, surface.mVertexOffset, 0);
+            }
+        }
+    }
+
+    //  add a draw indirect command for each transparent surface in the mesh
+    uint32_t surfaceIdx = 0;
+    for (const MeshLite& mesh : meshes)
+    {
+        for (const SurfaceLite& surface : mesh.mSurfaces)
+        {
+            if (surface.mTransparency == SurfaceTransparency::Transparent)
+            {
+                mSurfaceToCommandMapData[surfaceIdx] = mDrawCommandsData.size();
+                mDrawCommandsData.emplace_back(surface.mIndexCount, 0, surface.mFirstIndex, surface.mVertexOffset, 0);
+            }
+            surfaceIdx++;
         }
     }
 
@@ -83,10 +119,15 @@ void PbrForwardPass::buildDrawCommands()
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
         VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, VMA_MEMORY_USAGE_AUTO);
 
+    mVulkanResources->createBufferWithData(mSurfaceToCommandMapData.data(),
+        getContainerDataSize(mSurfaceToCommandMapData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+        VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, VMA_MEMORY_USAGE_AUTO, mSurfaceToCommandMapBuffer);
+
     mDeletionStack.AddFunction([this]() {
         mVulkanResources->destroyBuffer(mDrawCommandsBuffer);
         mVulkanResources->destroyBuffer(mInitialDrawCommandBuffer);
         mVulkanResources->destroyBuffer(mInstanceObjectBuffer);
+        mVulkanResources->destroyBuffer(mSurfaceToCommandMapBuffer);
         mDrawCommandsData.clear();
     });
 }
@@ -99,14 +140,15 @@ void PbrForwardPass::updateDrawInstanceCounts(std::unordered_map<IdType, size_t>
 
     const std::vector<MeshLite>& meshes = mMeshBank->getMeshes();
 
-    size_t idx = 0;
+    size_t surfaceIdx = 0;
     size_t accumulatedInstances = 0;
     for (const MeshLite& mesh : meshes)
     {
         for (const SurfaceLite& surface : mesh.mSurfaces)
         {
-            mDrawCommandsData[idx].firstInstance = accumulatedInstances;
-            idx++;
+            size_t commandIdx = mSurfaceToCommandMapData.at(surfaceIdx);
+            mDrawCommandsData[commandIdx].firstInstance = accumulatedInstances;
+            surfaceIdx++;
         }
         accumulatedInstances += meshInstanceCounts.at(mesh.mId);
     }

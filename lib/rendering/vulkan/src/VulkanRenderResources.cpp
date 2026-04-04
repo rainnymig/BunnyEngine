@@ -312,6 +312,7 @@ AllocatedBuffer VulkanRenderResources::createBuffer(VkDeviceSize size, VkBufferU
             mAllocator, &bufferInfo, &vmaInfo, &newBuffer.mBuffer, &newBuffer.mAllocation, &newBuffer.mAllocationInfo);
     }
 
+    newBuffer.mSize = size;
     return newBuffer;
 }
 
@@ -375,6 +376,7 @@ void VulkanRenderResources::destroyBuffer(AllocatedBuffer& buffer) const
     vmaDestroyBuffer(mAllocator, buffer.mBuffer, buffer.mAllocation);
     buffer.mBuffer = nullptr;
     buffer.mAllocation = nullptr;
+    buffer.mSize = 0;
 }
 
 void VulkanRenderResources::destroyImage(AllocatedImage& image) const

@@ -30,7 +30,8 @@ class CullingPass
     BunnyResult initializePass();
     void cleanup();
     void linkDrawData(const AllocatedBuffer& drawCommandBuffer, size_t drawbufferSize,
-        const AllocatedBuffer& instObjectBuffer, size_t instBufferSize);
+        const AllocatedBuffer& instObjectBuffer, size_t instBufferSize,
+        const AllocatedBuffer& surfaceToCommandMapBuffer);
     void linkMeshData();
     void linkObjectData(const AllocatedBuffer& objectBuffer, size_t bufferSize);
     void linkCullingData(
@@ -68,6 +69,7 @@ class CullingPass
     AllocatedBuffer mCullingDataBuffer;
     const AllocatedBuffer* mDrawCommandBuffer = nullptr;
     const AllocatedBuffer* mInstanceObjectBuffer = nullptr;
+    const AllocatedBuffer* mSurfaceToCommandMapBuffer = nullptr;
     uint32_t mObjectCount = 0;
     uint32_t mDepthImageWidth;
     uint32_t mDepthImageHeight;

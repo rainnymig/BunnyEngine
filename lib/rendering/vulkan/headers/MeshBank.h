@@ -21,6 +21,12 @@
 namespace Bunny::Render
 {
 
+enum class SurfaceTransparency
+{
+    Opaque,
+    Transparent,
+};
+
 struct SurfaceLite
 {
     uint32_t mVertexOffset = 0;
@@ -28,6 +34,7 @@ struct SurfaceLite
     uint32_t mIndexCount; //  the number of indices
     IdType mMaterialId;
     IdType mMaterialInstanceId;
+    SurfaceTransparency mTransparency = SurfaceTransparency::Opaque;
 };
 
 template <typename BoundType>
@@ -45,7 +52,12 @@ template <typename VertexType, typename IndexType = uint32_t>
 class MeshBank
 {
   public:
-    MeshBank(const VulkanRenderResources* vulkanResources) : mVulkanResources(vulkanResources) {}
+    MeshBank(const VulkanRenderResources* vulkanResources)
+        : mVulkanResources(vulkanResources),
+          mOpaqueSurfaceCount(0),
+          mTransparentSurfaceCount(0)
+    {
+    }
     ~MeshBank();
 
     IdType addMesh(std::span<VertexType> vertices, std::span<IndexType> indices, const MeshLite& mesh);
@@ -69,6 +81,9 @@ class MeshBank
 
     VkDeviceAddress getVertexBufferAddress() const { return mVertexBufferAddress; }
     VkDeviceAddress getIndexBufferAddress() const { return mIndexBufferAddress; }
+
+    uint32_t getOpaqueSurfaceCount() const { return mOpaqueSurfaceCount; }
+    uint32_t getTransparentSurfaceCount() const { return mTransparentSurfaceCount; }
 
   private:
     AcceStructGeometryData buildTriangleBlasGeometryDataFromMesh(
@@ -94,6 +109,9 @@ class MeshBank
 
     std::vector<MeshLite> mMeshes;
     std::unordered_map<std::string_view, IdType> mMeshNameToIdMap;
+
+    uint32_t mOpaqueSurfaceCount;
+    uint32_t mTransparentSurfaceCount;
 
     const VulkanRenderResources* mVulkanResources;
 };
@@ -146,6 +164,16 @@ IdType MeshBank<VertexType, IndexType>::addMesh(
         newSurfaceData.mVertexOffset = surface.mVertexOffset;
         newSurfaceData.mFirstIndex = surface.mFirstIndex;
         newSurfaceData.mMaterialId = surface.mMaterialId;
+
+        //  increment the opaque and transparent surface count
+        if (surface.mTransparency == SurfaceTransparency::Opaque)
+        {
+            mOpaqueSurfaceCount++;
+        }
+        else
+        {
+            mTransparentSurfaceCount++;
+        }
     }
 
     //  update mesh name to id mapping to enable get mesh from name

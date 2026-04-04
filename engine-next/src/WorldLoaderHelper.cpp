@@ -230,15 +230,6 @@ void loadMeshFromGltf(MeshBank<NormalVertex>* meshBank, PbrMaterialBank* materia
                     });
             }
 
-            //  load vertex color
-            // auto colorAttr = primitive.findAttribute("COLOR_0");
-            // if (colorAttr != primitive.attributes.end())
-            // {
-            //     fastgltf::Accessor& colorAccessor = gltfAsset.accessors[colorAttr->accessorIndex];
-            //     fastgltf::iterateAccessorWithIndex<glm::vec4>(gltfAsset, colorAccessor,
-            //         [&vertices, initialVtx](glm::vec4 col, size_t idx) { vertices[initialVtx + idx].mColor = col; });
-            // }
-
             //  load vertex texcoord
             auto TexCoordAttr = primitive.findAttribute("TEXCOORD_0");
             if (TexCoordAttr != primitive.attributes.end())
@@ -256,6 +247,8 @@ void loadMeshFromGltf(MeshBank<NormalVertex>* meshBank, PbrMaterialBank* materia
             if (materialIdx.has_value())
             {
                 auto iter = loadedMaterials.find(materialIdx.value());
+                const fastgltf::Material& gltfMaterial = gltfAsset.materials[materialIdx.value()];
+
                 if (iter != loadedMaterials.end())
                 {
                     //  this material is loaded
@@ -264,8 +257,6 @@ void loadMeshFromGltf(MeshBank<NormalVertex>* meshBank, PbrMaterialBank* materia
                 }
                 else
                 {
-                    const fastgltf::Material& gltfMaterial = gltfAsset.materials[materialIdx.value()];
-
                     PbrMaterialParameters newPbrMaterial;
                     const fastgltf::PBRData& pbrData = gltfMaterial.pbrData;
                     newPbrMaterial.mBaseColor = glm::vec4{
@@ -290,6 +281,12 @@ void loadMeshFromGltf(MeshBank<NormalVertex>* meshBank, PbrMaterialBank* materia
                     newSurface.mMaterialId = newMatId;
                     newSurface.mMaterialInstanceId = newMatId;
                 }
+
+                //  load the transparency mode for the surface
+                //  ignore the AlphaMode::Mask for now and consider that as opaque
+                newSurface.mTransparency = gltfMaterial.alphaMode == fastgltf::AlphaMode::Blend
+                                               ? SurfaceTransparency::Transparent
+                                               : SurfaceTransparency::Opaque;
             }
 
             newMesh.mSurfaces.push_back(newSurface);

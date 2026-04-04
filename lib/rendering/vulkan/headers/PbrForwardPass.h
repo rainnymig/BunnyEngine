@@ -33,6 +33,7 @@ class PbrForwardPass : public PbrGraphicsPass
     const size_t getDrawCommandBufferSize() const;
     const AllocatedBuffer& getInstanceObjectBuffer() const { return mInstanceObjectBuffer; }
     const size_t getInstanceObjectBufferSize() const { return mInstanceObjectBufferSize; }
+    const AllocatedBuffer& getSurfaceToCommandMapBuffer() const { return mSurfaceToCommandMapBuffer; }
 
   protected:
     struct FrameData
@@ -57,7 +58,9 @@ class PbrForwardPass : public PbrGraphicsPass
 
     AllocatedBuffer mDrawCommandsBuffer;
     AllocatedBuffer mInitialDrawCommandBuffer;
+    AllocatedBuffer mSurfaceToCommandMapBuffer;
     std::vector<VkDrawIndexedIndirectCommand> mDrawCommandsData;
+    std::vector<uint32_t> mSurfaceToCommandMapData;
     AllocatedBuffer mInstanceObjectBuffer;
     size_t mInstanceObjectBufferSize;
 

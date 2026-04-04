@@ -14,7 +14,7 @@ struct AllocatedImage
     VmaAllocation mAllocation;
     VkExtent3D mExtent;
     VkFormat mFormat;
-	bool mIsOwning = true;   //  temporary hack flag to indicate whether this image is owning the underlying resource
+    bool mIsOwning = true; //  temporary hack flag to indicate whether this image is owning the underlying resource
 };
 
 struct AllocatedBuffer
@@ -22,6 +22,7 @@ struct AllocatedBuffer
     VkBuffer mBuffer = nullptr;
     VmaAllocation mAllocation;
     VmaAllocationInfo mAllocationInfo;
+    VkDeviceSize mSize;
 };
 
 //  frame
