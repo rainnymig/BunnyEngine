@@ -13,20 +13,6 @@ layout (location = 0) out vec4 outAccumulation;
 layout (location = 1) out float outRevealage;
 
 layout(set = 3, binding = 0, r32ui) uniform readonly uimage2D lightShadowMap;
-layout(set = 3, binding = 1) uniform sampler2D sceneDepth;
-
-layout(push_constant) uniform SceneInfo
-{
-    float zNear;
-    float zFar;
-    float zFactor;      //  the z-based factor gives precedence to nearer surfaces
-};
-
-float recoverLinearDepth(float nonLinearDepth)
-{
-    //  check zNear and zFar direction
-	return -(zNear * zFar) / ((zFar - zNear) * nonLinearDepth - zFar);
-}
 
 void main()
 {
@@ -50,10 +36,10 @@ void main()
     }
     lightResult *= cameraData.exposure;
 
-    float depth = imageLoad(sceneDepth, ivec2(gl_FragCoord.xy)).x;
-    float z = recoverLinearDepth(depth);
-    float weight = max(min(1.0, max(max(lightResult.r, lightResult.g), lightResult.b) * alpha), alpha) * 
-                    clamp(0.03 / (1e-5 + pow(z / zFactor, 4.0)), 1e-2, 3e3);
+    // float weight = max(min(1.0, max(max(lightResult.r, lightResult.g), lightResult.b) * alpha), alpha) * 
+    //                 clamp(0.03 / (1e-5 + pow(z / zFactor, 4.0)), 1e-2, 3e3);
+    //  todo: pick a weight function
+    float weight = 1;
 
     outAccumulation = vec4(lightResult * alpha, alpha) * weight;
     outRevealage = alpha;

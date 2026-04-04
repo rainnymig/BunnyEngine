@@ -29,6 +29,8 @@ target_sources(VulkanRenderer
         headers/SwapChainSupportDetails.h
         headers/TextureBank.h
         headers/TexturePreviewPass.h
+        headers/TransparencyAccumulatePass.h
+        headers/TransparencyCompositePass.h
         headers/Vertex.h
         headers/VulkanGraphicsRenderer.h
         headers/VulkanRenderResources.h
@@ -57,6 +59,8 @@ target_sources(VulkanRenderer
         src/SkyPass.cpp
         src/TextureBank.cpp
         src/TexturePreviewPass.cpp
+        src/TransparencyAccumulatePass.cpp
+        src/TransparencyCompositePass.cpp
         src/Vertex.cpp
         src/VulkanGraphicsRenderer.cpp
         src/VulkanRenderResources.cpp
