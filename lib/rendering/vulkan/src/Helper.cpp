@@ -161,6 +161,32 @@ VkImageMemoryBarrier makeImageMemoryBarrier(VkImage image, VkAccessFlags srcAcce
     return result;
 }
 
+VkPipelineColorBlendAttachmentState makePipelineColorBlendAttachmentState(
+    VkBlendFactor sourceBlendFactor, VkBlendFactor destBlendFactor, VkBlendOp blendOp)
+{
+    //  for now we can use the same blend factors for both color and alpha
+    return VkPipelineColorBlendAttachmentState{
+        .blendEnable = VK_TRUE,
+        .srcColorBlendFactor = sourceBlendFactor,
+        .dstColorBlendFactor = destBlendFactor,
+        .colorBlendOp = blendOp,
+        .srcAlphaBlendFactor = sourceBlendFactor,
+        .dstAlphaBlendFactor = destBlendFactor,
+        .alphaBlendOp = blendOp,
+        .colorWriteMask =
+            VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
+    };
+}
+
+VkPipelineColorBlendAttachmentState makeNoBlendAttachmentState()
+{
+    return VkPipelineColorBlendAttachmentState{
+        .blendEnable = VK_FALSE,
+        .colorWriteMask =
+            VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
+    };
+}
+
 bool hasStencilComponent(VkFormat format)
 {
     return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;

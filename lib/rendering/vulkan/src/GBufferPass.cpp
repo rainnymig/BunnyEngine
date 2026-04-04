@@ -280,13 +280,10 @@ BunnyResult GBufferPass::initPipeline()
     builder.setPolygonMode(VK_POLYGON_MODE_FILL);
     builder.setCulling(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
     builder.setMultisamplingNone();
-    builder.disableBlending(); //  opaque pipeline
+    builder.addColorAttachmentNoBlend(VK_FORMAT_R8G8B8A8_UNORM);      // color
+    builder.addColorAttachmentNoBlend(VK_FORMAT_R16G16B16A16_SFLOAT); // frag pos
+    builder.addColorAttachmentNoBlend(VK_FORMAT_R16G16B16A16_SFLOAT); // normal texcoord
     builder.enableDepthTest(VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL);
-    // std::vector<VkFormat> colorFormats{VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_R16G16B16A16_SFLOAT,
-    //     VK_FORMAT_R16G16B16A16_SFLOAT}; //  color, frag pos, normal texcoord
-    std::vector<VkFormat> colorFormats{VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_R16G16B16A16_SFLOAT,
-        VK_FORMAT_R16G16B16A16_SFLOAT}; //  color, frag pos, normal texcoord
-    builder.setColorAttachmentFormats(colorFormats);
     builder.setDepthFormat(mRenderer->getDepthImageFormat());
     builder.setPipelineLayout(mPipelineLayout);
 

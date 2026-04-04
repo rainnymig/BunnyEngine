@@ -30,25 +30,23 @@ class GraphicsPipelineBuilder
     void setCulling(VkCullModeFlags cullMode, VkFrontFace frontFace);
     void setMultiSamplingCount(VkSampleCountFlagBits sampleCount);
     void setMultisamplingNone();
-    void disableBlending();
-    void enableBlendingAdditive();
-    void enableBlendingAlphablend();
-    void setColorAttachmentFormats(const std::vector<VkFormat>& formats);
     void setDepthFormat(VkFormat format);
     void disableDepthTest();
     void enableDepthTest(bool depthWriteEnable, VkCompareOp op);
     void setPipelineLayout(VkPipelineLayout layout);
+    void addColorAttachmentNoBlend(VkFormat format);
+    void addColorAttachmentWithBlend(VkFormat format, const VkPipelineColorBlendAttachmentState& blendState);
 
   private:
     std::vector<VkPipelineShaderStageCreateInfo> mShaderStages;
     VkPipelineVertexInputStateCreateInfo mVertexInputInfo;
     VkPipelineInputAssemblyStateCreateInfo mInputAssembly;
     VkPipelineRasterizationStateCreateInfo mRasterizer;
-    VkPipelineColorBlendAttachmentState mColorBlendAttachment;
     VkPipelineMultisampleStateCreateInfo mMultisampling;
     VkPipelineLayout mPipelineLayout;
     VkPipelineDepthStencilStateCreateInfo mDepthStencil;
     VkPipelineRenderingCreateInfo mRenderInfo;
     std::vector<VkFormat> mColorAttachmentFormats;
+    std::vector<VkPipelineColorBlendAttachmentState> mColorBlendStates;
 };
 } // namespace Bunny::Render

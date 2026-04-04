@@ -209,10 +209,8 @@ BunnyResult OceanPass::initPipeline()
     {
         pipelineBuilder.setMultisamplingNone();
     }
-    pipelineBuilder.disableBlending(); //  opaque pipeline
+    pipelineBuilder.addColorAttachmentNoBlend(mRenderer->getSwapChainImageFormat()); //  opaque pipeline
     pipelineBuilder.enableDepthTest(VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL);
-    std::vector<VkFormat> colorFormats{mRenderer->getSwapChainImageFormat()};
-    pipelineBuilder.setColorAttachmentFormats(colorFormats);
     pipelineBuilder.setDepthFormat(mRenderer->getDepthImageFormat());
     pipelineBuilder.setPipelineLayout(mPipelineLayout);
     mPipeline = pipelineBuilder.build(device);

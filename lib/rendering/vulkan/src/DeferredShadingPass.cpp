@@ -205,11 +205,8 @@ BunnyResult DeferredShadingPass::initPipeline()
     builder.setPolygonMode(VK_POLYGON_MODE_FILL);
     builder.setCulling(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
     builder.setMultisamplingNone();
-    builder.disableBlending();  //  opaque pipeline
-    builder.disableDepthTest(); //  no need to do depth test
-    std::vector<VkFormat> colorFormats{mRenderer->getSwapChainImageFormat()};
-    builder.setColorAttachmentFormats(colorFormats);
-    // builder.setDepthFormat(mRenderer->getDepthImageFormat());
+    builder.addColorAttachmentNoBlend(mRenderer->getSwapChainImageFormat()); //  opaque pipeline
+    builder.disableDepthTest();                                              //  no need to do depth test
     builder.setPipelineLayout(mPipelineLayout);
 
     mPipeline = builder.build(mVulkanResources->getDevice());

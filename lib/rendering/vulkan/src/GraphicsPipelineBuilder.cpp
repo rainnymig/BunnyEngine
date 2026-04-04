@@ -30,10 +30,12 @@ VkPipeline GraphicsPipelineBuilder::build(VkDevice device, PipelineType pipeline
 
     colorBlending.logicOpEnable = VK_FALSE;
     colorBlending.logicOp = VK_LOGIC_OP_COPY;
-    colorBlending.attachmentCount = mRenderInfo.colorAttachmentCount;
-    std::vector<VkPipelineColorBlendAttachmentState> blendAttachments(
-        mRenderInfo.colorAttachmentCount, mColorBlendAttachment);
-    colorBlending.pAttachments = blendAttachments.data();
+    colorBlending.attachmentCount = mColorBlendStates.size();
+    colorBlending.pAttachments = mColorBlendStates.data();
+
+    //  setup attachment formats in render info
+    mRenderInfo.colorAttachmentCount = mColorAttachmentFormats.size();
+    mRenderInfo.pColorAttachmentFormats = mColorAttachmentFormats.data();
 
     //  build the actual pipeline
     //  we now use all of the info structs we have been writing into into this one
@@ -141,48 +143,6 @@ void GraphicsPipelineBuilder::setMultisamplingNone()
     mMultisampling.alphaToOneEnable = VK_FALSE;
 }
 
-void GraphicsPipelineBuilder::disableBlending()
-{
-    // default write mask
-    mColorBlendAttachment.colorWriteMask =
-        VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-    // no blending
-    mColorBlendAttachment.blendEnable = VK_FALSE;
-}
-
-void GraphicsPipelineBuilder::enableBlendingAdditive()
-{
-    mColorBlendAttachment.colorWriteMask =
-        VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-    mColorBlendAttachment.blendEnable = VK_TRUE;
-    mColorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-    mColorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
-    mColorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
-    mColorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-    mColorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-    mColorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
-}
-
-void GraphicsPipelineBuilder::enableBlendingAlphablend()
-{
-    mColorBlendAttachment.colorWriteMask =
-        VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-    mColorBlendAttachment.blendEnable = VK_TRUE;
-    mColorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-    mColorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-    mColorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
-    mColorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-    mColorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-    mColorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
-}
-
-void GraphicsPipelineBuilder::setColorAttachmentFormats(const std::vector<VkFormat>& formats)
-{
-    mColorAttachmentFormats = formats;
-    mRenderInfo.colorAttachmentCount = mColorAttachmentFormats.size();
-    mRenderInfo.pColorAttachmentFormats = mColorAttachmentFormats.data();
-}
-
 void GraphicsPipelineBuilder::setDepthFormat(VkFormat format)
 {
     mRenderInfo.depthAttachmentFormat = format;
@@ -217,6 +177,18 @@ void GraphicsPipelineBuilder::enableDepthTest(bool depthWriteEnable, VkCompareOp
 void GraphicsPipelineBuilder::setPipelineLayout(VkPipelineLayout layout)
 {
     mPipelineLayout = layout;
+}
+
+void GraphicsPipelineBuilder::addColorAttachmentNoBlend(VkFormat format)
+{
+    addColorAttachmentWithBlend(format, makeNoBlendAttachmentState());
+}
+
+void GraphicsPipelineBuilder::addColorAttachmentWithBlend(
+    VkFormat format, const VkPipelineColorBlendAttachmentState& blendState)
+{
+    mColorAttachmentFormats.emplace_back(format);
+    mColorBlendStates.emplace_back(blendState);
 }
 
 } // namespace Bunny::Render

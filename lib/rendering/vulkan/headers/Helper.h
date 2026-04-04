@@ -32,6 +32,9 @@ VkRenderingInfo makeRenderingInfo(VkExtent2D renderExtent, uint32_t colorAttachm
 VkBufferMemoryBarrier makeBufferMemoryBarrier(VkBuffer buffer, uint32_t queueIndex);
 VkImageMemoryBarrier makeImageMemoryBarrier(VkImage image, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask,
     VkImageLayout oldLayout, VkImageLayout newLayout, VkImageAspectFlags aspectMask);
+VkPipelineColorBlendAttachmentState makePipelineColorBlendAttachmentState(
+    VkBlendFactor sourceBlendFactor, VkBlendFactor destBlendFactor, VkBlendOp blendOp = VK_BLEND_OP_ADD);
+VkPipelineColorBlendAttachmentState makeNoBlendAttachmentState();
 
 //  find the largest power of 2 that's less than val
 uint32_t findPreviousPow2(uint32_t val);

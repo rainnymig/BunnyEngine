@@ -261,10 +261,8 @@ BunnyResult PbrForwardPass::initPipeline()
     {
         builder.setMultisamplingNone();
     }
-    builder.disableBlending(); //  opaque pipeline
+    builder.addColorAttachmentNoBlend(mRenderer->getSwapChainImageFormat()); //  opaque pipeline
     builder.enableDepthTest(VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL);
-    std::vector<VkFormat> colorFormats{mRenderer->getSwapChainImageFormat()};
-    builder.setColorAttachmentFormats(colorFormats);
     builder.setDepthFormat(mRenderer->getDepthImageFormat());
     builder.setPipelineLayout(mPipelineLayout);
 
