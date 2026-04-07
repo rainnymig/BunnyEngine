@@ -25,14 +25,36 @@ void Render::TransparencyAccumulatePass::draw() const
 void Render::TransparencyAccumulatePass::linkWorldData(
     const AllocatedBuffer& lightData, const AllocatedBuffer& cameraData)
 {
+    DescriptorWriter writer;
+    writer.writeBuffer(0, lightData.mBuffer, sizeof(PbrLightData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+    writer.writeBuffer(1, cameraData.mBuffer, sizeof(PbrCameraData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+    for (const FrameData& frame : mFrameData)
+    {
+        writer.updateSet(mVulkanResources->getDevice(), frame.mWorldDescSet);
+    }
 }
 
 void Render::TransparencyAccumulatePass::linkObjectData(const AllocatedBuffer& objectBuffer, size_t bufferSize)
 {
+    Render::DescriptorWriter writer;
+    writer.writeBuffer(0, objectBuffer.mBuffer, bufferSize, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    for (const FrameData& frame : mFrameData)
+    {
+        writer.updateSet(mVulkanResources->getDevice(), frame.mObjectDescSet);
+    }
 }
 
 void Render::TransparencyAccumulatePass::linkShadowData(std::array<VkImageView, MAX_FRAMES_IN_FLIGHT> shadowImageViews)
 {
+    Render::DescriptorWriter writer;
+    VkDevice device = mVulkanResources->getDevice();
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+    {
+        const FrameData& frame = mFrameData[i];
+        writer.clear();
+        writer.writeImage(0, shadowImageViews[i], nullptr, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+        writer.updateSet(device, frame.mEffectDescSet);
+    }
 }
 
 BunnyResult Render::TransparencyAccumulatePass::initPipeline()
@@ -114,11 +136,25 @@ BunnyResult Render::TransparencyAccumulatePass::initDescriptors()
 
 BunnyResult Render::TransparencyAccumulatePass::initDataAndResources()
 {
+    VkExtent3D renderTargetExtent{mRenderer->getSwapChainExtent().width, mRenderer->getSwapChainExtent().height, 1};
     //  create the render targets
+    for (FrameData& frame : mFrameData)
+    {
+        //  accumulate
+        frame.mAccumulateImage = mVulkanResources->createImage(renderTargetExtent, VK_FORMAT_R32G32B32A32_SFLOAT,
+            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
+        //  revealage
+        frame.mRevealageImage = mVulkanResources->createImage(renderTargetExtent, VK_FORMAT_R16_SFLOAT,
+            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
+    }
 
-    //  accumulate
-
-    //  revealage
+    mDeletionStack.AddFunction([this]() {
+        for (FrameData& frame : mFrameData)
+        {
+            mVulkanResources->destroyImage(frame.mAccumulateImage);
+            mVulkanResources->destroyImage(frame.mRevealageImage);
+        }
+    });
 
     return BUNNY_HAPPY;
 }
