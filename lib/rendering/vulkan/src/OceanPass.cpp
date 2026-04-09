@@ -73,12 +73,17 @@ void OceanPass::draw() const
     }
 
     //  render
+    bool multiSample = mRenderer->isMultiSampleEnabled();
     std::vector<VkImageView> colorAttachmentViews;
     colorAttachmentViews.push_back(frame.mRenderTarget->mImageView);
     auto renderHelper = mRenderer->getRenderHelper()
-                            .setColorAttachments(colorAttachmentViews)
+                            .addColorAttachment(frame.mRenderTarget->mImageView, false,
+                                {
+                                    .color{0, 0, 0, 1}
+    },
+                                multiSample ? mRenderer->getColorImageResolved().mImageView : nullptr)
                             .setUpdateDepth(true)
-                            .setMultiSample(mRenderer->isMultiSampleEnabled(), true)
+                            .setMultiSample(multiSample, true)
                             .beginRender();
 
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipeline);

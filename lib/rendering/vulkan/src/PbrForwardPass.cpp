@@ -41,8 +41,7 @@ void PbrForwardPass::draw() const
     std::vector<VkImageView> colorAttachmentViews;
     colorAttachmentViews.push_back(frame.mSceneRenderTarget->mImageView);
     auto renderHelper = mRenderer->getRenderHelper()
-                            .setColorAttachments(colorAttachmentViews)
-                            .setClearColor(true)
+                            .addColorAttachment(frame.mSceneRenderTarget->mImageView, true)
                             .setClearDepth(true)
                             .setUpdateDepth(true)
                             .setMultiSample(mRenderer->isMultiSampleEnabled(), false)

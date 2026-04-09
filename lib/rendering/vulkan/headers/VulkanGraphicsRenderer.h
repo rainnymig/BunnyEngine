@@ -26,21 +26,24 @@ class VulkanGraphicsRenderer
         RenderHelper& beginRender();
         void finishRender();
 
-        RenderHelper& setColorAttachments(const std::vector<VkImageView>& colorAttachments);
+        RenderHelper& addColorAttachment(VkImageView attachmentView, bool shouldClear = false,
+            const VkClearValue& clearValue =
+                {
+                    .color = {0.0f, 0.0f, 0.0f, 1.0f}
+        },
+            VkImageView resolveImageView = VK_NULL_HANDLE);
+        RenderHelper& addDefaultColorAttachment(bool shouldClear = false, const VkClearValue& clearValue = {
+                                                                              .color = {0.0f, 0.0f, 0.0f, 1.0f}
+        });
+
         RenderHelper& setUpdateDepth(bool updateDepth);
-        RenderHelper& setClearColor(bool clearColor);
-        RenderHelper& setClearColorValue(const VkClearValue& clearValue);
         RenderHelper& setClearDepth(bool clearDepth);
         RenderHelper& setClearDepthValue(const VkClearValue& clearValue);
         RenderHelper& setMultiSample(bool multiSample, bool resolve);
 
       private:
-        std::vector<VkImageView> mColorAttachmentViews;
+        std::vector<VkRenderingAttachmentInfo> mColorAttachments;
         bool mUpdateDepth = true;
-        bool mClearColor = false;
-        VkClearValue mColorClearValue = {
-            .color = {0.0f, 0.0f, 0.0f, 1.0f}
-        };
         bool mClearDepth = false;
         VkClearValue mDepthClearValue = {
             .depthStencil = {.depth = 1.0f, .stencil = 0}

@@ -159,8 +159,12 @@ void GBufferPass::draw()
     std::vector<VkImageView> attachmentImageViews{mColorMaps[currentFrameIdx].mImageView,
         mFragPosMaps[currentFrameIdx].mImageView, mNormalTexCoordMaps[currentFrameIdx].mImageView};
 
-    auto renderHelper =
-        mRenderer->getRenderHelper().setColorAttachments(attachmentImageViews).setUpdateDepth(true).beginRender();
+    auto renderHelper = mRenderer->getRenderHelper()
+                            .addColorAttachment(mColorMaps[currentFrameIdx].mImageView, true)
+                            .addColorAttachment(mFragPosMaps[currentFrameIdx].mImageView, true)
+                            .addColorAttachment(mNormalTexCoordMaps[currentFrameIdx].mImageView, true)
+                            .setUpdateDepth(true)
+                            .beginRender();
 
     mMeshBank->bindMeshBuffers(cmd);
 

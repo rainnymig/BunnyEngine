@@ -77,7 +77,7 @@ VkRayTracingShaderGroupCreateInfoKHR makeRayTracingShaderGroupCreateInfoKHR()
 }
 
 VkRenderingAttachmentInfo makeAttachmentInfo(
-    VkImageView view, VkImageLayout layout, VkClearValue* clearValue, VkImageView resolveView)
+    VkImageView view, VkImageLayout layout, const VkClearValue* clearValue, VkImageView resolveView)
 {
     bool shouldClear = clearValue != VK_NULL_HANDLE;
     bool shouldResolve = resolveView != VK_NULL_HANDLE;
