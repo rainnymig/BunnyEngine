@@ -38,13 +38,11 @@ void PbrForwardPass::draw() const
     vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
         VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 1, &renderTargetBarrier);
 
-    std::vector<VkImageView> colorAttachmentViews;
-    colorAttachmentViews.push_back(frame.mSceneRenderTarget->mImageView);
     auto renderHelper = mRenderer->getRenderHelper()
                             .addColorAttachment(frame.mSceneRenderTarget->mImageView, true)
                             .setClearDepth(true)
-                            .setUpdateDepth(true)
-                            .setMultiSample(mRenderer->isMultiSampleEnabled(), false)
+                            .setDepthTest(true)
+                            .setDepthMultiSample(mRenderer->isMultiSampleEnabled(), false)
                             .beginRender();
 
     //  bind mesh vertex and index buffers

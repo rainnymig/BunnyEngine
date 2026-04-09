@@ -77,8 +77,7 @@ void DeferredShadingPass::draw()
     vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
         VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 3, barriers);
 
-    auto renderHelper =
-        mRenderer->getRenderHelper().addDefaultColorAttachment(true).setUpdateDepth(false).beginRender();
+    auto renderHelper = mRenderer->getRenderHelper().addDefaultColorAttachment(true).setDepthTest(false).beginRender();
 
     //  bind pipeline and resources
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipeline);

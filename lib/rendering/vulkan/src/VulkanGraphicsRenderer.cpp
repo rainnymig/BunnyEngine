@@ -598,6 +598,10 @@ VulkanGraphicsRenderer::RenderHelper& VulkanGraphicsRenderer::RenderHelper::begi
             VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, mClearDepth ? &mDepthClearValue : nullptr,
             mResolveMultiSample ? mRenderer->mFrameResources[mRenderer->mCurrentFrameId].mDepthImageResolved.mImageView
                                 : nullptr);
+        if (mStoreMultiSampled)
+        {
+            depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        }
     }
     else
     {
@@ -607,7 +611,7 @@ VulkanGraphicsRenderer::RenderHelper& VulkanGraphicsRenderer::RenderHelper::begi
     }
 
     VkRenderingInfo renderInfo = makeRenderingInfo(mRenderer->mSwapChainExtent, mColorAttachments.size(),
-        mColorAttachments.data(), mUpdateDepth ? &depthAttachment : nullptr);
+        mColorAttachments.data(), mDepthTest ? &depthAttachment : nullptr);
 
     vkCmdBeginRendering(mRenderer->getCurrentCommandBuffer(), &renderInfo);
 
@@ -640,9 +644,9 @@ VulkanGraphicsRenderer::RenderHelper& VulkanGraphicsRenderer::RenderHelper::addD
     return *this;
 }
 
-VulkanGraphicsRenderer::RenderHelper& VulkanGraphicsRenderer::RenderHelper::setUpdateDepth(bool updateDepth)
+VulkanGraphicsRenderer::RenderHelper& VulkanGraphicsRenderer::RenderHelper::setDepthTest(bool depthTest)
 {
-    mUpdateDepth = updateDepth;
+    mDepthTest = depthTest;
     return *this;
 }
 
@@ -659,11 +663,12 @@ VulkanGraphicsRenderer::RenderHelper& VulkanGraphicsRenderer::RenderHelper::setC
     return *this;
 }
 
-VulkanGraphicsRenderer::RenderHelper& VulkanGraphicsRenderer::RenderHelper::setMultiSample(
-    bool multiSample, bool resolve)
+VulkanGraphicsRenderer::RenderHelper& VulkanGraphicsRenderer::RenderHelper::setDepthMultiSample(
+    bool multiSample, bool resolve, bool storeMultiSampled)
 {
     mMultiSample = multiSample;
     mResolveMultiSample = resolve;
+    mStoreMultiSampled = storeMultiSampled;
     return *this;
 }
 

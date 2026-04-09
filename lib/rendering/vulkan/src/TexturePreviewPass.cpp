@@ -68,7 +68,7 @@ void TexturePreviewPass::draw() const
     VkCommandBuffer cmd = mRenderer->getCurrentCommandBuffer();
     uint32_t currentFrameIdx = mRenderer->getCurrentFrameIdx();
 
-    auto renderHelper = mRenderer->getRenderHelper().addDefaultColorAttachment().setUpdateDepth(false).beginRender();
+    auto renderHelper = mRenderer->getRenderHelper().addDefaultColorAttachment().setDepthTest(false).beginRender();
 
     //  bind pipeline and resources
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipeline);

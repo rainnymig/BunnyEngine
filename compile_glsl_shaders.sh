@@ -36,3 +36,5 @@ glslc --target-env=vulkan1.3 ./lib/rendering/vulkan/shader/waveConstruct.comp   
 glslc --target-spv=spv1.5 ./lib/rendering/vulkan/shader/wave.mesh                   -o ./build/engine-next/Debug/wave_mesh.spv
 glslc --target-spv=spv1.5 ./lib/rendering/vulkan/shader/wavefft.mesh                -o ./build/engine-next/Debug/wave_fft_mesh.spv
 glslc --target-spv=spv1.5 ./lib/rendering/vulkan/shader/wave.frag                   -o ./build/engine-next/Debug/wave_frag.spv
+
+glslc --target-env=vulkan1.3 ./lib/rendering/vulkan/shader/transparentAccum.frag    -o ./build/engine-next/Debug/transparent_accum_frag.spv

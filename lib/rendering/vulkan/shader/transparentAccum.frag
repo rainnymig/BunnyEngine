@@ -36,10 +36,10 @@ void main()
     }
     lightResult *= cameraData.exposure;
 
-    // float weight = max(min(1.0, max(max(lightResult.r, lightResult.g), lightResult.b) * alpha), alpha) * 
-    //                 clamp(0.03 / (1e-5 + pow(z / zFactor, 4.0)), 1e-2, 3e3);
-    //  todo: pick a weight function
-    float weight = 1;
+    //  weight function
+    //  more in https://jcgt.org/published/0002/02/09/
+    float weight = clamp(pow(min(1.0, alpha* 10.0) + 0.01, 3.0) * 1e8 * 
+                         pow(1.0 - gl_FragCoord.z * 0.9, 3.0), 1e-2, 3e3);
 
     outAccumulation = vec4(lightResult * alpha, alpha) * weight;
     outRevealage = alpha;

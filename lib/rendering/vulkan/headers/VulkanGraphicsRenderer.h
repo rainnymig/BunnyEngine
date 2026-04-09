@@ -36,20 +36,21 @@ class VulkanGraphicsRenderer
                                                                               .color = {0.0f, 0.0f, 0.0f, 1.0f}
         });
 
-        RenderHelper& setUpdateDepth(bool updateDepth);
+        RenderHelper& setDepthTest(bool depthTest);
         RenderHelper& setClearDepth(bool clearDepth);
         RenderHelper& setClearDepthValue(const VkClearValue& clearValue);
-        RenderHelper& setMultiSample(bool multiSample, bool resolve);
+        RenderHelper& setDepthMultiSample(bool multiSample, bool resolve, bool storeMultiSampled = false);
 
       private:
         std::vector<VkRenderingAttachmentInfo> mColorAttachments;
-        bool mUpdateDepth = true;
+        bool mDepthTest = true;
         bool mClearDepth = false;
         VkClearValue mDepthClearValue = {
             .depthStencil = {.depth = 1.0f, .stencil = 0}
         };
         bool mMultiSample = false;
         bool mResolveMultiSample = false;
+        bool mStoreMultiSampled = false;
 
         bool mRenderBeginned = false;
 

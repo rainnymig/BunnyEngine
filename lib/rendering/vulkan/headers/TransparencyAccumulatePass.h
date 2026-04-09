@@ -18,6 +18,7 @@ class TransparencyAccumulatePass : public PbrGraphicsPass
     void linkWorldData(const AllocatedBuffer& lightData, const AllocatedBuffer& cameraData);
     void linkObjectData(const AllocatedBuffer& objectBuffer, size_t bufferSize);
     void linkShadowData(std::array<VkImageView, MAX_FRAMES_IN_FLIGHT> shadowImageViews);
+    void setDrawCommandsBuffer(const AllocatedBuffer& buffer);
 
   protected:
     BunnyResult initPipeline() override;
@@ -34,6 +35,8 @@ class TransparencyAccumulatePass : public PbrGraphicsPass
         VkDescriptorSet mMaterialDescSet;
         VkDescriptorSet mEffectDescSet; // for shadows
 
+        AllocatedImage mAccumulateImageMultiSampled;
+        AllocatedImage mRevealageImageMultiSampled;
         AllocatedImage mAccumulateImage;
         AllocatedImage mRevealageImage;
     };

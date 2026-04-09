@@ -153,17 +153,11 @@ void GBufferPass::draw()
     vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
         VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 3, barriers);
 
-    //  setup render attachments
-    // std::vector<VkImageView> attachmentImageViews{mColorMaps[currentFrameIdx].mImageView,
-    //     mFragPosMaps[currentFrameIdx].mImageView, mNormalTexCoordMaps[currentFrameIdx].mImageView};
-    std::vector<VkImageView> attachmentImageViews{mColorMaps[currentFrameIdx].mImageView,
-        mFragPosMaps[currentFrameIdx].mImageView, mNormalTexCoordMaps[currentFrameIdx].mImageView};
-
     auto renderHelper = mRenderer->getRenderHelper()
                             .addColorAttachment(mColorMaps[currentFrameIdx].mImageView, true)
                             .addColorAttachment(mFragPosMaps[currentFrameIdx].mImageView, true)
                             .addColorAttachment(mNormalTexCoordMaps[currentFrameIdx].mImageView, true)
-                            .setUpdateDepth(true)
+                            .setDepthTest(true)
                             .beginRender();
 
     mMeshBank->bindMeshBuffers(cmd);
