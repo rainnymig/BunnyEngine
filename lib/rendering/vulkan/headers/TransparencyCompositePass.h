@@ -39,10 +39,27 @@ class TransparencyCompositePass : public PbrGraphicsPass
         const AllocatedImage* mSceneRenderTarget;
     };
 
+    BunnyResult initPipelineLayout();
+    BunnyResult initDescriptorLayouts();
+
     std::array<FrameData, MAX_FRAMES_IN_FLIGHT> mFrameData;
     DescriptorAllocator mDescriptorAllocator;
+    VkDescriptorSetLayout mImagesDescLayout;
+    VkSampler mImageSampler;
 
     std::string_view mVertexShaderPath;
     std::string_view mFragmentShaderPath;
+
+    AllocatedBuffer mVertexBuffer;
+    AllocatedBuffer mIndexBuffer;
+    //  vertices
+    //  TL, BL, BR, TR
+    std::array<ScreenQuadVertex, 4> mVertexData{
+        ScreenQuadVertex{{-1, 1, 1},  {0, 1}},
+        ScreenQuadVertex{{-1, -1, 1}, {0, 0}},
+        ScreenQuadVertex{{1, -1, 1},  {1, 0}},
+        ScreenQuadVertex{{1, 1, 1},   {1, 1}}
+    };
+    std::array<uint32_t, 6> mIndexData{0, 3, 1, 1, 3, 2};
 };
 } // namespace Bunny::Render

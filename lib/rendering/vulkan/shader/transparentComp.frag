@@ -19,30 +19,23 @@ float max3(vec3 v)
 //  from https://learnopengl.com/Guest-Articles/2020/OIT/Weighted-Blended
 void main()
 {
-    // fragment coordination
     ivec2 coords = ivec2(gl_FragCoord.xy);
 
-    // fragment revealage
     float revealage = texelFetch(revealageImage, coords, 0).r;
 
-    // save the blending and color texture fetch cost if there is not a transparent fragment
     if (isApproximatelyEqual(revealage, 1.0f))
     {
         discard;
     }
 
-    // fragment color
     vec4 accumulation = texelFetch(accumulationImage, coords, 0);
 
-    // suppress overflow
     if (isinf(max3(abs(accumulation.rgb))))
     {
         accumulation.rgb = vec3(accumulation.a);
     }
 
-    // prevent floating point precision bug
-    vec3 average_color = accumulation.rgb / max(accumulation.a, EPSILON);
+    vec3 averageColor = accumulation.rgb / max(accumulation.a, EPSILON);
 
-    // blend pixels
-    outColor = vec4(average_color, 1.0f - revealage);
+    outColor = vec4(averageColor, 1.0f - revealage);
 }
