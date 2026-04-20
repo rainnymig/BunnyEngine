@@ -20,7 +20,7 @@ Render::TransparencyAccumulatePass::TransparencyAccumulatePass(const VulkanRende
 
 void Render::TransparencyAccumulatePass::draw() const
 {
-    //  only draw opaque surfaces, skip if none
+    //  only draw transparent surfaces, skip if none
     if (mMeshBank->getTransparentSurfaceCount() == 0)
     {
         return;
@@ -125,6 +125,30 @@ void TransparencyAccumulatePass::setDrawCommandsBuffer(const AllocatedBuffer& bu
     mDrawCommandsBuffer = &buffer;
 }
 
+std::array<const AllocatedImage*, MAX_FRAMES_IN_FLIGHT> Render::TransparencyAccumulatePass::getAccumulateImages() const
+{
+    std::array<const AllocatedImage*, MAX_FRAMES_IN_FLIGHT> images;
+
+    for (int idx = 0; idx < MAX_FRAMES_IN_FLIGHT; idx++)
+    {
+        images[idx] = &mFrameData[idx].mAccumulateImage;
+    }
+
+    return images;
+}
+
+std::array<const AllocatedImage*, MAX_FRAMES_IN_FLIGHT> Render::TransparencyAccumulatePass::getRevealImages() const
+{
+    std::array<const AllocatedImage*, MAX_FRAMES_IN_FLIGHT> images;
+
+    for (int idx = 0; idx < MAX_FRAMES_IN_FLIGHT; idx++)
+    {
+        images[idx] = &mFrameData[idx].mRevealageImage;
+    }
+
+    return images;
+}
+
 BunnyResult Render::TransparencyAccumulatePass::initPipeline()
 {
     VkDevice device = mVulkanResources->getDevice();
@@ -216,7 +240,7 @@ BunnyResult Render::TransparencyAccumulatePass::initDataAndResources()
         frame.mAccumulateImage = mVulkanResources->createImage(renderTargetExtent, VK_FORMAT_R32G32B32A32_SFLOAT,
             VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
         //  revealage
-        frame.mRevealageImage = mVulkanResources->createImage(renderTargetExtent, VK_FORMAT_R16_SFLOAT,
+        frame.mRevealageImageMultiSampled = mVulkanResources->createImage(renderTargetExtent, VK_FORMAT_R16_SFLOAT,
             VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT, false,
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1, mRenderer->getRenderMultiSampleCount());
         frame.mRevealageImage = mVulkanResources->createImage(renderTargetExtent, VK_FORMAT_R16_SFLOAT,
@@ -226,6 +250,8 @@ BunnyResult Render::TransparencyAccumulatePass::initDataAndResources()
     mDeletionStack.AddFunction([this]() {
         for (FrameData& frame : mFrameData)
         {
+            mVulkanResources->destroyImage(frame.mAccumulateImageMultiSampled);
+            mVulkanResources->destroyImage(frame.mRevealageImageMultiSampled);
             mVulkanResources->destroyImage(frame.mAccumulateImage);
             mVulkanResources->destroyImage(frame.mRevealageImage);
         }

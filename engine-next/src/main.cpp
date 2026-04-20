@@ -30,6 +30,8 @@
 #include "OceanPass.h"
 #include "WaveSpectrumPrePass.h"
 #include "WaveSpectrumTransformPass.h"
+#include "TransparencyAccumulatePass.h"
+#include "TransparencyCompositePass.h"
 
 #include <imgui.h>
 #include <fmt/core.h>
@@ -110,6 +112,8 @@ int main(void)
     TexturePreviewPass texturePreviewPass(&renderResources, &renderer, &pbrMaterialBank, &meshBank, &textureBank);
     OceanPass oceanPass(&renderResources, &renderer, &textureBank, &pbrMaterialBank, &meshBank,
         waveSpectrumPrePass.getWidth(), 512, 4096);
+    TransparencyAccumulatePass transAccumPass(&renderResources, &renderer, &pbrMaterialBank, &meshBank);
+    TransparencyCompositePass transCompPass(&renderResources, &renderer, &pbrMaterialBank, &meshBank);
 
     pbrMaterialBank.recreateMaterialBuffer();
 
@@ -126,6 +130,8 @@ int main(void)
     {
         oceanPass.initializePass();
     }
+    transAccumPass.initializePass();
+    transCompPass.initializePass();
 
     pbrForwardPass.buildDrawCommands();
 
@@ -167,6 +173,13 @@ int main(void)
         oceanPass.linkLightAndCameraData(worldTranslator.getPbrLightBuffer(), worldTranslator.getPbrCameraBuffer());
         oceanPass.linkSceneAccelerationStructure(acceStructBuilder.getTopLevelAccelerationStructure().mAcceStruct);
     }
+
+    transAccumPass.linkWorldData(worldTranslator.getPbrLightBuffer(), worldTranslator.getPbrCameraBuffer());
+    transAccumPass.linkObjectData(worldTranslator.getObjectBuffer(), worldTranslator.getObjectBufferSize());
+    transAccumPass.linkShadowData(rtShadowPass.getOutImageViews());
+    transAccumPass.setDrawCommandsBuffer(pbrForwardPass.getDrawCommandBuffer());
+
+    transCompPass.linkTransparentImages(transAccumPass.getAccumulateImages(), transAccumPass.getRevealImages());
 
     CameraSystem cameraSystem(&inputManager);
 
@@ -280,6 +293,11 @@ int main(void)
             oceanPass.draw();
         }
 
+        transAccumPass.draw();
+
+        transCompPass.setSceneRenderTarget(&renderer.getColorImageResolved());
+        transCompPass.draw();
+
         skyPass.updateFrameData();
         skyPass.draw();
 
@@ -303,6 +321,8 @@ int main(void)
     depthReducePass.cleanup();
     finalOutputPass.cleanup();
     skyPass.cleanup();
+    transCompPass.cleanup();
+    transAccumPass.cleanup();
     oceanPass.cleanup();
     pbrForwardPass.cleanup();
     rtShadowPass.cleanup();

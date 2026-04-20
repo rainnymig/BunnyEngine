@@ -3,6 +3,8 @@
 #include "PbrGraphicsPass.h"
 #include "Descriptor.h"
 
+#include <array>
+
 namespace Bunny::Render
 {
 class TransparencyAccumulatePass : public PbrGraphicsPass
@@ -19,6 +21,9 @@ class TransparencyAccumulatePass : public PbrGraphicsPass
     void linkObjectData(const AllocatedBuffer& objectBuffer, size_t bufferSize);
     void linkShadowData(std::array<VkImageView, MAX_FRAMES_IN_FLIGHT> shadowImageViews);
     void setDrawCommandsBuffer(const AllocatedBuffer& buffer);
+
+    std::array<const AllocatedImage*, MAX_FRAMES_IN_FLIGHT> getAccumulateImages() const;
+    std::array<const AllocatedImage*, MAX_FRAMES_IN_FLIGHT> getRevealImages() const;
 
   protected:
     BunnyResult initPipeline() override;
