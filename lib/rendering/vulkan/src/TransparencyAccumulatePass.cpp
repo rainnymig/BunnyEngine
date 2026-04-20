@@ -79,7 +79,8 @@ void Render::TransparencyAccumulatePass::draw() const
         &mFrameData[mRenderer->getCurrentFrameIdx()].mWorldDescSet, 0, nullptr);
 
     //  only draw the transparent surfaces
-    vkCmdDrawIndexedIndirect(cmd, mDrawCommandsBuffer->mBuffer, mMeshBank->getOpaqueSurfaceCount(),
+    vkCmdDrawIndexedIndirect(cmd, mDrawCommandsBuffer->mBuffer,
+        mMeshBank->getOpaqueSurfaceCount() * sizeof(VkDrawIndexedIndirectCommand),
         mMeshBank->getTransparentSurfaceCount(), sizeof(VkDrawIndexedIndirectCommand));
 
     renderHelper.finishRender();
