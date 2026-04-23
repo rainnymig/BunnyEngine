@@ -18,7 +18,7 @@ class TransparencyAccumulatePass : public PbrGraphicsPass
     void draw() const override;
 
     void linkWorldData(const AllocatedBuffer& lightData, const AllocatedBuffer& cameraData);
-    void linkObjectData(const AllocatedBuffer& objectBuffer, size_t bufferSize);
+    void linkObjectData(const AllocatedBuffer& objectBuffer, const AllocatedBuffer& instObjectBuffer);
     void linkShadowData(std::array<VkImageView, MAX_FRAMES_IN_FLIGHT> shadowImageViews);
     void setDrawCommandsBuffer(const AllocatedBuffer& buffer);
 

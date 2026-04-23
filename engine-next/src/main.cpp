@@ -175,7 +175,7 @@ int main(void)
     }
 
     transAccumPass.linkWorldData(worldTranslator.getPbrLightBuffer(), worldTranslator.getPbrCameraBuffer());
-    transAccumPass.linkObjectData(worldTranslator.getObjectBuffer(), worldTranslator.getObjectBufferSize());
+    transAccumPass.linkObjectData(worldTranslator.getObjectBuffer(), pbrForwardPass.getInstanceObjectBuffer());
     transAccumPass.linkShadowData(rtShadowPass.getOutImageViews());
     transAccumPass.setDrawCommandsBuffer(pbrForwardPass.getDrawCommandBuffer());
 

@@ -98,10 +98,12 @@ void Render::TransparencyAccumulatePass::linkWorldData(
     }
 }
 
-void Render::TransparencyAccumulatePass::linkObjectData(const AllocatedBuffer& objectBuffer, size_t bufferSize)
+void Render::TransparencyAccumulatePass::linkObjectData(
+    const AllocatedBuffer& objectBuffer, const AllocatedBuffer& instObjectBuffer)
 {
     Render::DescriptorWriter writer;
-    writer.writeBuffer(0, objectBuffer.mBuffer, bufferSize, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    writer.writeBuffer(0, objectBuffer.mBuffer, objectBuffer.mSize, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    writer.writeBuffer(1, instObjectBuffer.mBuffer, instObjectBuffer.mSize, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     for (const FrameData& frame : mFrameData)
     {
         writer.updateSet(mVulkanResources->getDevice(), frame.mObjectDescSet);
