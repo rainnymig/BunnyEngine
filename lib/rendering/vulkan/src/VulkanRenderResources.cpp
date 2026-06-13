@@ -1,7 +1,7 @@
 #include "VulkanRenderResources.h"
 
-#include "Error.h"
-#include "ErrorCheck.h"
+#include "BunnyError.h"
+#include "VulkanError.h"
 #include "Window.h"
 #include "Helper.h"
 

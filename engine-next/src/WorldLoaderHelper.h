@@ -5,7 +5,7 @@
 #include "MeshBank.h"
 #include "MaterialBank.h"
 #include "TextureBank.h"
-#include "Error.h"
+#include "BunnyError.h"
 
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>

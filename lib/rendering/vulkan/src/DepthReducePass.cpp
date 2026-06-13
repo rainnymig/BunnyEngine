@@ -3,7 +3,7 @@
 #include "VulkanRenderResources.h"
 #include "VulkanGraphicsRenderer.h"
 #include "Helper.h"
-#include "Error.h"
+#include "BunnyError.h"
 #include "Shader.h"
 #include "ComputePipelineBuilder.h"
 #include "BunnyResult.h"

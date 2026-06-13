@@ -2,7 +2,7 @@
 
 #include "AccelerationStructureData.h"
 #include "Fundamentals.h"
-#include "ErrorCheck.h"
+#include "VulkanError.h"
 #include "VulkanRenderResources.h"
 #include "VulkanGraphicsRenderer.h"
 #include "Helper.h"

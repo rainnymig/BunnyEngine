@@ -1,8 +1,8 @@
 #include "OceanPass.h"
 
 #include "Descriptor.h"
-#include "ErrorCheck.h"
-#include "Error.h"
+#include "VulkanError.h"
+#include "BunnyError.h"
 #include "Shader.h"
 #include "GraphicsPipelineBuilder.h"
 #include "TextureBank.h"

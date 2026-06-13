@@ -1,6 +1,6 @@
 #include "Window.h"
 
-#include "Error.h"
+#include "BunnyError.h"
 
 namespace Bunny
 {

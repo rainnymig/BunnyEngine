@@ -3,8 +3,8 @@
 #include "VulkanRenderResources.h"
 #include "Window.h"
 #include "Helper.h"
-#include "Error.h"
-#include "ErrorCheck.h"
+#include "BunnyError.h"
+#include "VulkanError.h"
 
 #include <imgui.h>
 #include <imgui_impl_glfw.h>

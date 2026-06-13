@@ -1,12 +1,12 @@
 #include "SkyPass.h"
 
-#include "Error.h"
+#include "BunnyError.h"
 #include "VulkanRenderResources.h"
 #include "VulkanGraphicsRenderer.h"
 #include "TextureBank.h"
 #include "Shader.h"
 #include "Camera.h"
-#include "ErrorCheck.h"
+#include "VulkanError.h"
 #include "ComputePipelineBuilder.h"
 
 #include <cassert>

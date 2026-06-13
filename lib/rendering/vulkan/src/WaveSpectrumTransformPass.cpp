@@ -2,7 +2,7 @@
 
 #include "VulkanRenderResources.h"
 #include "VulkanGraphicsRenderer.h"
-#include "Error.h"
+#include "BunnyError.h"
 #include "ImguiHelper.h"
 
 #include <imgui.h>

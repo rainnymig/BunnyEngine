@@ -1,7 +1,7 @@
 #include "AccelerationStructureBuilder.h"
 
 #include "AlignHelpers.h"
-#include "Error.h"
+#include "BunnyError.h"
 #include "Helper.h"
 
 #include <algorithm>

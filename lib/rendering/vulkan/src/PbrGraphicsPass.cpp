@@ -1,7 +1,7 @@
 #include "PbrGraphicsPass.h"
 
-#include "Error.h"
-#include "ErrorCheck.h"
+#include "BunnyError.h"
+#include "VulkanError.h"
 #include "ComputePipelineBuilder.h"
 
 #include <cassert>

@@ -2,8 +2,8 @@
 
 #include "VulkanRenderResources.h"
 #include "VulkanGraphicsRenderer.h"
-#include "Error.h"
-#include "ErrorCheck.h"
+#include "BunnyError.h"
+#include "VulkanError.h"
 #include "Descriptor.h"
 
 #include <stb_image.h>

@@ -1,6 +1,6 @@
 #include "Descriptor.h"
 
-#include "ErrorCheck.h"
+#include "VulkanError.h"
 
 #include <algorithm>
 #include <cassert>

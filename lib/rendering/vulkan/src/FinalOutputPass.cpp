@@ -6,8 +6,8 @@
 #include "GraphicsPipelineBuilder.h"
 #include "Helper.h"
 #include "TextureBank.h"
-#include "Error.h"
-#include "ErrorCheck.h"
+#include "BunnyError.h"
+#include "VulkanError.h"
 
 namespace Bunny
 {

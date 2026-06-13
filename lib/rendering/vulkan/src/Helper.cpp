@@ -1,6 +1,6 @@
 #include "Helper.h"
 
-#include "ErrorCheck.h"
+#include "VulkanError.h"
 
 namespace Bunny
 {

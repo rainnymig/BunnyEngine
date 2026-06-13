@@ -4,7 +4,7 @@
 #include "VulkanGraphicsRenderer.h"
 #include "Descriptor.h"
 #include "GraphicsPipelineBuilder.h"
-#include "Error.h"
+#include "BunnyError.h"
 #include "TextureBank.h"
 #include "ImguiHelper.h"
 

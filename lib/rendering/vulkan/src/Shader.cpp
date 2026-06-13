@@ -1,6 +1,6 @@
 #include "Shader.h"
 
-#include "Error.h"
+#include "BunnyError.h"
 
 #include <fstream>
 

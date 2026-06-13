@@ -9,7 +9,6 @@ target_sources(VulkanRenderer
         headers/DeferredShadingPass.h
         headers/DepthReducePass.h
         headers/Descriptor.h
-        headers/ErrorCheck.h
         headers/FinalOutputPass.h
         headers/Fundamentals.h
         headers/GBufferPass.h
@@ -32,6 +31,7 @@ target_sources(VulkanRenderer
         headers/TransparencyAccumulatePass.h
         headers/TransparencyCompositePass.h
         headers/Vertex.h
+        headers/VulkanError.h
         headers/VulkanGraphicsRenderer.h
         headers/VulkanRenderResources.h
         headers/WaveSpectrumPrePass.h

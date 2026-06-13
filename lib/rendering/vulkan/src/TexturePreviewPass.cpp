@@ -6,7 +6,7 @@
 #include "GraphicsPipelineBuilder.h"
 #include "Shader.h"
 #include "Vertex.h"
-#include "Error.h"
+#include "BunnyError.h"
 #include "Helper.h"
 
 #include <imgui.h>

@@ -1,7 +1,7 @@
 #include "RaytracingShadowPass.h"
 
-#include "Error.h"
-#include "ErrorCheck.h"
+#include "BunnyError.h"
+#include "VulkanError.h"
 #include "MaterialBank.h"
 #include "Shader.h"
 #include "RaytracingPipelineBuilder.h"

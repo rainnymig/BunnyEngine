@@ -4,10 +4,11 @@ target_sources(Base
     PUBLIC
         headers/AlignHelpers.h
         headers/BoundingBox.h
+        headers/BunnyError.h
         headers/BunnyGuard.h
         headers/BunnyResult.h
-        headers/Error.h
         headers/FunctionStack.h
+        headers/IdType.h
         headers/ImguiHelper.h
         headers/Input.h
         headers/Queue.h
