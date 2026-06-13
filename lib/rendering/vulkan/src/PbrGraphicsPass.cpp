@@ -6,7 +6,7 @@
 
 #include <cassert>
 
-namespace Bunny::Render
+namespace Bunny
 {
 PbrGraphicsPass::PbrGraphicsPass(const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer,
     const PbrMaterialBank* materialBank, const MeshBank<NormalVertex>* meshBank)
@@ -94,4 +94,4 @@ BunnyResult PbrGraphicsPass::buildComputePipeline(std::string_view shaderPath,
 
     return BUNNY_HAPPY;
 }
-} // namespace Bunny::Render
+} // namespace Bunny

@@ -9,7 +9,7 @@
 #include <glm/vec4.hpp>
 #include <volk.h>
 
-namespace Bunny::Render
+namespace Bunny
 {
 //  non PBR legacy
 struct SceneData
@@ -74,7 +74,7 @@ struct SurfaceData
 
 struct MeshData
 {
-    Base::BoundingSphere mBoundingSphere;
+    BoundingSphere mBoundingSphere;
     uint32_t mFirstSurface; //  the index of the first surface into the surface data array
     uint32_t mSurfaceCount; //  the number of surfaces of the mesh
     uint32_t mPadding;
@@ -87,4 +87,4 @@ struct VertexIndexBufferData
     VkDeviceAddress mIndexBufferAddress;
 };
 
-} // namespace Bunny::Render
+} // namespace Bunny

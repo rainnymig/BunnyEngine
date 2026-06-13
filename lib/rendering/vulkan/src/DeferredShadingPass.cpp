@@ -7,7 +7,7 @@
 #include "ShaderData.h"
 #include "Helper.h"
 
-namespace Bunny::Render
+namespace Bunny
 {
 DeferredShadingPass::DeferredShadingPass(
     const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer)
@@ -245,4 +245,4 @@ void DeferredShadingPass::buildScreenQuad()
         VMA_ALLOCATION_CREATE_MAPPED_BIT, VMA_MEMORY_USAGE_GPU_ONLY, mIndexBuffer);
 }
 
-} // namespace Bunny::Render
+} // namespace Bunny

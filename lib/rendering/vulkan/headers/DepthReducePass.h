@@ -8,7 +8,7 @@
 #include <array>
 #include <string>
 
-namespace Bunny::Render
+namespace Bunny
 {
 class VulkanRenderResources;
 class VulkanGraphicsRenderer;
@@ -66,4 +66,4 @@ class DepthReducePass
 
     std::string mShaderPath{"./reduce_depth_comp.spv"};
 };
-} // namespace Bunny::Render
+} // namespace Bunny

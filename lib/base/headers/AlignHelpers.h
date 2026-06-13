@@ -3,7 +3,7 @@
 #include <concepts>
 #include <cassert>
 
-namespace Bunny::Base
+namespace Bunny
 {
 //  taken from https://github.com/nvpro-samples/nvpro_core/blob/master/nvh/alignment.hpp
 
@@ -23,4 +23,4 @@ constexpr IntegralType alignDown(IntegralType x, size_t a)
     return IntegralType(x & ~IntegralType(a - 1));
 }
 
-} // namespace Bunny::Base
+} // namespace Bunny

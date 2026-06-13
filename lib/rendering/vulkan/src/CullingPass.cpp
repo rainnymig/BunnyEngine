@@ -11,7 +11,7 @@
 
 #include <array>
 
-namespace Bunny::Render
+namespace Bunny
 {
 CullingPass::CullingPass(const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer,
     const MeshBank<NormalVertex>* meshBank)
@@ -352,4 +352,4 @@ BunnyResult CullingPass::initPipeline()
     return BUNNY_HAPPY;
 }
 
-} // namespace Bunny::Render
+} // namespace Bunny

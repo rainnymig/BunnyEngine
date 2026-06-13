@@ -3,7 +3,7 @@
 #include <GLFW/glfw3.h>
 #include <memory>
 
-namespace Bunny::Render
+namespace Bunny
 {
 class Renderer
 {
@@ -18,4 +18,4 @@ class RendererFactory
   public:
     virtual std::unique_ptr<Renderer> makeRenderer(GLFWwindow* window) = 0;
 };
-} // namespace Bunny::Render
+} // namespace Bunny

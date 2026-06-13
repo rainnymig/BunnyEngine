@@ -5,7 +5,7 @@
 
 #include <limits>
 
-namespace Bunny::Render
+namespace Bunny
 {
 struct AllocatedImage
 {
@@ -37,4 +37,4 @@ using IdType = uint32_t;
 //  114514
 static constexpr IdType BUNNY_INVALID_ID = 114514;
 
-} // namespace Bunny::Render
+} // namespace Bunny

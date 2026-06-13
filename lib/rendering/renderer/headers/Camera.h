@@ -5,7 +5,7 @@
 #include <glm/trigonometric.hpp>
 #include <glm/matrix.hpp>
 
-namespace Bunny::Render
+namespace Bunny
 {
 
 struct FrustumPlane
@@ -102,4 +102,4 @@ class PhysicalCamera : public Camera
     float mIso = 100;
 };
 
-} // namespace Bunny::Render
+} // namespace Bunny

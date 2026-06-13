@@ -7,7 +7,7 @@
 #include "GraphicsPipelineBuilder.h"
 #include "Helper.h"
 
-namespace Bunny::Render
+namespace Bunny
 {
 GBufferPass::GBufferPass(const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer,
     const MeshBank<NormalVertex>* meshBank)
@@ -121,7 +121,7 @@ void GBufferPass::linkSceneData(const AllocatedBuffer& sceneBuffer)
 
 void GBufferPass::linkObjectData(const AllocatedBuffer& objectBuffer, size_t bufferSize)
 {
-    Render::DescriptorWriter writer;
+    DescriptorWriter writer;
     writer.writeBuffer(0, objectBuffer.mBuffer, bufferSize, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     for (VkDescriptorSet set : mObjectDescSets)
     {
@@ -305,4 +305,4 @@ void GBufferPass::createImages()
     }
 }
 
-} // namespace Bunny::Render
+} // namespace Bunny

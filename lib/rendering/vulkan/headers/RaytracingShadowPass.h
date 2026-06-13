@@ -9,7 +9,7 @@
 
 #include <array>
 
-namespace Bunny::Render
+namespace Bunny
 {
 class RaytracingShadowPass : public PbrGraphicsPass
 {
@@ -72,4 +72,4 @@ class RaytracingShadowPass : public PbrGraphicsPass
     std::array<FrameData, MAX_FRAMES_IN_FLIGHT> mFrameData;
 };
 
-} // namespace Bunny::Render
+} // namespace Bunny

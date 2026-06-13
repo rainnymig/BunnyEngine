@@ -7,17 +7,17 @@
 
 #include <entt/entt.hpp>
 
-namespace Bunny::Engine
+namespace Bunny
 {
 struct TransformComponent
 {
-    Base::Transform mTransform;
+    Transform mTransform;
 };
 
 struct MeshComponent
 {
-    Render::IdType mMeshId;
-    Render::IdType mMaterialId;
+    IdType mMeshId;
+    IdType mMaterialId;
 };
 
 struct HierarchyComponent
@@ -27,21 +27,21 @@ struct HierarchyComponent
 
 struct DirectionLightComponent
 {
-    Render::DirectionalLight mLight;
+    DirectionalLight mLight;
 };
 
 struct PbrLightComponent
 {
-    Render::PbrLight mLight;
+    PbrLight mLight;
 };
 
 struct CameraComponent
 {
-    Render::Camera mCamera;
+    Camera mCamera;
 };
 
 struct PbrCameraComponent
 {
-    Render::PhysicalCamera mCamera;
+    PhysicalCamera mCamera;
 };
-} // namespace Bunny::Engine
+} // namespace Bunny

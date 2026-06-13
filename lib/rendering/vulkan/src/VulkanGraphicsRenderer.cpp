@@ -14,7 +14,7 @@
 #include <cassert>
 #include <unordered_map>
 
-namespace Bunny::Render
+namespace Bunny
 {
 
 VkSampleCountFlagBits getVkSampleCountFromInt(int sampleCount)
@@ -570,7 +570,7 @@ VkExtent2D VulkanGraphicsRenderer::chooseSwapExtent(const VkSurfaceCapabilitiesK
     }
 }
 
-VkFormat Bunny::Render::VulkanGraphicsRenderer::findDepthFormat() const
+VkFormat Bunny::VulkanGraphicsRenderer::findDepthFormat() const
 {
     std::array<VkFormat, 3> candidates{VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT};
     return mRenderResources->findSupportedFormat(
@@ -578,7 +578,7 @@ VkFormat Bunny::Render::VulkanGraphicsRenderer::findDepthFormat() const
 }
 
 VulkanGraphicsRenderer::RenderHelper::RenderHelper(
-    const VulkanGraphicsRenderer* renderer, Base::BunnyGuard<VulkanGraphicsRenderer> guard)
+    const VulkanGraphicsRenderer* renderer, BunnyGuard<VulkanGraphicsRenderer> guard)
     : mRenderer(renderer)
 {
 }
@@ -672,4 +672,4 @@ VulkanGraphicsRenderer::RenderHelper& VulkanGraphicsRenderer::RenderHelper::setD
     return *this;
 }
 
-} // namespace Bunny::Render
+} // namespace Bunny

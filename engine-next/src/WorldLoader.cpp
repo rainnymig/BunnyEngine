@@ -19,11 +19,11 @@
 #include <variant>
 #include <unordered_map>
 
-namespace Bunny::Engine
+namespace Bunny
 {
 
-WorldLoader::WorldLoader(const Render::VulkanRenderResources* vulkanResources, Render::PbrMaterialBank* pbrMaterialBank,
-    Render::MeshBank<Render::NormalVertex>* meshBank, Render::TextureBank* textureBank)
+WorldLoader::WorldLoader(const VulkanRenderResources* vulkanResources, PbrMaterialBank* pbrMaterialBank,
+    MeshBank<NormalVertex>* meshBank, TextureBank* textureBank)
     : mVulkanResources(vulkanResources),
       mPbrMaterialBank(pbrMaterialBank),
       mMeshBank(meshBank),
@@ -66,7 +66,7 @@ BunnyResult WorldLoader::loadPbrTestWorldWithGltfMeshes(std::string_view filePat
         if (camComps.empty())
         {
             const auto cameraEntity = outWorld.mEntityRegistry.create();
-            Render::PhysicalCamera camera({0, 3, -10}, {0, 0, 0});
+            PhysicalCamera camera({0, 3, -10}, {0, 0, 0});
             camera.setAperture(4);
             camera.setShutterTime(1.0f / 2000);
             outWorld.mEntityRegistry.emplace<PbrCameraComponent>(cameraEntity, camera);
@@ -76,12 +76,12 @@ BunnyResult WorldLoader::loadPbrTestWorldWithGltfMeshes(std::string_view filePat
     //  light
     {
         const auto lightEntity = outWorld.mEntityRegistry.create();
-        Render::PbrLight light{
+        PbrLight light{
             .mDirOrPos = glm::normalize(glm::vec3{-1,   -3,   -2  }
               ),
             .mIntensity = 100000, //  10AM sun light
             .mColor = {1.0f, 1.0f, 1.0f},
-            .mType = Render::LightType::Directional,
+            .mType = LightType::Directional,
         };
         outWorld.mEntityRegistry.emplace<PbrLightComponent>(lightEntity, light);
     }
@@ -91,7 +91,7 @@ BunnyResult WorldLoader::loadPbrTestWorldWithGltfMeshes(std::string_view filePat
     return BUNNY_HAPPY;
 }
 
-void Engine::WorldLoader::postLoad(World& outWorld)
+void WorldLoader::postLoad(World& outWorld)
 {
     //  sort the meshes and transform component according to mesh id
     //  to prepare them for rendering
@@ -111,7 +111,7 @@ void WorldLoader::loadWorldStructure(fastgltf::Asset& gltfAsset, World& outWorld
         const fastgltf::Node& gltfNode = gltfAsset.nodes[idx];
 
         const auto nodeEntity = outWorld.mEntityRegistry.create();
-        Base::Transform transform;
+        Transform transform;
         glm::vec3 camPos;
         glm::vec3 camEuler;
         std::visit(fastgltf::visitor{[&](fastgltf::math::fmat4x4 matrix) {
@@ -119,7 +119,7 @@ void WorldLoader::loadWorldStructure(fastgltf::Asset& gltfAsset, World& outWorld
                                              matrix[1][0], matrix[1][1], matrix[1][2], matrix[1][3], matrix[2][0],
                                              matrix[2][1], matrix[2][2], matrix[2][3], matrix[3][0], matrix[3][1],
                                              matrix[3][2], matrix[3][3]);
-                                         transform = Base::Transform(matrixGLM);
+                                         transform = Transform(matrixGLM);
                                      },
                        [&](fastgltf::TRS trs) {
                            glm::vec3 tl(trs.translation[0], trs.translation[1], trs.translation[2]);
@@ -129,7 +129,7 @@ void WorldLoader::loadWorldStructure(fastgltf::Asset& gltfAsset, World& outWorld
                            camPos = tl;
                            camEuler = glm::eulerAngles(rot);
 
-                           transform = Base::Transform(tl, rot, sc);
+                           transform = Transform(tl, rot, sc);
                        }},
             gltfNode.transform);
 
@@ -140,11 +140,11 @@ void WorldLoader::loadWorldStructure(fastgltf::Asset& gltfAsset, World& outWorld
         if (gltfNode.meshIndex.has_value())
         {
             outWorld.mEntityRegistry.emplace<MeshComponent>(
-                nodeEntity, static_cast<Render::IdType>(gltfNode.meshIndex.value()), 0u);
+                nodeEntity, static_cast<IdType>(gltfNode.meshIndex.value()), 0u);
         }
         else if (gltfNode.cameraIndex.has_value())
         {
-            Render::PhysicalCamera camera(camPos, camEuler);
+            PhysicalCamera camera(camPos, camEuler);
             camera.setAperture(4);
             camera.setShutterTime(1.0f / 2000);
             outWorld.mEntityRegistry.emplace<PbrCameraComponent>(nodeEntity, camera);
@@ -168,4 +168,4 @@ void WorldLoader::loadWorldStructure(fastgltf::Asset& gltfAsset, World& outWorld
     }
 }
 
-} // namespace Bunny::Engine
+} // namespace Bunny

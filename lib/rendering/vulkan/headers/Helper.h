@@ -15,7 +15,7 @@
 #include <memory>
 #include <span>
 
-namespace Bunny::Render
+namespace Bunny
 {
 VkCommandPoolCreateInfo makeCommandPoolCreateInfo(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flags = 0);
 VkCommandBufferAllocateInfo makeCommandBufferAllocateInfo(VkCommandPool commandPool, uint32_t bufferCount = 1);
@@ -63,4 +63,4 @@ size_t getContainerDataSize(const ContainerT& container)
     return container.size() * sizeof(typename ContainerT::value_type);
 }
 
-} // namespace Bunny::Render
+} // namespace Bunny

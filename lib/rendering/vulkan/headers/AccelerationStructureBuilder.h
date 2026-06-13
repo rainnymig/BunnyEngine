@@ -15,7 +15,7 @@
 #include <iterator>
 #include <cassert>
 
-namespace Bunny::Render
+namespace Bunny
 {
 
 class AccelerationStructureBuilder
@@ -181,4 +181,4 @@ inline void AccelerationStructureBuilder::buildTopLevelAcceStructFromInstances(
     mVulkanResources->destroyBuffer(instanceBuffer);
 }
 
-} // namespace Bunny::Render
+} // namespace Bunny

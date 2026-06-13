@@ -9,19 +9,19 @@
 
 #include <unordered_map>
 
-namespace Bunny::Render
+namespace Bunny
 {
 class VulkanRenderResources;
 class VulkanGraphicsRenderer;
-} // namespace Bunny::Render
+} // namespace Bunny
 
-namespace Bunny::Engine
+namespace Bunny
 {
 class WorldRenderDataTranslator
 {
   public:
-    WorldRenderDataTranslator(const Render::VulkanRenderResources* vulkanResources,
-        const Render::VulkanGraphicsRenderer* renderer, const Render::MeshBank<Render::NormalVertex>* meshBank);
+    WorldRenderDataTranslator(const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer,
+        const MeshBank<NormalVertex>* meshBank);
 
     BunnyResult initialize();
     BunnyResult updatePbrWorldData(const World* world); //  update camera and light data
@@ -29,14 +29,14 @@ class WorldRenderDataTranslator
     BunnyResult initObjectDataBuffer(const World* world);
     void cleanup();
 
-    const Render::AllocatedBuffer& getObjectBuffer() const { return mObjectDataBuffer; }
-    const Render::AllocatedBuffer& getPbrCameraBuffer() const { return mPbrCameraBuffer; }
-    const Render::AllocatedBuffer& getPbrLightBuffer() const { return mPbrLightBuffer; }
-    const size_t getObjectBufferSize() const { return mObjectData.size() * sizeof(Render::ObjectData); }
+    const AllocatedBuffer& getObjectBuffer() const { return mObjectDataBuffer; }
+    const AllocatedBuffer& getPbrCameraBuffer() const { return mPbrCameraBuffer; }
+    const AllocatedBuffer& getPbrLightBuffer() const { return mPbrLightBuffer; }
+    const size_t getObjectBufferSize() const { return mObjectData.size() * sizeof(ObjectData); }
     const uint32_t getObjectCount() const { return mObjectData.size(); }
-    const std::vector<Render::ObjectData>& getObjectData() const { return mObjectData; }
+    const std::vector<ObjectData>& getObjectData() const { return mObjectData; }
 
-    const std::unordered_map<Render::IdType, size_t>& getMeshInstanceCounts() const { return mMeshInstanceCounts; }
+    const std::unordered_map<IdType, size_t>& getMeshInstanceCounts() const { return mMeshInstanceCounts; }
 
     void showImguiControlPanel(World* world);
 
@@ -44,19 +44,19 @@ class WorldRenderDataTranslator
     static void getEntityGlobalTransform(const entt::registry& registry, entt::entity entity,
         const glm::mat4x4& transform, const glm::vec3& scale, glm::mat4x4& outTransform, glm::vec3& outScale);
 
-    const Render::VulkanRenderResources* mVulkanResources;
-    const Render::VulkanGraphicsRenderer* mRenderer;
-    const Render::MeshBank<Render::NormalVertex>* mMeshBank;
+    const VulkanRenderResources* mVulkanResources;
+    const VulkanGraphicsRenderer* mRenderer;
+    const MeshBank<NormalVertex>* mMeshBank;
 
-    Render::AllocatedBuffer mObjectDataBuffer;
-    std::vector<Render::ObjectData> mObjectData;
+    AllocatedBuffer mObjectDataBuffer;
+    std::vector<ObjectData> mObjectData;
 
-    std::unordered_map<Render::IdType, size_t> mMeshInstanceCounts;
+    std::unordered_map<IdType, size_t> mMeshInstanceCounts;
 
     //  PBR
-    Render::AllocatedBuffer mPbrCameraBuffer;
-    Render::AllocatedBuffer mPbrLightBuffer;
-    Render::PbrCameraData mPbrCameraData;
-    Render::PbrLightData mPbrLightData;
+    AllocatedBuffer mPbrCameraBuffer;
+    AllocatedBuffer mPbrLightBuffer;
+    PbrCameraData mPbrCameraData;
+    PbrLightData mPbrLightData;
 };
-} // namespace Bunny::Engine
+} // namespace Bunny

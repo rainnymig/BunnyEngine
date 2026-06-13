@@ -5,7 +5,7 @@
 
 #include <array>
 
-namespace Bunny::Render
+namespace Bunny
 {
 class TransparencyCompositePass : public PbrGraphicsPass
 {
@@ -62,4 +62,4 @@ class TransparencyCompositePass : public PbrGraphicsPass
     };
     std::array<uint32_t, 6> mIndexData{0, 3, 1, 1, 3, 2};
 };
-} // namespace Bunny::Render
+} // namespace Bunny

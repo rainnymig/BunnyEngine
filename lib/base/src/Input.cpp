@@ -8,7 +8,7 @@
 #include <functional>
 #include <cassert>
 
-namespace Bunny::Base
+namespace Bunny
 {
 InputManager* InputManager::msKeyReceiverInstance = nullptr;
 
@@ -67,4 +67,4 @@ void InputManager::onMousePositionCallback(GLFWwindow* window, double xpos, doub
 {
 }
 
-} // namespace Bunny::Base
+} // namespace Bunny

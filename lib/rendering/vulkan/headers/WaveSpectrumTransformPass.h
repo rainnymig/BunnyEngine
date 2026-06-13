@@ -10,7 +10,7 @@
 #include <array>
 #include <string_view>
 
-namespace Bunny::Render
+namespace Bunny
 {
 class WaveSpectrumTransformPass : public PbrGraphicsPass
 {
@@ -127,4 +127,4 @@ class WaveSpectrumTransformPass : public PbrGraphicsPass
 
     bool mFreezeWaveTime = false;
 };
-} // namespace Bunny::Render
+} // namespace Bunny

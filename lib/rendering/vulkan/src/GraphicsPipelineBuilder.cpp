@@ -2,7 +2,7 @@
 
 #include "Helper.h"
 
-namespace Bunny::Render
+namespace Bunny
 {
 GraphicsPipelineBuilder::GraphicsPipelineBuilder()
 {
@@ -191,4 +191,4 @@ void GraphicsPipelineBuilder::addColorAttachmentWithBlend(
     mColorBlendStates.emplace_back(blendState);
 }
 
-} // namespace Bunny::Render
+} // namespace Bunny

@@ -1,6 +1,6 @@
 #include "Vertex.h"
 
-namespace Bunny::Render
+namespace Bunny
 {
 size_t NormalVertex::Hash::operator()(const NormalVertex& v) const
 {
@@ -9,4 +9,4 @@ size_t NormalVertex::Hash::operator()(const NormalVertex& v) const
     return hashf{}(v.mPosition.x) ^ hashf {}(v.mPosition.y) ^ hashf {}(v.mPosition.z) ^ hashf {}(v.mNormal.x) ^
            hashf {}(v.mNormal.y) ^ hashf {}(v.mNormal.z);
 };
-} // namespace Bunny::Render
+} // namespace Bunny

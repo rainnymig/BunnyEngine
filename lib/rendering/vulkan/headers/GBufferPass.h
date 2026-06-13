@@ -11,7 +11,7 @@
 #include <array>
 #include <string>
 
-namespace Bunny::Render
+namespace Bunny
 {
 
 class VulkanRenderResources;
@@ -76,4 +76,4 @@ class GBufferPass
     std::string mVertexShaderPath{"./culled_instanced_vert.spv"};
     std::string mFragmentShaderPath{"./gbuffer_frag.spv"};
 };
-} // namespace Bunny::Render
+} // namespace Bunny

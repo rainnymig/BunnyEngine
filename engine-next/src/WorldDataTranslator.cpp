@@ -7,11 +7,11 @@
 
 #include <imgui.h>
 
-namespace Bunny::Engine
+namespace Bunny
 {
 
-WorldRenderDataTranslator::WorldRenderDataTranslator(const Render::VulkanRenderResources* vulkanResources,
-    const Render::VulkanGraphicsRenderer* renderer, const Render::MeshBank<Render::NormalVertex>* meshBank)
+WorldRenderDataTranslator::WorldRenderDataTranslator(const VulkanRenderResources* vulkanResources,
+    const VulkanGraphicsRenderer* renderer, const MeshBank<NormalVertex>* meshBank)
     : mVulkanResources(vulkanResources),
       mRenderer(renderer),
       mMeshBank(meshBank)
@@ -21,11 +21,11 @@ WorldRenderDataTranslator::WorldRenderDataTranslator(const Render::VulkanRenderR
 BunnyResult WorldRenderDataTranslator::initialize()
 {
     //  PBR
-    mPbrCameraBuffer = mVulkanResources->createBuffer(sizeof(Render::PbrCameraData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+    mPbrCameraBuffer = mVulkanResources->createBuffer(sizeof(PbrCameraData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
         VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
         VMA_MEMORY_USAGE_AUTO);
 
-    mPbrLightBuffer = mVulkanResources->createBuffer(sizeof(Render::PbrLightData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+    mPbrLightBuffer = mVulkanResources->createBuffer(sizeof(PbrLightData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
         VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
         VMA_MEMORY_USAGE_AUTO);
 
@@ -56,7 +56,7 @@ BunnyResult WorldRenderDataTranslator::updatePbrWorldData(const World* world)
 
     {
         void* mappedCameraData = mPbrCameraBuffer.mAllocationInfo.pMappedData;
-        memcpy(mappedCameraData, &mPbrCameraData, sizeof(Render::PbrCameraData));
+        memcpy(mappedCameraData, &mPbrCameraData, sizeof(PbrCameraData));
     }
 
     const auto lightComps = world->mEntityRegistry.view<PbrLightComponent>();
@@ -75,7 +75,7 @@ BunnyResult WorldRenderDataTranslator::updatePbrWorldData(const World* world)
 
     {
         void* mappedLightData = mPbrLightBuffer.mAllocationInfo.pMappedData;
-        memcpy(mappedLightData, &mPbrLightData, sizeof(Render::PbrLightData));
+        memcpy(mappedLightData, &mPbrLightData, sizeof(PbrLightData));
     }
 
     return BUNNY_HAPPY;
@@ -92,8 +92,8 @@ BunnyResult WorldRenderDataTranslator::updateObjectData(const World* world)
         getEntityGlobalTransform(
             world->mEntityRegistry, entity, transform.mTransform.mMatrix, transform.mTransform.mScale, modelMat, scale);
         glm::mat4 invTransModel = glm::transpose(glm::inverse(modelMat));
-        const Render::MeshLite& meshLite = mMeshBank->getMesh(mesh.mMeshId);
-        Render::ObjectData& obj = mObjectData[idx];
+        const MeshLite& meshLite = mMeshBank->getMesh(mesh.mMeshId);
+        ObjectData& obj = mObjectData[idx];
         obj.model = modelMat;
         obj.invTransModel = invTransModel;
         obj.scale = scale;
@@ -106,7 +106,7 @@ BunnyResult WorldRenderDataTranslator::updateObjectData(const World* world)
 
     {
         void* mappedObjectData = mObjectDataBuffer.mAllocationInfo.pMappedData;
-        memcpy(mappedObjectData, mObjectData.data(), mObjectData.size() * sizeof(Render::ObjectData));
+        memcpy(mappedObjectData, mObjectData.data(), mObjectData.size() * sizeof(ObjectData));
     }
 
     return BUNNY_HAPPY;
@@ -125,7 +125,7 @@ BunnyResult WorldRenderDataTranslator::initObjectDataBuffer(const World* world)
         getEntityGlobalTransform(
             world->mEntityRegistry, entity, transform.mTransform.mMatrix, transform.mTransform.mScale, modelMat, scale);
         glm::mat4 invTransModel = glm::transpose(glm::inverse(modelMat));
-        const Render::MeshLite& meshLite = mMeshBank->getMesh(mesh.mMeshId);
+        const MeshLite& meshLite = mMeshBank->getMesh(mesh.mMeshId);
         mObjectData.emplace_back(modelMat, invTransModel, scale, mesh.mMeshId, mesh.mMaterialId, 0,
             meshLite.mSurfaces[0].mFirstIndex); //  for now just take the first index of the first surface
 
@@ -137,15 +137,15 @@ BunnyResult WorldRenderDataTranslator::initObjectDataBuffer(const World* world)
     {
         mVulkanResources->destroyBuffer(mObjectDataBuffer);
     }
-    mObjectDataBuffer = mVulkanResources->createBuffer(mObjectData.size() * sizeof(Render::ObjectData),
-        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-        VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT |
-            VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT,
-        VMA_MEMORY_USAGE_AUTO);
+    mObjectDataBuffer =
+        mVulkanResources->createBuffer(mObjectData.size() * sizeof(ObjectData), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+            VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT |
+                VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT,
+            VMA_MEMORY_USAGE_AUTO);
 
     {
         void* mappedObjectData = mObjectDataBuffer.mAllocationInfo.pMappedData;
-        memcpy(mappedObjectData, mObjectData.data(), mObjectData.size() * sizeof(Render::ObjectData));
+        memcpy(mappedObjectData, mObjectData.data(), mObjectData.size() * sizeof(ObjectData));
     }
 
     return BUNNY_HAPPY;
@@ -191,7 +191,7 @@ void WorldRenderDataTranslator::showImguiControlPanel(World* world)
             //  (need proper handling to normalize direction)
             ImGui::DragFloat("Intensity", &pbrLight.mIntensity, 10, 0, 200000, "%.1f");
             ImGui::DragFloat3("Color", &pbrLight.mColor.x, 0.01f, 0, 1, "%.2f");
-            if (pbrLight.mType == Render::LightType::Directional)
+            if (pbrLight.mType == LightType::Directional)
             {
                 ImGui::DragFloat3("Direction", &pbrLight.mDirOrPos.x, 0.01f);
                 pbrLight.mDirOrPos = glm::normalize(pbrLight.mDirOrPos);
@@ -229,4 +229,4 @@ void WorldRenderDataTranslator::getEntityGlobalTransform(const entt::registry& r
     }
 }
 
-} // namespace Bunny::Engine
+} // namespace Bunny

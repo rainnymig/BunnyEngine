@@ -8,9 +8,9 @@
 #include <VkBootstrap.h>
 #include <cassert>
 
-namespace Bunny::Render
+namespace Bunny
 {
-BunnyResult VulkanRenderResources::initialize(Base::Window* window)
+BunnyResult VulkanRenderResources::initialize(Window* window)
 {
     assert(window != nullptr);
     mWindow = window;
@@ -635,4 +635,4 @@ BunnyResult VulkanRenderResources::endAndSubmitImmediateCommand(CommandQueueType
     return BUNNY_HAPPY;
 }
 
-} // namespace Bunny::Render
+} // namespace Bunny

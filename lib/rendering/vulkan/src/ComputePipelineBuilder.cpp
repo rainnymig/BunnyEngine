@@ -2,7 +2,7 @@
 
 #include "Helper.h"
 
-namespace Bunny::Render
+namespace Bunny
 {
 void ComputePipelineBuilder::setShader(VkShaderModule computeShader)
 {
@@ -32,4 +32,4 @@ VkPipeline ComputePipelineBuilder::build(VkDevice device)
     }
 }
 
-} // namespace Bunny::Render
+} // namespace Bunny

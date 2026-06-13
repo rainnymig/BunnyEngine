@@ -9,7 +9,7 @@
 #include "GraphicsPipelineBuilder.h"
 #include "Helper.h"
 
-namespace Bunny::Render
+namespace Bunny
 {
 PbrForwardPass::PbrForwardPass(const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer,
     const PbrMaterialBank* materialBank, const MeshBank<NormalVertex>* meshBank, std::string_view vertShader,
@@ -196,7 +196,7 @@ void PbrForwardPass::linkWorldData(const AllocatedBuffer& lightData, const Alloc
 
 void PbrForwardPass::linkObjectData(const AllocatedBuffer& objectBuffer, size_t bufferSize)
 {
-    Render::DescriptorWriter writer;
+    DescriptorWriter writer;
     writer.writeBuffer(0, objectBuffer.mBuffer, bufferSize, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     for (const FrameData& frame : mFrameData)
     {
@@ -206,7 +206,7 @@ void PbrForwardPass::linkObjectData(const AllocatedBuffer& objectBuffer, size_t 
 
 void PbrForwardPass::linkShadowData(std::array<VkImageView, MAX_FRAMES_IN_FLIGHT> shadowImageViews)
 {
-    Render::DescriptorWriter writer;
+    DescriptorWriter writer;
     VkDevice device = mVulkanResources->getDevice();
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
     {
@@ -302,4 +302,4 @@ BunnyResult PbrForwardPass::initDataAndResources()
 {
     return BUNNY_HAPPY;
 }
-} // namespace Bunny::Render
+} // namespace Bunny

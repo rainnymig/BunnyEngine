@@ -6,7 +6,7 @@
 #include <GLFW/glfw3.h>
 #include <string>
 
-namespace Bunny::Base
+namespace Bunny
 {
 class Window
 {
@@ -38,4 +38,4 @@ class Window
   private:
     GLFWwindow* mGlfwWindow = nullptr;
 };
-} // namespace Bunny::Base
+} // namespace Bunny

@@ -8,13 +8,13 @@
 #include <imgui.h>
 #include <vector>
 
-namespace Bunny::Render
+namespace Bunny
 {
 
 static constexpr uint32_t DIRECTION_ROW = 0;
 static constexpr uint32_t DIRECTION_COLUMN = 1;
 
-Render::WaveSpectrumTransformPass::WaveSpectrumTransformPass(const VulkanRenderResources* vulkanResources,
+WaveSpectrumTransformPass::WaveSpectrumTransformPass(const VulkanRenderResources* vulkanResources,
     const VulkanGraphicsRenderer* renderer, uint32_t size, float width, std::string_view spectrumShaderPath,
     std::string_view bitReverseShaderPath, std::string_view fftPingPongShaderPath,
     std::string_view waveConstructShaderPath)
@@ -27,7 +27,7 @@ Render::WaveSpectrumTransformPass::WaveSpectrumTransformPass(const VulkanRenderR
     updateWidth(size, width);
 }
 
-void Render::WaveSpectrumTransformPass::draw() const
+void WaveSpectrumTransformPass::draw() const
 {
     FrameData& frame = mFrameData[mRenderer->getCurrentFrameIdx()];
     VkDevice device = mVulkanResources->getDevice();
@@ -51,7 +51,7 @@ void Render::WaveSpectrumTransformPass::draw() const
     constructWave();
 }
 
-void Render::WaveSpectrumTransformPass::updateWaveTime(float time)
+void WaveSpectrumTransformPass::updateWaveTime(float time)
 {
     if (!mFreezeWaveTime)
     {
@@ -59,14 +59,14 @@ void Render::WaveSpectrumTransformPass::updateWaveTime(float time)
     }
 }
 
-void Render::WaveSpectrumTransformPass::updateWidth(uint32_t size, float width)
+void WaveSpectrumTransformPass::updateWidth(uint32_t size, float width)
 {
     mTimedSpectrumParams.mN = size;
     mTimedSpectrumParams.mWidth = width;
     mFFTParams.mN = size;
 }
 
-void Render::WaveSpectrumTransformPass::updateSpectrumImage(const AllocatedImage* spectrumImage)
+void WaveSpectrumTransformPass::updateSpectrumImage(const AllocatedImage* spectrumImage)
 {
     VkDevice device = mVulkanResources->getDevice();
     DescriptorWriter writer;
@@ -107,7 +107,7 @@ const AllocatedImage& WaveSpectrumTransformPass::getWaveNormalImage() const
     return mFrameData[mRenderer->getCurrentFrameIdx()].mWaveNormalImage;
 }
 
-BunnyResult Render::WaveSpectrumTransformPass::initPipeline()
+BunnyResult WaveSpectrumTransformPass::initPipeline()
 {
     std::vector<VkDescriptorSetLayout> descLayouts{mImageDescLayout};
     std::vector<VkPushConstantRange> pushConsts;
@@ -140,7 +140,7 @@ BunnyResult Render::WaveSpectrumTransformPass::initPipeline()
     return BUNNY_HAPPY;
 }
 
-BunnyResult Render::WaveSpectrumTransformPass::initDescriptors()
+BunnyResult WaveSpectrumTransformPass::initDescriptors()
 {
     BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(initDescriptorLayouts())
 
@@ -167,7 +167,7 @@ BunnyResult Render::WaveSpectrumTransformPass::initDescriptors()
     return BUNNY_HAPPY;
 }
 
-BunnyResult Render::WaveSpectrumTransformPass::initDataAndResources()
+BunnyResult WaveSpectrumTransformPass::initDataAndResources()
 {
     //  create image for fft result
     for (FrameData& frame : mFrameData)
@@ -225,12 +225,12 @@ BunnyResult Render::WaveSpectrumTransformPass::initDataAndResources()
 
     //  set up imgui control here
     //  might move to somewhere better later
-    Base::ImguiHelper::get().registerCommand([this]() { showImguiControlPanel(); });
+    ImguiHelper::get().registerCommand([this]() { showImguiControlPanel(); });
 
     return BUNNY_HAPPY;
 }
 
-BunnyResult Render::WaveSpectrumTransformPass::initDescriptorLayouts()
+BunnyResult WaveSpectrumTransformPass::initDescriptorLayouts()
 {
     VkDescriptorSetLayoutBinding descBinding{
         0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_COMPUTE_BIT, nullptr};
@@ -337,7 +337,7 @@ void WaveSpectrumTransformPass::computeTimedSpectrum() const
         cmd, mTimedSpectrumParams.mN / spectrumComputeSizeX, mTimedSpectrumParams.mN / spectrumComputeSizeY, 1);
 }
 
-void Render::WaveSpectrumTransformPass::fastFourierTransform(const AllocatedImage& inputImage,
+void WaveSpectrumTransformPass::fastFourierTransform(const AllocatedImage& inputImage,
     const AllocatedImage& bufferImage, uint32_t N, bool isInverse, bool& isOutputToBuffer) const
 {
     fastFourierTransformOneDir(inputImage, bufferImage, N, DIRECTION_COLUMN, isInverse, isOutputToBuffer);
@@ -355,7 +355,7 @@ void Render::WaveSpectrumTransformPass::fastFourierTransform(const AllocatedImag
     }
 }
 
-void Render::WaveSpectrumTransformPass::fastFourierTransformOneDir(const AllocatedImage& inputImage,
+void WaveSpectrumTransformPass::fastFourierTransformOneDir(const AllocatedImage& inputImage,
     const AllocatedImage& bufferImage, uint32_t N, uint32_t direction, bool isInverse, bool& isOutputToBuffer) const
 {
     VkCommandBuffer cmd = mRenderer->getCurrentCommandBuffer();
@@ -520,4 +520,4 @@ void WaveSpectrumTransformPass::showImguiControlPanel()
     ImGui::End();
 }
 
-} // namespace Bunny::Render
+} // namespace Bunny

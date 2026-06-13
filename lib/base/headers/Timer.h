@@ -7,7 +7,7 @@
 //  may need to handle cross platform in the future
 #include <windows.h>
 
-namespace Bunny::Base
+namespace Bunny
 {
 
 template <typename TimeUnit = double>
@@ -48,4 +48,4 @@ class BasicTimer : public ITTimer<TimeUnit>
     std::chrono::duration<TimeUnit> mDeltaTime{0};
 };
 
-} // namespace Bunny::Base
+} // namespace Bunny

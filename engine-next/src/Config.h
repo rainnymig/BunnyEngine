@@ -4,9 +4,9 @@
 
 #include <string>
 
-namespace Bunny::Engine
+namespace Bunny
 {
-class Config : public Base::Singleton<Config>
+class Config : public Singleton<Config>
 {
   public:
     void loadConfigFile(const std::string& path);
@@ -19,4 +19,4 @@ class Config : public Base::Singleton<Config>
     int mMultiSampleCount = 1;
 };
 
-} // namespace Bunny::Engine
+} // namespace Bunny

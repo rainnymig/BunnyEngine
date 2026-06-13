@@ -4,7 +4,7 @@
 #include <cassert>
 #endif
 
-namespace Bunny::Base
+namespace Bunny
 {
 
 std::unique_ptr<ImguiHelper> ImguiHelper::msInstance = nullptr;
@@ -21,4 +21,4 @@ void ImguiHelper::render() const
         command();
     }
 }
-} // namespace Bunny::Base
+} // namespace Bunny

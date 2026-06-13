@@ -5,7 +5,7 @@
 #include <string_view>
 #include <vector>
 
-namespace Bunny::Render
+namespace Bunny
 {
 class Shader
 {
@@ -23,4 +23,4 @@ class Shader
     VkShaderModule mShaderModule = nullptr;
     VkDevice mDevice = nullptr;
 };
-} // namespace Bunny::Render
+} // namespace Bunny

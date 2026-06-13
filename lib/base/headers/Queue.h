@@ -6,7 +6,7 @@
 #include <functional>
 #include <list>
 
-namespace Bunny::Base
+namespace Bunny
 {
 template <typename ElementT>
 class LockFreeSingleConsumerQueue
@@ -31,4 +31,4 @@ class EventQueue
     std::list<EventHandler> mHandlers;
 };
 
-} // namespace Bunny::Base
+} // namespace Bunny

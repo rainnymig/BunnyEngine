@@ -4,7 +4,7 @@
 #include <glm/matrix.hpp>
 #include <glm/gtx/quaternion.hpp>
 
-namespace Bunny::Base
+namespace Bunny
 {
 struct Transform
 {
@@ -16,4 +16,4 @@ struct Transform
     glm::mat4 mMatrix;
     glm::vec3 mScale;
 };
-} // namespace Bunny::Base
+} // namespace Bunny

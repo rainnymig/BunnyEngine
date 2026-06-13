@@ -1,6 +1,6 @@
 #include "Task.h"
 
-namespace Bunny::Utils
+namespace Bunny
 {
 void BaseTask::Run()
 {
@@ -13,4 +13,4 @@ TaskState BaseTask::GetState() const
 void BaseTask::Stop()
 {
 }
-} // namespace Bunny::Utils
+} // namespace Bunny

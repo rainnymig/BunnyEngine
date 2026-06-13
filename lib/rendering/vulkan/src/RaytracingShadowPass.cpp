@@ -14,7 +14,7 @@
 
 #include <array>
 
-namespace Bunny::Render
+namespace Bunny
 {
 RaytracingShadowPass::RaytracingShadowPass(const VulkanRenderResources* vulkanResources,
     const VulkanGraphicsRenderer* renderer, const PbrMaterialBank* materialBank, const MeshBank<NormalVertex>* meshBank)
@@ -77,7 +77,7 @@ void RaytracingShadowPass::linkWorldData(const AllocatedBuffer& lightData, const
 
 void RaytracingShadowPass::linkObjectData(const AllocatedBuffer& objectBuffer, size_t bufferSize)
 {
-    Render::DescriptorWriter writer;
+    DescriptorWriter writer;
     writer.writeBuffer(0, objectBuffer.mBuffer, bufferSize, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     for (const FrameData& frame : mFrameData)
     {
@@ -95,7 +95,7 @@ void RaytracingShadowPass::linkTopLevelAccelerationStructure(VkAccelerationStruc
     }
 }
 
-std::array<VkImageView, MAX_FRAMES_IN_FLIGHT> Render::RaytracingShadowPass::getOutImageViews() const
+std::array<VkImageView, MAX_FRAMES_IN_FLIGHT> RaytracingShadowPass::getOutImageViews() const
 {
     std::array<VkImageView, MAX_FRAMES_IN_FLIGHT> imageViews;
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
@@ -292,7 +292,7 @@ BunnyResult RaytracingShadowPass::buildRaytracingDescSetLayouts()
     return BUNNY_HAPPY;
 }
 
-BunnyResult Render::RaytracingShadowPass::buildShaderBindingTable()
+BunnyResult RaytracingShadowPass::buildShaderBindingTable()
 {
     constexpr uint32_t rayGenShaderCount = 1;
     constexpr uint32_t missShaderCount = 2;
@@ -300,15 +300,15 @@ BunnyResult Render::RaytracingShadowPass::buildShaderBindingTable()
     constexpr uint32_t handleCount = rayGenShaderCount + missShaderCount + hitShaderCount;
 
     uint32_t handleSize = mRaytracingProperties.shaderGroupHandleSize;
-    uint32_t handleAlignment = Base::alignUp(handleSize, mRaytracingProperties.shaderGroupHandleAlignment);
+    uint32_t handleAlignment = alignUp(handleSize, mRaytracingProperties.shaderGroupHandleAlignment);
     uint32_t groupAlignment = mRaytracingProperties.shaderGroupBaseAlignment;
 
     //  The size member of pRayGenShaderBindingTable must be equal to its stride member
-    mRayGenRegion.size = Base::alignUp(rayGenShaderCount * handleAlignment, groupAlignment);
+    mRayGenRegion.size = alignUp(rayGenShaderCount * handleAlignment, groupAlignment);
     mRayGenRegion.stride = mRayGenRegion.size;
-    mMissRegion.size = Base::alignUp(missShaderCount * handleAlignment, groupAlignment);
+    mMissRegion.size = alignUp(missShaderCount * handleAlignment, groupAlignment);
     mMissRegion.stride = handleAlignment;
-    mHitRegion.size = Base::alignUp(hitShaderCount * handleAlignment, groupAlignment);
+    mHitRegion.size = alignUp(hitShaderCount * handleAlignment, groupAlignment);
     mHitRegion.stride = handleAlignment;
 
     //  Get the shader group handles
@@ -363,7 +363,7 @@ void RaytracingShadowPass::queryRaytracingProperties()
     mVulkanResources->getPhysicalDeviceProperties(&mRaytracingProperties);
 }
 
-void Render::RaytracingShadowPass::resetFrameImage() const
+void RaytracingShadowPass::resetFrameImage() const
 {
     const AllocatedImage& frameImage = mFrameData[mRenderer->getCurrentFrameIdx()].mOutImage;
 
@@ -388,4 +388,4 @@ void Render::RaytracingShadowPass::resetFrameImage() const
         cmd, frameImage.mImage, frameImage.mFormat, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
 }
 
-} // namespace Bunny::Render
+} // namespace Bunny

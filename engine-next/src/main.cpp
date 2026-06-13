@@ -39,12 +39,12 @@
 #include <entt/entt.hpp>
 #include <memory>
 
-using namespace Bunny::Engine;
-using namespace Bunny::Render;
-using Bunny::Base::ImguiHelper;
-using Bunny::Base::BasicTimer;
+using namespace Bunny;
+using namespace Bunny;
+using Bunny::ImguiHelper;
+using Bunny::BasicTimer;
 
-using PbrMaterialParameters = Bunny::Render::PbrMaterialParameters;
+using PbrMaterialParameters = Bunny::PbrMaterialParameters;
 
 int main(void)
 {
@@ -59,11 +59,11 @@ int main(void)
     Config::setup();
     Config::get().loadConfigFile("./assets/config.ini");
 
-    Bunny::Base::Window window;
+    Bunny::Window window;
     window.initialize(Config::get().mWindowWidth, Config::get().mWindowHeight, Config::get().mIsFullScreen,
         Config::get().mWindowName);
 
-    Bunny::Base::InputManager inputManager;
+    Bunny::InputManager inputManager;
     inputManager.setupWithWindow(window);
 
     VulkanRenderResources renderResources;

@@ -2,7 +2,7 @@
 
 #include "Error.h"
 
-namespace Bunny::Base
+namespace Bunny
 {
 BunnyResult Window::initialize(int width, int height, bool isFullscreen, const std::string& name)
 {
@@ -85,4 +85,4 @@ Window::~Window()
     destroyAndTerminate();
 }
 
-} // namespace Bunny::Base
+} // namespace Bunny

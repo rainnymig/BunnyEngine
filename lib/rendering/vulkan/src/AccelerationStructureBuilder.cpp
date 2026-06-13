@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <iterator>
 
-namespace Bunny::Render
+namespace Bunny
 {
 AccelerationStructureBuilder::AccelerationStructureBuilder(
     const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer)
@@ -90,7 +90,7 @@ AllocatedBuffer AccelerationStructureBuilder::buildScratchBufferForAcceStruct(
     {
         //  the buffer size at this point is also the offset in the scratch buffer for each acce struct
         outScratchAddress.push_back(bufferSize);
-        VkDeviceSize alignedSize = Base::alignUp(buildData.mSizeInfo.buildScratchSize, bufferAlignment);
+        VkDeviceSize alignedSize = alignUp(buildData.mSizeInfo.buildScratchSize, bufferAlignment);
         bufferSize += alignedSize;
     }
 
@@ -348,4 +348,4 @@ void AccelerationStructureBuilder::initializeQueryPool(uint32_t queryCount)
         vkResetQueryPool(mVulkanResources->getDevice(), mQueryPool, 0, queryCount);
     }
 }
-} // namespace Bunny::Render
+} // namespace Bunny

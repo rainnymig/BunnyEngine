@@ -2,7 +2,7 @@
 
 #include "Helper.h"
 
-namespace Bunny::Render
+namespace Bunny
 {
 
 VkPipeline RaytracingPipelineBuilder::build(VkDevice device)
@@ -84,4 +84,4 @@ void RaytracingPipelineBuilder::setPipelineLayout(VkPipelineLayout pipelineLayou
     mPipelineLayout = pipelineLayout;
 }
 
-} // namespace Bunny::Render
+} // namespace Bunny

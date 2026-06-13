@@ -8,22 +8,22 @@
 #include <imgui.h>
 #include <entt/entt.hpp>
 
-namespace Bunny::Engine
+namespace Bunny
 {
-Engine::CameraSystem::CameraSystem(Base::InputManager* inputManager)
+CameraSystem::CameraSystem(InputManager* inputManager)
 {
     inputManager->registerKeyboardCallback(
-        [this](const std::string& keyName, Base::InputManager::KeyState state) { onKeyboardInput(keyName, state); });
-    Base::ImguiHelper::get().registerCommand([this]() { showImguiControlPanel(); });
+        [this](const std::string& keyName, InputManager::KeyState state) { onKeyboardInput(keyName, state); });
+    ImguiHelper::get().registerCommand([this]() { showImguiControlPanel(); });
 }
 
-void Engine::CameraSystem::update(World* world, float deltaTime)
+void CameraSystem::update(World* world, float deltaTime)
 {
     const auto camComps = world->mEntityRegistry.view<PbrCameraComponent>();
     if (!camComps.empty())
     {
         auto& cam = world->mEntityRegistry.get<PbrCameraComponent>(camComps.front());
-        Render::Camera& camera = cam.mCamera;
+        Camera& camera = cam.mCamera;
         camera.recordPrevViewProjMatrix();
 
         // camera.setDeltaRotation(glm::vec3(0, deltaTime * glm::pi<double>() / 16, 0));
@@ -32,9 +32,9 @@ void Engine::CameraSystem::update(World* world, float deltaTime)
     }
 }
 
-void Engine::CameraSystem::onKeyboardInput(const std::string& keyName, Base::InputManager::KeyState state)
+void CameraSystem::onKeyboardInput(const std::string& keyName, InputManager::KeyState state)
 {
-    if (state == Base::InputManager::KeyState::Press)
+    if (state == InputManager::KeyState::Press)
     {
         if (keyName == "w")
         {
@@ -77,7 +77,7 @@ void Engine::CameraSystem::onKeyboardInput(const std::string& keyName, Base::Inp
             mRotateVector.y = -1;
         }
     }
-    else if (state == Base::InputManager::KeyState::Release)
+    else if (state == InputManager::KeyState::Release)
     {
         if (keyName == "w" || keyName == "s")
         {
@@ -114,7 +114,7 @@ void CameraSystem::showImguiControlPanel()
     ImGui::End();
 }
 
-void Engine::ObjectRandomMovementSystem::update(World* world, float deltaTime, float time)
+void ObjectRandomMovementSystem::update(World* world, float deltaTime, float time)
 {
     static constexpr glm::vec3 maxTranslateVelocity{0, 3, 0};
     static constexpr float phaseInteval = 0.05f;
@@ -130,4 +130,4 @@ void Engine::ObjectRandomMovementSystem::update(World* world, float deltaTime, f
     }
 }
 
-} // namespace Bunny::Engine
+} // namespace Bunny

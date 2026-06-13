@@ -1,6 +1,6 @@
 #include "World.h"
 
-namespace Bunny::Engine
+namespace Bunny
 {
 
-} // namespace Bunny::Engine
+} // namespace Bunny

@@ -10,7 +10,7 @@
 #include <vector>
 #include <unordered_map>
 
-namespace Bunny::Render
+namespace Bunny
 {
 
 class VulkanRenderResources;
@@ -48,4 +48,4 @@ class TextureBank
     std::unordered_map<std::string_view, IdType> mTexturePathToIds;
     VkSampler mImageSampler;
 };
-} // namespace Bunny::Render
+} // namespace Bunny

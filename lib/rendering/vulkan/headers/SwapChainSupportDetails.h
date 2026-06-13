@@ -3,7 +3,7 @@
 #include <volk.h>
 #include <vector>
 
-namespace Bunny::Render
+namespace Bunny
 {
 struct SwapChainSupportDetails
 {
@@ -11,4 +11,4 @@ struct SwapChainSupportDetails
     std::vector<VkSurfaceFormatKHR> formats;
     std::vector<VkPresentModeKHR> presentModes;
 };
-} // namespace Bunny::Render
+} // namespace Bunny

@@ -12,7 +12,7 @@
 #include <array>
 #include <span>
 
-namespace Bunny::Render
+namespace Bunny
 {
 class VulkanRenderResources;
 
@@ -22,7 +22,7 @@ class VulkanGraphicsRenderer
     class RenderHelper
     {
       public:
-        RenderHelper(const VulkanGraphicsRenderer* renderer, Base::BunnyGuard<VulkanGraphicsRenderer> guard);
+        RenderHelper(const VulkanGraphicsRenderer* renderer, BunnyGuard<VulkanGraphicsRenderer> guard);
         RenderHelper& beginRender();
         void finishRender();
 
@@ -151,6 +151,6 @@ class VulkanGraphicsRenderer
 
     bool mFrameBufferResized = false;
 
-    Base::FunctionStack<> mDeletionStack;
+    FunctionStack<> mDeletionStack;
 };
-} // namespace Bunny::Render
+} // namespace Bunny

@@ -11,7 +11,7 @@
 
 #include <imgui.h>
 
-namespace Bunny::Render
+namespace Bunny
 {
 
 //  hack, for imgui list
@@ -384,4 +384,4 @@ BunnyResult TexturePreviewPass::initDescriptorLayouts()
 
     return BUNNY_HAPPY;
 }
-} // namespace Bunny::Render
+} // namespace Bunny

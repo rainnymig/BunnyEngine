@@ -2,14 +2,14 @@
 
 #include <inicpp.h>
 
-namespace Bunny::Base
+namespace Bunny
 {
 //  to avoid Error C2888
 //  A symbol belonging to namespace A must be defined in a namespace that encloses A.
-std::unique_ptr<Bunny::Engine::Config> Bunny::Engine::Config::msInstance = nullptr;
-} // namespace Bunny::Base
+std::unique_ptr<Bunny::Config> Bunny::Config::msInstance = nullptr;
+} // namespace Bunny
 
-namespace Bunny::Engine
+namespace Bunny
 {
 void Config::loadConfigFile(const std::string& path)
 {
@@ -24,4 +24,4 @@ void Config::loadConfigFile(const std::string& path)
     mMultiSampleCount = basicSection["multiSampleCount"].as<int>();
 }
 
-} // namespace Bunny::Engine
+} // namespace Bunny

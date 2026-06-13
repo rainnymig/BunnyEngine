@@ -15,30 +15,29 @@
 #include <vector>
 #include <unordered_map>
 
-namespace Bunny::Engine
+namespace Bunny
 {
 
 void addVertex(const glm::vec3& position, const glm::vec3& normal, const glm::vec3& tangent, const glm::vec4& color,
-    const glm::vec2& texCoord, std::vector<uint32_t>& indices, std::vector<Render::NormalVertex>& vertices,
-    std::unordered_map<Render::NormalVertex, uint32_t, Render::NormalVertex::Hash>& vertexToIndexMap);
+    const glm::vec2& texCoord, std::vector<uint32_t>& indices, std::vector<NormalVertex>& vertices,
+    std::unordered_map<NormalVertex, uint32_t, NormalVertex::Hash>& vertexToIndexMap);
 void addTriangle(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3, const glm::vec4& color,
     const glm::vec2& texCoordBase, const float scale, std::vector<uint32_t>& indices,
-    std::vector<Render::NormalVertex>& vertices,
-    std::unordered_map<Render::NormalVertex, uint32_t, Render::NormalVertex::Hash>& vertexToIndexMap);
+    std::vector<NormalVertex>& vertices,
+    std::unordered_map<NormalVertex, uint32_t, NormalVertex::Hash>& vertexToIndexMap);
 void addQuad(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3, const glm::vec3& p4, const glm::vec4& color,
     const glm::vec2& texCoordBase, const float scale, std::vector<uint32_t>& indices,
-    std::vector<Render::NormalVertex>& vertices,
-    std::unordered_map<Render::NormalVertex, uint32_t, Render::NormalVertex::Hash>& vertexToIndexMap);
-const Render::IdType createCubeMeshToBank(
-    Render::MeshBank<Render::NormalVertex>* meshBank, Render::IdType materialId, Render::IdType materialInstanceId);
-void loadMeshFromGltf(Render::MeshBank<Render::NormalVertex>* meshBank, Render::PbrMaterialBank* materialBank,
-    Render::TextureBank* textureBank, fastgltf::Asset& gltfAsset);
+    std::vector<NormalVertex>& vertices,
+    std::unordered_map<NormalVertex, uint32_t, NormalVertex::Hash>& vertexToIndexMap);
+const IdType createCubeMeshToBank(MeshBank<NormalVertex>* meshBank, IdType materialId, IdType materialInstanceId);
+void loadMeshFromGltf(MeshBank<NormalVertex>* meshBank, PbrMaterialBank* materialBank, TextureBank* textureBank,
+    fastgltf::Asset& gltfAsset);
 
 template <typename TextureInfoType>
-Bunny::Render::IdType loadTextureFromGltf(const fastgltf::Optional<TextureInfoType>& gltfTexInfo,
-    const fastgltf::Asset& gltfAsset, Render::TextureBank* textureBank)
+Bunny::IdType loadTextureFromGltf(
+    const fastgltf::Optional<TextureInfoType>& gltfTexInfo, const fastgltf::Asset& gltfAsset, TextureBank* textureBank)
 {
-    Render::IdType newId = Render::BUNNY_INVALID_ID;
+    IdType newId = BUNNY_INVALID_ID;
 
     if (gltfTexInfo.has_value())
     {
@@ -57,7 +56,7 @@ Bunny::Render::IdType loadTextureFromGltf(const fastgltf::Optional<TextureInfoTy
                 if (const fastgltf::sources::Array* bufDataArray = std::get_if<fastgltf::sources::Array>(&imgBuf.data))
                 {
                     unsigned char* imageData = (unsigned char*)bufDataArray->bytes.data();
-                    Render::IdType newTexId;
+                    IdType newTexId;
                     if (BUNNY_SUCCESS(textureBank->addTextureFromMemory(imageData + imgBufView.byteOffset,
                             imgBufView.byteLength, VK_FORMAT_R8G8B8A8_UNORM, newTexId)))
                     {
@@ -71,4 +70,4 @@ Bunny::Render::IdType loadTextureFromGltf(const fastgltf::Optional<TextureInfoTy
     return newId;
 }
 
-} // namespace Bunny::Engine
+} // namespace Bunny

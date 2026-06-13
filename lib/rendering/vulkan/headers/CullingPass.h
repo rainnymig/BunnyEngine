@@ -15,7 +15,7 @@
 #include <vector>
 #include <array>
 
-namespace Bunny::Render
+namespace Bunny
 {
 class VulkanRenderResources;
 class VulkanGraphicsRenderer;
@@ -83,4 +83,4 @@ class CullingPass
 
     std::string mCullingShaderPath{"./culling_comp.spv"};
 };
-} // namespace Bunny::Render
+} // namespace Bunny

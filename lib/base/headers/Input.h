@@ -6,7 +6,7 @@
 
 class GLFWwindow;
 
-namespace Bunny::Base
+namespace Bunny
 {
 class Window;
 
@@ -38,4 +38,4 @@ class InputManager
 
     bool mIsMouseActive = true;
 };
-} // namespace Bunny::Base
+} // namespace Bunny

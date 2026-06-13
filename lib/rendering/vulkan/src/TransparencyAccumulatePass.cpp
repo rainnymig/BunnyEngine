@@ -7,9 +7,9 @@
 #include "VulkanGraphicsRenderer.h"
 #include "Helper.h"
 
-namespace Bunny::Render
+namespace Bunny
 {
-Render::TransparencyAccumulatePass::TransparencyAccumulatePass(const VulkanRenderResources* vulkanResources,
+TransparencyAccumulatePass::TransparencyAccumulatePass(const VulkanRenderResources* vulkanResources,
     const VulkanGraphicsRenderer* renderer, const PbrMaterialBank* materialBank, const MeshBank<NormalVertex>* meshBank,
     std::string_view vertShader, std::string_view fragShader)
     : super(vulkanResources, renderer, materialBank, meshBank),
@@ -18,7 +18,7 @@ Render::TransparencyAccumulatePass::TransparencyAccumulatePass(const VulkanRende
 {
 }
 
-void Render::TransparencyAccumulatePass::draw() const
+void TransparencyAccumulatePass::draw() const
 {
     //  only draw transparent surfaces, skip if none
     if (mMeshBank->getTransparentSurfaceCount() == 0)
@@ -86,8 +86,7 @@ void Render::TransparencyAccumulatePass::draw() const
     renderHelper.finishRender();
 }
 
-void Render::TransparencyAccumulatePass::linkWorldData(
-    const AllocatedBuffer& lightData, const AllocatedBuffer& cameraData)
+void TransparencyAccumulatePass::linkWorldData(const AllocatedBuffer& lightData, const AllocatedBuffer& cameraData)
 {
     DescriptorWriter writer;
     writer.writeBuffer(0, lightData.mBuffer, sizeof(PbrLightData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
@@ -98,10 +97,10 @@ void Render::TransparencyAccumulatePass::linkWorldData(
     }
 }
 
-void Render::TransparencyAccumulatePass::linkObjectData(
+void TransparencyAccumulatePass::linkObjectData(
     const AllocatedBuffer& objectBuffer, const AllocatedBuffer& instObjectBuffer)
 {
-    Render::DescriptorWriter writer;
+    DescriptorWriter writer;
     writer.writeBuffer(0, objectBuffer.mBuffer, objectBuffer.mSize, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     writer.writeBuffer(1, instObjectBuffer.mBuffer, instObjectBuffer.mSize, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     for (const FrameData& frame : mFrameData)
@@ -110,9 +109,9 @@ void Render::TransparencyAccumulatePass::linkObjectData(
     }
 }
 
-void Render::TransparencyAccumulatePass::linkShadowData(std::array<VkImageView, MAX_FRAMES_IN_FLIGHT> shadowImageViews)
+void TransparencyAccumulatePass::linkShadowData(std::array<VkImageView, MAX_FRAMES_IN_FLIGHT> shadowImageViews)
 {
-    Render::DescriptorWriter writer;
+    DescriptorWriter writer;
     VkDevice device = mVulkanResources->getDevice();
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
     {
@@ -128,7 +127,7 @@ void TransparencyAccumulatePass::setDrawCommandsBuffer(const AllocatedBuffer& bu
     mDrawCommandsBuffer = &buffer;
 }
 
-std::array<const AllocatedImage*, MAX_FRAMES_IN_FLIGHT> Render::TransparencyAccumulatePass::getAccumulateImages() const
+std::array<const AllocatedImage*, MAX_FRAMES_IN_FLIGHT> TransparencyAccumulatePass::getAccumulateImages() const
 {
     std::array<const AllocatedImage*, MAX_FRAMES_IN_FLIGHT> images;
 
@@ -140,7 +139,7 @@ std::array<const AllocatedImage*, MAX_FRAMES_IN_FLIGHT> Render::TransparencyAccu
     return images;
 }
 
-std::array<const AllocatedImage*, MAX_FRAMES_IN_FLIGHT> Render::TransparencyAccumulatePass::getRevealImages() const
+std::array<const AllocatedImage*, MAX_FRAMES_IN_FLIGHT> TransparencyAccumulatePass::getRevealImages() const
 {
     std::array<const AllocatedImage*, MAX_FRAMES_IN_FLIGHT> images;
 
@@ -152,7 +151,7 @@ std::array<const AllocatedImage*, MAX_FRAMES_IN_FLIGHT> Render::TransparencyAccu
     return images;
 }
 
-BunnyResult Render::TransparencyAccumulatePass::initPipeline()
+BunnyResult TransparencyAccumulatePass::initPipeline()
 {
     VkDevice device = mVulkanResources->getDevice();
 
@@ -201,7 +200,7 @@ BunnyResult Render::TransparencyAccumulatePass::initPipeline()
     return BUNNY_HAPPY;
 }
 
-BunnyResult Render::TransparencyAccumulatePass::initDescriptors()
+BunnyResult TransparencyAccumulatePass::initDescriptors()
 {
     VkDevice device = mVulkanResources->getDevice();
 
@@ -229,7 +228,7 @@ BunnyResult Render::TransparencyAccumulatePass::initDescriptors()
     return BUNNY_HAPPY;
 }
 
-BunnyResult Render::TransparencyAccumulatePass::initDataAndResources()
+BunnyResult TransparencyAccumulatePass::initDataAndResources()
 {
     VkExtent3D renderTargetExtent{mRenderer->getSwapChainExtent().width, mRenderer->getSwapChainExtent().height, 1};
     //  create the render targets
@@ -263,4 +262,4 @@ BunnyResult Render::TransparencyAccumulatePass::initDataAndResources()
     return BUNNY_HAPPY;
 }
 
-} // namespace Bunny::Render
+} // namespace Bunny

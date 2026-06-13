@@ -8,7 +8,7 @@
 
 #include <string>
 
-namespace Bunny::Engine
+namespace Bunny
 {
 
 class World;
@@ -16,11 +16,11 @@ class World;
 class CameraSystem
 {
   public:
-    CameraSystem(Base::InputManager* inputManager);
+    CameraSystem(InputManager* inputManager);
     void update(World* world, float deltaTime);
 
   private:
-    void onKeyboardInput(const std::string& keyName, Base::InputManager::KeyState state);
+    void onKeyboardInput(const std::string& keyName, InputManager::KeyState state);
     void showImguiControlPanel();
 
     float mMoveVelocity = 10;
@@ -36,4 +36,4 @@ class ObjectRandomMovementSystem
     void update(World* world, float deltaTime, float time);
 };
 
-} // namespace Bunny::Engine
+} // namespace Bunny

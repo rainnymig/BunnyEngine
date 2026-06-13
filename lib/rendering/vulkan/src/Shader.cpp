@@ -4,7 +4,7 @@
 
 #include <fstream>
 
-namespace Bunny::Render
+namespace Bunny
 {
 Shader::Shader(std::string_view shaderPath, VkDevice device) : mDevice(device)
 {
@@ -38,7 +38,7 @@ std::vector<std::byte> Shader::readShaderFile(std::string_view path)
 
 void Shader::createShaderModule(const std::vector<std::byte>& code, VkDevice device)
 {
-    if (code.empty()) 
+    if (code.empty())
     {
         PRINT_AND_RETURN("Shader code is empty!")
     }
@@ -64,4 +64,4 @@ void Shader::destroyShaderModule()
         mShaderModule = nullptr;
     }
 }
-} // namespace Bunny::Render
+} // namespace Bunny

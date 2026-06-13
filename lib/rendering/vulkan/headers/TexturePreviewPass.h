@@ -7,7 +7,7 @@
 #include <string_view>
 #include <array>
 
-namespace Bunny::Render
+namespace Bunny
 {
 
 class VulkanRenderResources;
@@ -88,4 +88,4 @@ class TexturePreviewPass : public PbrGraphicsPass
     bool mIsActive = false;            //  is texture preview pass active at all
     bool mTexturePreviewReady = false; //  do we have a valid texture to preview
 };
-} // namespace Bunny::Render
+} // namespace Bunny

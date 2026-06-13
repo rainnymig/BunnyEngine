@@ -1,6 +1,6 @@
 #include "MeshBank.h"
 
-namespace Bunny::Render
+namespace Bunny
 {
 
-} // namespace Bunny::Render
+} // namespace Bunny

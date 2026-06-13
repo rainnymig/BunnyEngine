@@ -6,7 +6,7 @@
 #include <cassert>
 #include <iterator>
 
-namespace Bunny::Render
+namespace Bunny
 {
 void DescriptorLayoutBuilder::addBinding(VkDescriptorSetLayoutBinding binding)
 {
@@ -251,4 +251,4 @@ void DescriptorWriter::updateSet(VkDevice device, VkDescriptorSet descriptorSet)
     vkUpdateDescriptorSets(device, static_cast<uint32_t>(mWrites.size()), mWrites.data(), 0, nullptr);
 }
 
-} // namespace Bunny::Render
+} // namespace Bunny

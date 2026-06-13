@@ -4,7 +4,7 @@
 
 #include <vector>
 
-namespace Bunny::Render
+namespace Bunny
 {
 
 //  This class is a helper for building a graphics VkPipeline
@@ -49,4 +49,4 @@ class GraphicsPipelineBuilder
     std::vector<VkFormat> mColorAttachmentFormats;
     std::vector<VkPipelineColorBlendAttachmentState> mColorBlendStates;
 };
-} // namespace Bunny::Render
+} // namespace Bunny

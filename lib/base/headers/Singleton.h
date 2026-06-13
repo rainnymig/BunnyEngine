@@ -5,7 +5,7 @@
 #include <cassert>
 #endif
 
-namespace Bunny::Base
+namespace Bunny
 {
 
 template <typename T>
@@ -39,4 +39,4 @@ T& Singleton<T>::get()
     return *msInstance;
 }
 
-} // namespace Bunny::Base
+} // namespace Bunny

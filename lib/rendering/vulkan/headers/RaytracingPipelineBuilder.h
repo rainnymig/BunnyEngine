@@ -4,7 +4,7 @@
 
 #include <vector>
 
-namespace Bunny::Render
+namespace Bunny
 {
 class RaytracingPipelineBuilder
 {
@@ -29,4 +29,4 @@ class RaytracingPipelineBuilder
     VkPipelineLayout mPipelineLayout = nullptr;
     uint32_t mMaxRecursionDepth = 1;
 };
-} // namespace Bunny::Render
+} // namespace Bunny

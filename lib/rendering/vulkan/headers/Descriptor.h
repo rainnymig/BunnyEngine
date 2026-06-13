@@ -6,7 +6,7 @@
 #include <vector>
 #include <deque>
 
-namespace Bunny::Render
+namespace Bunny
 {
 class DescriptorLayoutBuilder
 {
@@ -74,4 +74,4 @@ class DescriptorWriter
 
     std::vector<VkWriteDescriptorSet> mWrites;
 };
-} // namespace Bunny::Render
+} // namespace Bunny

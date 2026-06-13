@@ -3,7 +3,7 @@
 
 #include <glm/gtx/euler_angles.hpp>
 
-namespace Bunny::Base
+namespace Bunny
 {
 Transform::Transform(const glm::vec3& position, const glm::quat& rotationQuat, const glm::vec3& scale)
 {
@@ -32,4 +32,4 @@ Transform::Transform(const glm::mat4& matrix)
         glm::length(glm::vec3(matrix[0])), glm::length(glm::vec3(matrix[1])), glm::length(glm::vec3(matrix[2])));
 }
 
-} // namespace Bunny::Base
+} // namespace Bunny

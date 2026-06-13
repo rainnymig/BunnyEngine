@@ -10,7 +10,7 @@
 
 #include <glm/vec2.hpp>
 
-namespace Bunny::Render
+namespace Bunny
 {
 
 DepthReducePass::DepthReducePass(const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer)
@@ -285,9 +285,9 @@ uint32_t DepthReducePass::findHierarchyLevels(uint32_t width, uint32_t height) c
     return result;
 }
 
-uint32_t Render::DepthReducePass::getGroupCount(uint32_t threadCount, uint32_t localSize) const
+uint32_t DepthReducePass::getGroupCount(uint32_t threadCount, uint32_t localSize) const
 {
     return (threadCount + localSize - 1) / localSize;
 }
 
-} // namespace Bunny::Render
+} // namespace Bunny

@@ -8,7 +8,7 @@
 #include <array>
 #include <string_view>
 
-namespace Bunny::Render
+namespace Bunny
 {
 class TextureBank;
 
@@ -65,4 +65,4 @@ class FinalOutputPass : public PbrGraphicsPass
 
     std::array<FrameData, MAX_FRAMES_IN_FLIGHT> mFrameData;
 };
-} // namespace Bunny::Render
+} // namespace Bunny

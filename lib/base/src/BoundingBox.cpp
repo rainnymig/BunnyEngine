@@ -1,6 +1,6 @@
 #include "BoundingBox.h"
 
-namespace Bunny::Base
+namespace Bunny
 {
-    
-} // namespace Bunny::Base
+
+} // namespace Bunny

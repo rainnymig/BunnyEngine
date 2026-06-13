@@ -18,7 +18,7 @@
 #include <iterator>
 #include <random>
 
-namespace Bunny::Render
+namespace Bunny
 {
 
 enum class SurfaceTransparency
@@ -46,7 +46,7 @@ struct MeshLiteT
     BoundType mBounds;
 };
 
-using MeshLite = MeshLiteT<Base::BoundingSphere>;
+using MeshLite = MeshLiteT<BoundingSphere>;
 
 template <typename VertexType, typename IndexType = uint32_t>
 class MeshBank
@@ -75,7 +75,7 @@ class MeshBank
     const AllocatedBuffer& getSurfaceDataBuffer() const { return mSurfaceDataBuffer; }
     const size_t getSurfaceDataBufferSize() const { return getContainerDataSize(mSurfaceData); }
     const AllocatedBuffer& getMeshDataBuffer() const { return mMeshDataBuffer; }
-    const size_t getMeshDataBufferSize() const { return Bunny::Render::getContainerDataSize(mMeshData); }
+    const size_t getMeshDataBufferSize() const { return Bunny::getContainerDataSize(mMeshData); }
 
     [[nodiscard]] std::vector<AcceStructGeometryData> getBlasGeometryData() const;
 
@@ -100,7 +100,7 @@ class MeshBank
 
     std::vector<VertexType> mVertexBufferData;
     std::vector<IndexType> mIndexBufferData;
-    std::vector<Base::BoundingSphere> mBoundsData; //  maybe template this as well
+    std::vector<BoundingSphere> mBoundsData; //  maybe template this as well
 
     //  surface and mesh data to be used in the shader
     //  may even replace the current MeshLite vector (mMeshes) in the future, so that no duplicated data?
@@ -305,4 +305,4 @@ inline AcceStructGeometryData MeshBank<VertexType, IndexType>::buildTriangleBlas
 
     return blasData;
 }
-} // namespace Bunny::Render
+} // namespace Bunny

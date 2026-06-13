@@ -2,7 +2,7 @@
 
 #include <glm/vec3.hpp>
 
-namespace Bunny::Render
+namespace Bunny
 {
 
 enum class LightType : uint32_t
@@ -30,4 +30,4 @@ struct PbrLight
     LightType mType = LightType::Directional;
     float mPadding;
 };
-} // namespace Bunny::Render
+} // namespace Bunny

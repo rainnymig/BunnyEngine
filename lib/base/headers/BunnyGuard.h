@@ -2,7 +2,7 @@
 
 #include <type_traits>
 
-namespace Bunny::Base
+namespace Bunny
 {
 
 //  A Bunny Guard won't let you in unless you give them a snack
@@ -28,6 +28,6 @@ struct BunnyGuard
     }
 };
 
-#define CARROT Bunny::Base::BunnySnack(*this)
+#define CARROT Bunny::BunnySnack(*this)
 
-} // namespace Bunny::Base
+} // namespace Bunny

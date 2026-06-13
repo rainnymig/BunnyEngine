@@ -11,7 +11,7 @@
 #include <unordered_map>
 #include <string>
 
-namespace Bunny::Render
+namespace Bunny
 {
 class VulkanRenderResources;
 class VulkanGraphicsRenderer;
@@ -78,6 +78,6 @@ class PbrMaterialBank
     AllocatedBuffer mMaterialBuffer;
     bool mMaterialBufferNeedUpdate = false;
 
-    Base::FunctionStack<> mDeletionStack;
+    FunctionStack<> mDeletionStack;
 };
-} // namespace Bunny::Render
+} // namespace Bunny

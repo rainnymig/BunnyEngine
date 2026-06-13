@@ -12,7 +12,7 @@
 #include <string_view>
 #include <vector>
 
-namespace Bunny::Render
+namespace Bunny
 {
 class VulkanRenderResources;
 class VulkanGraphicsRenderer;
@@ -46,7 +46,7 @@ class PbrGraphicsPass
     VkPipelineLayout mPipelineLayout;
     VkPipeline mPipeline;
 
-    Base::FunctionStack<> mDeletionStack;
+    FunctionStack<> mDeletionStack;
 };
 
-} // namespace Bunny::Render
+} // namespace Bunny

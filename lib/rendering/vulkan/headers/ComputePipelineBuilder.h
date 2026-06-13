@@ -2,7 +2,7 @@
 
 #include <volk.h>
 
-namespace Bunny::Render
+namespace Bunny
 {
 class ComputePipelineBuilder
 {
@@ -15,4 +15,4 @@ class ComputePipelineBuilder
     VkPipelineLayout mPipelineLayout;
     VkPipelineShaderStageCreateInfo mShaderStage;
 };
-} // namespace Bunny::Render
+} // namespace Bunny

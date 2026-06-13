@@ -10,7 +10,7 @@
 #include <array>
 #include <string>
 
-namespace Bunny::Render
+namespace Bunny
 {
 
 class VulkanRenderResources;
@@ -60,4 +60,4 @@ class DeferredShadingPass
     std::string mVertexShaderPath{"./screen_quad_vert.spv"};
     std::string mFragmentShaderPath{"./basic_deferred_frag.spv"};
 };
-} // namespace Bunny::Render
+} // namespace Bunny

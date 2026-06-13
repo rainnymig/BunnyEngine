@@ -13,12 +13,12 @@
 #include <functional>
 #include <map>
 
-namespace Bunny::Base
+namespace Bunny
 {
 class Window;
 }
 
-namespace Bunny::Render
+namespace Bunny
 {
 class VulkanRenderResources
 {
@@ -41,10 +41,10 @@ class VulkanRenderResources
         VkCommandBuffer mBuffer;
     };
 
-    BunnyResult initialize(Base::Window* window);
+    BunnyResult initialize(Window* window);
     void cleanup();
 
-    Base::Window* getWindow() const { return mWindow; }
+    Window* getWindow() const { return mWindow; }
     VkInstance getInstance() const { return mInstance; }
     VkSurfaceKHR getSurface() const { return mSurface; }
     VkPhysicalDevice getPhysicalDevice() const { return mPhysicalDevice; }
@@ -98,7 +98,7 @@ class VulkanRenderResources
     BunnyResult getQueueFromDevice(Queue& queue, const vkb::Device& device, vkb::QueueType queueType) const;
     BunnyResult createImmediateCommand();
 
-    Base::Window* mWindow = nullptr;
+    Window* mWindow = nullptr;
     VkInstance mInstance = VK_NULL_HANDLE;
 #ifdef _DEBUG
     VkDebugUtilsMessengerEXT mDebugMessenger = VK_NULL_HANDLE;
@@ -119,8 +119,8 @@ class VulkanRenderResources
     VmaAllocator mAllocator = nullptr;
 
     //  deletion stack
-    Base::FunctionStack<> mDeletionStack;
+    FunctionStack<> mDeletionStack;
 
     bool mSupportMeshShader = false;
 };
-} // namespace Bunny::Render
+} // namespace Bunny

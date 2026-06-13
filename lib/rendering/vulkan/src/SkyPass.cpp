@@ -11,7 +11,7 @@
 
 #include <cassert>
 
-namespace Bunny::Render
+namespace Bunny
 {
 static constexpr SkyPass::CloudData defaultCloudData{
     //  .mCloudNoiseDimension
@@ -401,4 +401,4 @@ const AllocatedImage& SkyPass::FrameData::getCloudTexture() const
     return mCurrentFrameSeqId == 0 ? mCloudTexture1 : mCloudTexture2;
 }
 
-} // namespace Bunny::Render
+} // namespace Bunny

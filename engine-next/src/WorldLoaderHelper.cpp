@@ -7,9 +7,9 @@
 #include <algorithm>
 #include <variant>
 
-using namespace Bunny::Render;
+using namespace Bunny;
 
-namespace Bunny::Engine
+namespace Bunny
 {
 
 void addVertex(const glm::vec3& position, const glm::vec3& normal, const glm::vec3& tangent, const glm::vec4& color,
@@ -148,12 +148,12 @@ void loadMeshFromGltf(MeshBank<NormalVertex>* meshBank, PbrMaterialBank* materia
     fastgltf::Asset& gltfAsset)
 {
     std::vector<uint32_t> indices;
-    std::vector<Render::NormalVertex> vertices;
+    std::vector<NormalVertex> vertices;
     std::unordered_map<size_t, IdType> loadedMaterials; // if the material is loaded we don't load again
                                                         //  this is only valid for the current gltf file
     for (const fastgltf::Mesh& mesh : gltfAsset.meshes)
     {
-        Render::MeshLite newMesh;
+        MeshLite newMesh;
         newMesh.mName = mesh.name;
 
         indices.clear();
@@ -168,7 +168,7 @@ void loadMeshFromGltf(MeshBank<NormalVertex>* meshBank, PbrMaterialBank* materia
         //  create mesh surfaces
         for (const auto& primitive : mesh.primitives)
         {
-            Render::SurfaceLite newSurface;
+            SurfaceLite newSurface;
             newSurface.mFirstIndex = indices.size();
             size_t initialVtx = vertices.size();
             newSurface.mVertexOffset = initialVtx;
@@ -191,7 +191,7 @@ void loadMeshFromGltf(MeshBank<NormalVertex>* meshBank, PbrMaterialBank* materia
 
                 fastgltf::iterateAccessorWithIndex<glm::vec3>(gltfAsset, posAccessor,
                     [&vertices, &minCorner, &maxCorner, initialVtx, primitiveIdx](glm::vec3 vec, size_t idx) {
-                        Render::NormalVertex newVertex;
+                        NormalVertex newVertex;
                         newVertex.mPosition = glm::vec4(vec, 1.0f);
                         newVertex.mNormal = {0, 0, 1, 0};
                         newVertex.mTangent = {1, 0, 0, 0};
@@ -302,4 +302,4 @@ void loadMeshFromGltf(MeshBank<NormalVertex>* meshBank, PbrMaterialBank* materia
     }
 }
 
-} // namespace Bunny::Engine
+} // namespace Bunny

@@ -14,7 +14,7 @@
 
 #include <glm/gtx/euler_angles.hpp>
 
-namespace Bunny::Render
+namespace Bunny
 {
 constexpr static PbrMaterialParameters defaultWaveMaterial{
     .mBaseColor = glm::vec4(0.3f, 0.6f, 1.0f, 1.0f),
@@ -323,4 +323,4 @@ BunnyResult OceanPass::initDescriptorLayouts()
     return BUNNY_HAPPY;
 }
 
-} // namespace Bunny::Render
+} // namespace Bunny

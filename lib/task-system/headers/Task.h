@@ -2,7 +2,7 @@
 
 #include <atomic>
 
-namespace Bunny::Utils
+namespace Bunny
 {
 enum class TaskState
 {
@@ -30,4 +30,4 @@ class BaseTask : public ITask
     std::atomic<TaskState> mState{TaskState::Pending};
 };
 
-} // namespace Bunny::Utils
+} // namespace Bunny

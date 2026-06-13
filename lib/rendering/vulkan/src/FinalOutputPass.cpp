@@ -9,7 +9,7 @@
 #include "Error.h"
 #include "ErrorCheck.h"
 
-namespace Bunny::Render
+namespace Bunny
 {
 FinalOutputPass::FinalOutputPass(const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer,
     const TextureBank* textureBank, std::string_view vertShader, std::string_view fragShader)
@@ -198,4 +198,4 @@ BunnyResult FinalOutputPass::initDescriptorLayouts()
     return BUNNY_HAPPY;
 }
 
-} // namespace Bunny::Render
+} // namespace Bunny

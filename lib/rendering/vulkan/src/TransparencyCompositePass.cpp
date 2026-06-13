@@ -6,7 +6,7 @@
 #include "ErrorCheck.h"
 #include "GraphicsPipelineBuilder.h"
 
-namespace Bunny::Render
+namespace Bunny
 {
 TransparencyCompositePass::TransparencyCompositePass(const VulkanRenderResources* vulkanResources,
     const VulkanGraphicsRenderer* renderer, const PbrMaterialBank* materialBank, const MeshBank<NormalVertex>* meshBank,
@@ -224,4 +224,4 @@ BunnyResult TransparencyCompositePass::initDescriptorLayouts()
     return BUNNY_HAPPY;
 }
 
-} // namespace Bunny::Render
+} // namespace Bunny

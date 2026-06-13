@@ -5,7 +5,7 @@
 
 #include <array>
 
-namespace Bunny::Render
+namespace Bunny
 {
 class TransparencyAccumulatePass : public PbrGraphicsPass
 {
@@ -54,4 +54,4 @@ class TransparencyAccumulatePass : public PbrGraphicsPass
     std::string_view mVertexShaderPath;
     std::string_view mFragmentShaderPath;
 };
-} // namespace Bunny::Render
+} // namespace Bunny

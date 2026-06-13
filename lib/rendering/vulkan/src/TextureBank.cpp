@@ -13,7 +13,7 @@
 #include <iterator>
 #include <cassert>
 
-namespace Bunny::Render
+namespace Bunny
 {
 TextureBank::TextureBank(const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer)
     : mVulkanResources(vulkanResources),
@@ -92,7 +92,7 @@ BunnyResult TextureBank::addAllocatedTexture(const AllocatedImage& image, IdType
 {
     outId = mTextures.size();
     AllocatedImage& newImage = mTextures.emplace_back(image);
-	newImage.mIsOwning = false; //  mark as non-owning to avoid double destrution
+    newImage.mIsOwning = false; //  mark as non-owning to avoid double destrution
 
     return BUNNY_HAPPY;
 }
@@ -240,4 +240,4 @@ BunnyResult TextureBank::createSampler()
 
     return BUNNY_HAPPY;
 }
-} // namespace Bunny::Render
+} // namespace Bunny

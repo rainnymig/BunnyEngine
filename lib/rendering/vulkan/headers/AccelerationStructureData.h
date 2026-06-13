@@ -6,7 +6,7 @@
 
 #include <vector>
 
-namespace Bunny::Render
+namespace Bunny
 {
 //  geometry data used as input to build acceleration structure
 //  normally 1 AcceStructGeometryData corresponds to 1 mesh
@@ -25,4 +25,4 @@ struct BuiltAccelerationStructure
     VkDeviceAddress mAcceAddress;
 };
 
-} // namespace Bunny::Render
+} // namespace Bunny

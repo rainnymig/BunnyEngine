@@ -5,7 +5,7 @@
 
 #include <array>
 
-namespace Bunny::Render
+namespace Bunny
 {
 
 class VulkanRenderResources;
@@ -67,4 +67,4 @@ class PbrForwardPass : public PbrGraphicsPass
     DescriptorAllocator mDescriptorAllocator;
     std::array<FrameData, MAX_FRAMES_IN_FLIGHT> mFrameData;
 };
-} // namespace Bunny::Render
+} // namespace Bunny

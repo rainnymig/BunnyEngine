@@ -5,7 +5,7 @@
 #include <cassert>
 #include <algorithm>
 
-namespace Bunny::Utils
+namespace Bunny
 {
 TaskRunner::TaskRunner() : mIsRunning(true), mPendingTaskCount(0)
 {
@@ -153,4 +153,4 @@ void TaskDispatcher::CreateRunners()
     }
 }
 
-} // namespace Bunny::Utils
+} // namespace Bunny

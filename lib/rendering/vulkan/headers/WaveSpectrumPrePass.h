@@ -10,7 +10,7 @@
 #include <array>
 #include <string_view>
 
-namespace Bunny::Render
+namespace Bunny
 {
 class WaveSpectrumPrePass : public PbrGraphicsPass
 {
@@ -68,4 +68,4 @@ class WaveSpectrumPrePass : public PbrGraphicsPass
     VkDescriptorSetLayout mImageDescLayout;
     VkDescriptorSetLayout mSpectrumDescLayout;
 };
-} // namespace Bunny::Render
+} // namespace Bunny

@@ -5,7 +5,7 @@
 #include <functional>
 #include <vector>
 
-namespace Bunny::Base
+namespace Bunny
 {
 class ImguiHelper : public Singleton<ImguiHelper>
 {
@@ -18,4 +18,4 @@ class ImguiHelper : public Singleton<ImguiHelper>
   private:
     std::vector<ImguiCommand> mRegisteredCommands;
 };
-} // namespace Bunny::Base
+} // namespace Bunny

@@ -12,7 +12,7 @@
 #include <array>
 #include <string_view>
 
-namespace Bunny::Render
+namespace Bunny
 {
 
 class VulkanRenderResources;
@@ -140,4 +140,4 @@ class SkyPass : public PbrGraphicsPass
     static constexpr uint32_t TEXTURE_3D_COUNT = 2;
 };
 
-} // namespace Bunny::Render
+} // namespace Bunny

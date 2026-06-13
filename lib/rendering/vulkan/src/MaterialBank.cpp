@@ -12,7 +12,7 @@
 #include <cassert>
 #include <imgui.h>
 
-namespace Bunny::Render
+namespace Bunny
 {
 PbrMaterialBank::PbrMaterialBank(
     const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer, TextureBank* textureBank)
@@ -27,7 +27,7 @@ BunnyResult PbrMaterialBank::initialize()
     BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(buildDescriptorSetLayouts())
     BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(buildPipelineLayouts())
 
-    Base::ImguiHelper::get().registerCommand([this]() { showImguiControlPanel(); });
+    ImguiHelper::get().registerCommand([this]() { showImguiControlPanel(); });
 
     return BUNNY_HAPPY;
 }
@@ -260,4 +260,4 @@ void PbrMaterialBank::showImguiControlPanel()
     ImGui::End();
 }
 
-} // namespace Bunny::Render
+} // namespace Bunny

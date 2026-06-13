@@ -2,7 +2,7 @@
 
 #include <glm/gtx/euler_angles.hpp>
 
-namespace Bunny::Render
+namespace Bunny
 {
 Camera::Camera(const glm::vec3& position, const glm::vec3& pitchYawRoll, float fov, float aspectRatio)
 {
@@ -132,4 +132,4 @@ float PhysicalCamera::getExposure() const
     float ev100 = glm::log2(mAperture * mAperture / mShutterTime * 100 / mIso);
     return 1.0f / (pow(2.0f, ev100) * 1.2f);
 }
-} // namespace Bunny::Render
+} // namespace Bunny

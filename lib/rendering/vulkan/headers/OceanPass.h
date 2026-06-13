@@ -11,7 +11,7 @@
 #include <array>
 #include <string_view>
 
-namespace Bunny::Render
+namespace Bunny
 {
 
 class VulkanRenderResources;
@@ -105,4 +105,4 @@ class OceanPass : public PbrGraphicsPass
     const AllocatedBuffer* mCameraDataBuffer;
     VkAccelerationStructureKHR mSceneAcceStruct;
 };
-} // namespace Bunny::Render
+} // namespace Bunny

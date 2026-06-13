@@ -2,7 +2,7 @@
 
 #include "ErrorCheck.h"
 
-namespace Bunny::Render
+namespace Bunny
 {
 VkCommandPoolCreateInfo makeCommandPoolCreateInfo(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flags)
 {
@@ -220,4 +220,4 @@ VkTransformMatrixKHR convertToVkTransformMatrix(const glm::mat4& glmMat)
     return vkMat;
 }
 
-} // namespace Bunny::Render
+} // namespace Bunny

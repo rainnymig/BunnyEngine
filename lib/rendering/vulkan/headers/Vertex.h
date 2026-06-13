@@ -4,7 +4,7 @@
 #include <glm/glm.hpp>
 #include <array>
 
-namespace Bunny::Render
+namespace Bunny
 {
 
 enum class VertexInputRate
@@ -100,4 +100,4 @@ struct NormalVertex
         return attributeDescriptions;
     }
 };
-} // namespace Bunny::Render
+} // namespace Bunny

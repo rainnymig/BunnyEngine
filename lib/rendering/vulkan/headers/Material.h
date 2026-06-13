@@ -15,7 +15,7 @@
 #include <array>
 #include <string>
 
-namespace Bunny::Render
+namespace Bunny
 {
 struct PbrMaterialParameters
 {
@@ -30,4 +30,4 @@ struct PbrMaterialParameters
     IdType mEmissiveTexId = BUNNY_INVALID_ID;
     IdType mMetalRoughnessTexId = BUNNY_INVALID_ID;
 };
-} // namespace Bunny::Render
+} // namespace Bunny

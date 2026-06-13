@@ -15,7 +15,7 @@
 #include <vector>
 #include <random>
 
-namespace Bunny::Render
+namespace Bunny
 {
 
 WaveSpectrumPrePass::WaveSpectrumPrePass(
@@ -184,4 +184,4 @@ BunnyResult WaveSpectrumPrePass::createRandomValueImage()
     return BUNNY_HAPPY;
 }
 
-} // namespace Bunny::Render
+} // namespace Bunny

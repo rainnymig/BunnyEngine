@@ -6,7 +6,7 @@
 #include <mutex>
 #include <thread>
 
-namespace Bunny::Utils
+namespace Bunny
 {
 
 class ITask;
@@ -50,4 +50,4 @@ class TaskDispatcher
     std::vector<std::thread> mRunnerThreads;
 };
 
-} // namespace Bunny::Utils
+} // namespace Bunny
