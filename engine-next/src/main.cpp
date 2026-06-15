@@ -115,6 +115,8 @@ int main(void)
     TransparencyCompositePass transCompPass(&renderResources, &renderer, &pbrMaterialBank, &meshBank);
 
     pbrMaterialBank.recreateMaterialBuffer();
+    pbrMaterialBank.allocateMaterialDescriptorSet();
+    pbrMaterialBank.updateMaterialDescriptorSet(&meshBank);
 
     waveSpectrumPrePass.initializePass();
     waveTransformPass.initializePass();

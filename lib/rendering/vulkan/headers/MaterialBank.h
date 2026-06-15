@@ -30,15 +30,14 @@ class PbrMaterialBank
     BunnyResult initialize();
     void cleanup();
 
-    IdType giveMeAMaterial() const;
-    IdType giveMeAMaterialInstance() const;
-
     PbrMaterialParameters getMaterialInstance(IdType id) const;
-    IdType getRandomMaterialInstanceId() const;
     BunnyResult addMaterialInstance(const PbrMaterialParameters& materialParams, IdType& outId);
+
+    VkDescriptorSet getMaterialDescriptorSet() const;
+    BunnyResult allocateMaterialDescriptorSet();
     //  temp solution, include mesh bank as parameter
     //  maybe order the descriptors better to avoid this
-    void updateMaterialDescriptorSet(VkDescriptorSet descriptorSet, const MeshBank<NormalVertex>* meshBank) const;
+    void updateMaterialDescriptorSet(const MeshBank<NormalVertex>* meshBank) const;
     BunnyResult recreateMaterialBuffer();
     void updateMaterialBuffer();
 
@@ -55,12 +54,16 @@ class PbrMaterialBank
   private:
     BunnyResult buildDescriptorSetLayouts();
     BunnyResult buildPipelineLayouts();
+    BunnyResult initDescriptorAllocator();
 
     void showImguiControlPanel();
 
     const VulkanRenderResources* mVulkanResources;
     const VulkanGraphicsRenderer* mRenderer;
     TextureBank* mTextureBank;
+
+    DescriptorAllocator mDescriptorAllocator;
+    VkDescriptorSet mMaterialDescSet;
 
     VkDescriptorSetLayout mWorldDescSetLayout;
     VkDescriptorSetLayout mObjectDescSetLayout;

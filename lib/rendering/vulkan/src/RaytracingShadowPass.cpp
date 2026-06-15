@@ -153,23 +153,20 @@ BunnyResult RaytracingShadowPass::initDescriptors()
 
     //  allocate descriptor sets
     DescriptorAllocator::PoolSize poolSizes[] = {
-        {.mType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,             .mRatio = 4                                      },
-        {.mType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,             .mRatio = 6                                      },
-        {.mType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,     .mRatio = PbrMaterialBank::TEXTURE_ARRAY_MAX_SIZE},
-        {.mType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, .mRatio = 2                                      },
-        {.mType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,              .mRatio = 2                                      }
+        {.mType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,             .mRatio = 4},
+        {.mType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,             .mRatio = 6},
+        {.mType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, .mRatio = 2},
+        {.mType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,              .mRatio = 2}
     };
     mDescriptorAllocator.init(mVulkanResources->getDevice(), 12, poolSizes);
 
-    VkDescriptorSetLayout descLayouts[] = {mMaterialBank->getWorldDescSetLayout(), mObjectDescSetLayout,
-        mMaterialBank->getMaterialDescSetLayout(), mRtDataDescSetLayout};
+    VkDescriptorSetLayout worldLayout = mMaterialBank->getWorldDescSetLayout();
     for (FrameData& frame : mFrameData)
     {
-        //  allocate all 4 sets of one frame at once
-        mDescriptorAllocator.allocate(mVulkanResources->getDevice(), descLayouts, &frame.mWorldDescSet, 4);
-
-        //  link material data to material descriptor set
-        mMaterialBank->updateMaterialDescriptorSet(frame.mMaterialDescSet, mMeshBank);
+        mDescriptorAllocator.allocate(mVulkanResources->getDevice(), &worldLayout, &frame.mWorldDescSet, 1);
+        mDescriptorAllocator.allocate(mVulkanResources->getDevice(), &mObjectDescSetLayout, &frame.mObjectDescSet, 1);
+        mDescriptorAllocator.allocate(mVulkanResources->getDevice(), &mRtDataDescSetLayout, &frame.mRtDataDescSet, 1);
+        frame.mMaterialDescSet = mMaterialBank->getMaterialDescriptorSet();
     }
 
     mDeletionStack.AddFunction([this]() { mDescriptorAllocator.destroyPools(mVulkanResources->getDevice()); });

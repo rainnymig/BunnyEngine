@@ -205,23 +205,22 @@ BunnyResult TransparencyAccumulatePass::initDescriptors()
     VkDevice device = mVulkanResources->getDevice();
 
     DescriptorAllocator::PoolSize poolSizes[] = {
-        {.mType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,         .mRatio = 4                                      },
-        {.mType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         .mRatio = 4                                      },
-        {.mType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .mRatio = PbrMaterialBank::TEXTURE_ARRAY_MAX_SIZE},
-        {.mType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,          .mRatio = 2                                      },
+        {.mType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, .mRatio = 4},
+        {.mType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .mRatio = 4},
+        {.mType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,  .mRatio = 2},
     };
-    mDescriptorAllocator.init(device, 10, poolSizes);
+    mDescriptorAllocator.init(device, 8, poolSizes);
 
-    VkDescriptorSetLayout descLayouts[] = {mMaterialBank->getWorldDescSetLayout(),
-        mMaterialBank->getObjectDescSetLayout(), mMaterialBank->getMaterialDescSetLayout(),
-        mMaterialBank->getEffectDescSetLayout()};
+    VkDescriptorSetLayout worldLayout = mMaterialBank->getWorldDescSetLayout();
+    VkDescriptorSetLayout objectLayout = mMaterialBank->getObjectDescSetLayout();
+    VkDescriptorSetLayout effectLayout = mMaterialBank->getEffectDescSetLayout();
+
     for (FrameData& frame : mFrameData)
     {
-        //  allocate all 4 sets of one frame at once
-        mDescriptorAllocator.allocate(device, descLayouts, &frame.mWorldDescSet, 4);
-
-        //  link material data to material descriptor set
-        mMaterialBank->updateMaterialDescriptorSet(frame.mMaterialDescSet, mMeshBank);
+        mDescriptorAllocator.allocate(device, &worldLayout, &frame.mWorldDescSet, 1);
+        mDescriptorAllocator.allocate(device, &objectLayout, &frame.mObjectDescSet, 1);
+        mDescriptorAllocator.allocate(device, &effectLayout, &frame.mEffectDescSet, 1);
+        frame.mMaterialDescSet = mMaterialBank->getMaterialDescriptorSet();
     }
 
     mDeletionStack.AddFunction([this]() { mDescriptorAllocator.destroyPools(mVulkanResources->getDevice()); });

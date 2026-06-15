@@ -112,7 +112,10 @@ void OceanPass::prepareFrameDescriptors()
     //  allocate descriptor sets
     VkDescriptorSetLayout descLayouts[] = {mMeshDescLayout, mWaveImageDescLayout, mFragDescLayout,
         mMaterialBank->getMaterialDescSetLayout(), mAcceStructDescLayout};
-    frame.mDescriptorAllocator.allocate(device, descLayouts, &frame.mMeshDescSet, 5);
+    frame.mDescriptorAllocator.allocate(device, &mMeshDescLayout, &frame.mMeshDescSet, 1);
+    frame.mDescriptorAllocator.allocate(device, &mWaveImageDescLayout, &frame.mWaveImageDescSet, 1);
+    frame.mDescriptorAllocator.allocate(device, &mFragDescLayout, &frame.mFragDescSet, 1);
+    frame.mDescriptorAllocator.allocate(device, &mAcceStructDescLayout, &frame.mAcceStructDescSet, 1);
 
     //  write the resources to the desc sets
     DescriptorWriter writer;
@@ -132,7 +135,7 @@ void OceanPass::prepareFrameDescriptors()
     writer.writeBuffer(1, mCameraDataBuffer->mBuffer, sizeof(PbrCameraData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
     writer.updateSet(device, frame.mFragDescSet);
 
-    mMaterialBank->updateMaterialDescriptorSet(frame.mMaterialDescSet, mMeshBank);
+    frame.mMaterialDescSet = mMaterialBank->getMaterialDescriptorSet();
 
     writer.clear();
     writer.writeAccelerationStructure(0, mSceneAcceStruct);
@@ -234,11 +237,11 @@ BunnyResult OceanPass::initDescriptors()
     VkDevice device = mVulkanResources->getDevice();
 
     DescriptorAllocator::PoolSize poolSizes[] = {
-        {.mType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,             .mRatio = 8                                           },
-        {.mType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,     .mRatio = PbrMaterialBank::TEXTURE_ARRAY_MAX_SIZE + 10},
-        {.mType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,             .mRatio = 6                                           },
-        {.mType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,              .mRatio = 2                                           },
-        {.mType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, .mRatio = 2                                           }
+        {.mType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,             .mRatio = 8 },
+        {.mType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,     .mRatio = 10},
+        {.mType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,             .mRatio = 6 },
+        {.mType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,              .mRatio = 2 },
+        {.mType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, .mRatio = 2 }
     };
     for (FrameData& frame : mFrameData)
     {

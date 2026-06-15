@@ -26,6 +26,7 @@ BunnyResult PbrMaterialBank::initialize()
 {
     BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(buildDescriptorSetLayouts())
     BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(buildPipelineLayouts())
+    BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(initDescriptorAllocator())
 
     ImguiHelper::get().registerCommand([this]() { showImguiControlPanel(); });
 
@@ -38,28 +39,9 @@ void PbrMaterialBank::cleanup()
     mDeletionStack.Flush();
 }
 
-IdType PbrMaterialBank::giveMeAMaterial() const
-{
-    return getRandomMaterialInstanceId();
-}
-
-IdType PbrMaterialBank::giveMeAMaterialInstance() const
-{
-    return getRandomMaterialInstanceId();
-}
-
 PbrMaterialParameters PbrMaterialBank::getMaterialInstance(IdType id) const
 {
     return mMaterialInstances.at(id);
-}
-
-IdType PbrMaterialBank::getRandomMaterialInstanceId() const
-{
-    static std::random_device rd;
-    static std::mt19937 re(rd());
-
-    std::uniform_int_distribution<int> uniDist(0, mMaterialInstances.size() - 1);
-    return uniDist(re);
 }
 
 BunnyResult PbrMaterialBank::addMaterialInstance(const PbrMaterialParameters& materialParams, IdType& outId)
@@ -74,8 +56,28 @@ BunnyResult PbrMaterialBank::addMaterialInstance(const PbrMaterialParameters& ma
     return BUNNY_HAPPY;
 }
 
-void PbrMaterialBank::updateMaterialDescriptorSet(
-    VkDescriptorSet descriptorSet, const MeshBank<NormalVertex>* meshBank) const
+VkDescriptorSet PbrMaterialBank::getMaterialDescriptorSet() const
+{
+    return mMaterialDescSet;
+}
+
+BunnyResult PbrMaterialBank::allocateMaterialDescriptorSet()
+{
+    //  material descriptor set contains variable count descriptors (textures)
+    //  therefore we need to get the actual number of descriptors to allocate
+    uint32_t textureCount = mTextureBank->getTextureCount();
+    VkDescriptorSetVariableDescriptorCountAllocateInfo variableInfo{
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO};
+    variableInfo.descriptorSetCount = 1;
+    variableInfo.pDescriptorCounts = &textureCount;
+
+    mDescriptorAllocator.allocate(
+        mVulkanResources->getDevice(), &mMaterialDescSetLayout, &mMaterialDescSet, 1, &variableInfo);
+
+    return BUNNY_HAPPY;
+}
+
+void PbrMaterialBank::updateMaterialDescriptorSet(const MeshBank<NormalVertex>* meshBank) const
 {
     assert(!mMaterialBufferNeedUpdate);
 
@@ -87,7 +89,7 @@ void PbrMaterialBank::updateMaterialDescriptorSet(
     writer.writeBuffer(2, meshBank->getSurfaceDataBuffer().mBuffer, meshBank->getSurfaceDataBufferSize(), 0,
         VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
     mTextureBank->addDescriptorSetWrite(3, writer);
-    writer.updateSet(mVulkanResources->getDevice(), descriptorSet);
+    writer.updateSet(mVulkanResources->getDevice(), mMaterialDescSet);
 }
 
 BunnyResult PbrMaterialBank::recreateMaterialBuffer()
@@ -249,6 +251,21 @@ BunnyResult PbrMaterialBank::buildPipelineLayouts()
         vkDestroyPipelineLayout(device, mPbrGBufferPipelineLayout, nullptr);
         vkDestroyPipelineLayout(device, mPbrDeferredPipelineLayout, nullptr);
     });
+
+    return BUNNY_HAPPY;
+}
+
+BunnyResult PbrMaterialBank::initDescriptorAllocator()
+{
+    VkDevice device = mVulkanResources->getDevice();
+
+    DescriptorAllocator::PoolSize poolSizes[] = {
+        {.mType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,         .mRatio = 3                                      },
+        {.mType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .mRatio = PbrMaterialBank::TEXTURE_ARRAY_MAX_SIZE},
+    };
+    mDescriptorAllocator.init(device, 1, poolSizes);
+
+    mDeletionStack.AddFunction([this]() { mDescriptorAllocator.destroyPools(mVulkanResources->getDevice()); });
 
     return BUNNY_HAPPY;
 }
