@@ -20,11 +20,9 @@ class TextureBank;
 class PbrMaterialBank
 {
   public:
-    //  Size of the array containing all textures in the shader
-    //  This value is needed when creating the descriptor set
-    //  For now this is fixed, try to make it growable when necessary
-    //  In this case need to rebuild the whole rendering pipeline
-    static constexpr uint32_t TEXTURE_ARRAY_SIZE = 64;
+    //  The maximum number of textures in the texture array
+    //  the actual number of texture descriptors allocated should be lower than this
+    static constexpr uint32_t TEXTURE_ARRAY_MAX_SIZE = 1024;
 
     PbrMaterialBank(
         const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer, TextureBank* textureBank);

@@ -203,6 +203,11 @@ VkSampler TextureBank::getSampler() const
     return mImageSampler;
 }
 
+uint32_t TextureBank::getTextureCount() const
+{
+    return mTextures.size();
+}
+
 void TextureBank::cleanup()
 {
     for (AllocatedImage& texture : mTextures)

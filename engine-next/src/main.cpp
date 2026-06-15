@@ -103,8 +103,7 @@ int main(void)
     WaveSpectrumTransformPass waveTransformPass(
         &renderResources, &renderer, waveSpectrumPrePass.getGridN(), waveSpectrumPrePass.getWidth());
     RaytracingShadowPass rtShadowPass(&renderResources, &renderer, &pbrMaterialBank, &meshBank);
-    PbrForwardPass pbrForwardPass(&renderResources, &renderer, &pbrMaterialBank, &meshBank,
-        "pbr_culled_instanced_vert.spv", "pbr_forward_frag.spv");
+    PbrForwardPass pbrForwardPass(&renderResources, &renderer, &pbrMaterialBank, &meshBank);
     CullingPass cullingPass(&renderResources, &renderer, &meshBank);
     SkyPass skyPass(&renderResources, &renderer, &textureBank);
     FinalOutputPass finalOutputPass(&renderResources, &renderer, &textureBank);

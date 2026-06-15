@@ -34,6 +34,7 @@ class TextureBank
     bool getTexture3d(IdType id, AllocatedImage& outTexture) const; //  return true when success, otherwise false
     const std::vector<AllocatedImage>& getAllTextures3d() const;
     VkSampler getSampler() const;
+    uint32_t getTextureCount() const;
 
     void cleanup();
 

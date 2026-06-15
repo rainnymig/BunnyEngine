@@ -234,11 +234,11 @@ BunnyResult OceanPass::initDescriptors()
     VkDevice device = mVulkanResources->getDevice();
 
     DescriptorAllocator::PoolSize poolSizes[] = {
-        {.mType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,             .mRatio = 8                                       },
-        {.mType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,     .mRatio = PbrMaterialBank::TEXTURE_ARRAY_SIZE + 10},
-        {.mType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,             .mRatio = 6                                       },
-        {.mType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,              .mRatio = 2                                       },
-        {.mType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, .mRatio = 2                                       }
+        {.mType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,             .mRatio = 8                                           },
+        {.mType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,     .mRatio = PbrMaterialBank::TEXTURE_ARRAY_MAX_SIZE + 10},
+        {.mType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,             .mRatio = 6                                           },
+        {.mType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,              .mRatio = 2                                           },
+        {.mType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, .mRatio = 2                                           }
     };
     for (FrameData& frame : mFrameData)
     {

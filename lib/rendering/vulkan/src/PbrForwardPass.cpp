@@ -8,6 +8,7 @@
 #include "ShaderData.h"
 #include "GraphicsPipelineBuilder.h"
 #include "Helper.h"
+#include "TextureBank.h"
 
 namespace Bunny
 {
@@ -275,10 +276,10 @@ BunnyResult PbrForwardPass::initDescriptors()
     VkDevice device = mVulkanResources->getDevice();
 
     DescriptorAllocator::PoolSize poolSizes[] = {
-        {.mType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,         .mRatio = 4                                  },
-        {.mType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         .mRatio = 4                                  },
-        {.mType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .mRatio = PbrMaterialBank::TEXTURE_ARRAY_SIZE},
-        {.mType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,          .mRatio = 2                                  },
+        {.mType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,         .mRatio = 4                                      },
+        {.mType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         .mRatio = 4                                      },
+        {.mType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .mRatio = PbrMaterialBank::TEXTURE_ARRAY_MAX_SIZE},
+        {.mType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,          .mRatio = 2                                      },
     };
     mDescriptorAllocator.init(device, 10, poolSizes);
 

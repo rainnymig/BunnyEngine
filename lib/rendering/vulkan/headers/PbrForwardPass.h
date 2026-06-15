@@ -16,8 +16,9 @@ class PbrForwardPass : public PbrGraphicsPass
 {
   public:
     PbrForwardPass(const VulkanRenderResources* vulkanResources, const VulkanGraphicsRenderer* renderer,
-        const PbrMaterialBank* materialBank, const MeshBank<NormalVertex>* meshBank, std::string_view vertShader,
-        std::string_view fragShader);
+        const PbrMaterialBank* materialBank, const MeshBank<NormalVertex>* meshBank,
+        std::string_view vertShader = "pbr_culled_instanced_vert.spv",
+        std::string_view fragShader = "pbr_forward_frag.spv");
 
     virtual void draw() const override;
 

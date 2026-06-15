@@ -175,9 +175,19 @@ BunnyResult PbrMaterialBank::buildDescriptorSetLayouts()
     //  all textures array
     imageBinding.binding = 3;
     imageBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
-    imageBinding.descriptorCount = TEXTURE_ARRAY_SIZE;
+    imageBinding.descriptorCount = TEXTURE_ARRAY_MAX_SIZE;
     builder.addBinding(imageBinding);
-    mMaterialDescSetLayout = builder.build(mVulkanResources->getDevice());
+    //  because we need to support variable descriptor count for the texture array we need some extra setup
+    constexpr VkDescriptorBindingFlags nullBindingFlags = 0;
+    constexpr VkDescriptorBindingFlags texBindingFlags =
+        VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT //  variable descriptor count for tex array
+        | VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT;        //  the descriptors not used need not to be bound
+    VkDescriptorBindingFlags bindingFlags[] = {nullBindingFlags, nullBindingFlags, nullBindingFlags, texBindingFlags};
+    VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsCreateInfo{
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO};
+    bindingFlagsCreateInfo.bindingCount = 4; //  number of bindings flags, each for one binding in this set
+    bindingFlagsCreateInfo.pBindingFlags = bindingFlags;
+    mMaterialDescSetLayout = builder.build(mVulkanResources->getDevice(), &bindingFlagsCreateInfo);
 
     builder.clear();
     //  light shadow info
