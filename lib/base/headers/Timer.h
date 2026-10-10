@@ -28,12 +28,12 @@ class BasicTimer : public ITTimer<TimeUnit>
   public:
     void start()
     {
-        mStartTimePoint = std::chrono::high_resolution_clock::now();
+        mStartTimePoint = std::chrono::steady_clock::now();
         mLastTimePoint = mStartTimePoint;
     }
     virtual void tick() override
     {
-        const auto currentTimePoint = std::chrono::high_resolution_clock::now();
+        const auto currentTimePoint = std::chrono::steady_clock::now();
         mDeltaTime = currentTimePoint - mLastTimePoint;
         mTime = currentTimePoint - mStartTimePoint;
         mLastTimePoint = currentTimePoint;
@@ -42,10 +42,52 @@ class BasicTimer : public ITTimer<TimeUnit>
     virtual TimeUnit getDeltaTime() const override { return mDeltaTime.count(); }
 
   private:
-    std::chrono::time_point<std::chrono::high_resolution_clock> mStartTimePoint;
-    std::chrono::time_point<std::chrono::high_resolution_clock> mLastTimePoint;
+    std::chrono::time_point<std::chrono::steady_clock> mStartTimePoint;
+    std::chrono::time_point<std::chrono::steady_clock> mLastTimePoint;
     std::chrono::duration<TimeUnit> mTime{0};
     std::chrono::duration<TimeUnit> mDeltaTime{0};
+};
+
+template <typename TimeUnit = double>
+    requires std::is_floating_point_v<TimeUnit>
+class GameTimer : public ITTimer<TimeUnit>
+{
+  public:
+    void start()
+    {
+        mLastTimePoint = std::chrono::steady_clock::now();
+        mTime = 0;
+        mIsRunning = true;
+    }
+
+    virtual void tick() override
+    {
+        const auto currentTimePoint = std::chrono::steady_clock::now();
+
+        if (mIsRunning)
+        {
+            mDeltaTime = currentTimePoint - mLastTimePoint;
+        }
+        else
+        {
+            mDeltaTime = std::chrono::duration<TimeUnit>::zero();
+        }
+
+        mTime += mDeltaTime * mDilationFactor;
+        mLastTimePoint = currentTimePoint;
+    }
+
+    void pause() { mIsRunning = false; }
+    void resume() { mIsRunning = true; }
+    virtual TimeUnit getTime() const override { return mTime.count(); }
+    virtual TimeUnit getDeltaTime() const override { return mDeltaTime.count(); }
+
+  private:
+    std::chrono::time_point<std::chrono::steady_clock> mLastTimePoint;
+    std::chrono::duration<TimeUnit> mTime{0};
+    std::chrono::duration<TimeUnit> mDeltaTime{0};
+    double mDilationFactor = 1;
+    bool mIsRunning = false;
 };
 
 } // namespace Bunny
