@@ -15,11 +15,11 @@ BunnyResult Game::initialize(Engine& engine)
 
 BunnyResult Game::run()
 {
-    return BunnyResult();
+    return BUNNY_HAPPY;
 }
 
 BunnyResult Game::shutdown()
 {
-    return BunnyResult();
+    return BUNNY_HAPPY;
 }
 } // namespace Bunny

@@ -34,12 +34,12 @@ BunnyResult GraphicsSystem::initialize(Engine& engine)
 
 BunnyResult GraphicsSystem::draw()
 {
-    return BunnyResult();
+    return BUNNY_HAPPY;
 }
 
 BunnyResult GraphicsSystem::shutdown()
 {
-    return BunnyResult();
+    return BUNNY_HAPPY;
 }
 
 } // namespace Bunny
