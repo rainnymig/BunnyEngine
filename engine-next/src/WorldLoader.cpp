@@ -22,10 +22,8 @@
 namespace Bunny
 {
 
-WorldLoader::WorldLoader(const VulkanRenderResources* vulkanResources, PbrMaterialBank* pbrMaterialBank,
-    MeshBank<NormalVertex>* meshBank, TextureBank* textureBank)
-    : mVulkanResources(vulkanResources),
-      mPbrMaterialBank(pbrMaterialBank),
+WorldLoader::WorldLoader(PbrMaterialBank* pbrMaterialBank, MeshBank<NormalVertex>* meshBank, TextureBank* textureBank)
+    : mPbrMaterialBank(pbrMaterialBank),
       mMeshBank(meshBank),
       mTextureBank(textureBank)
 {

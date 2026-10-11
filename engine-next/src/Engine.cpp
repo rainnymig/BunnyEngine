@@ -21,11 +21,26 @@ BunnyResult Engine::initialize(std::unique_ptr<Game>&& game)
 
     ImguiHelper::setup();
 
+    BUNNY_CHECK_SUCCESS_OR_RETURN_RESULT(mGame->initialize(*this));
+
     return BUNNY_HAPPY;
 }
 
 BunnyResult Engine::runEngine()
 {
+    mTimer.start();
+    while (true)
+    {
+        mTimer.tick();
+
+        if (mWindow->processWindowEvent())
+        {
+            break;
+        }
+
+        mGame->run();
+        mGraphicsSystem->draw();
+    }
 
     return BUNNY_HAPPY;
 }

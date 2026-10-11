@@ -91,7 +91,7 @@ int main(void)
     pbrMaterialBank.initialize();
 
     World bunnyWorld;
-    WorldLoader worldLoader(&renderResources, &pbrMaterialBank, &meshBank, &textureBank);
+    WorldLoader worldLoader(&pbrMaterialBank, &meshBank, &textureBank);
     worldLoader.loadPbrTestWorldWithGltfMeshes(Config::get().mModelFilePath, bunnyWorld);
 
     AccelerationStructureBuilder acceStructBuilder(&renderResources, &renderer);

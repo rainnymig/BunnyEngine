@@ -2,10 +2,13 @@
 
 #include "BunnyResult.h"
 
+#include <memory>
+
 namespace Bunny
 {
 
 class Engine;
+class World;
 
 class Game
 {
@@ -14,7 +17,11 @@ class Game
     virtual BunnyResult run();
     virtual BunnyResult shutdown();
 
+    World& getWorld() { return *mWorld; }
+
   private:
+    std::unique_ptr<World> mWorld;
+
     Engine* mEngine;
 };
 } // namespace Bunny

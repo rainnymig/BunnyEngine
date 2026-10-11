@@ -9,7 +9,6 @@
 
 namespace Bunny
 {
-class VulkanRenderResources;
 class PbrMaterialBank;
 class TextureBank;
 } // namespace Bunny
@@ -19,8 +18,7 @@ namespace Bunny
 class WorldLoader
 {
   public:
-    WorldLoader(const VulkanRenderResources* vulkanResources, PbrMaterialBank* pbrMaterialBank,
-        MeshBank<NormalVertex>* meshBank, TextureBank* textureBank);
+    WorldLoader(PbrMaterialBank* pbrMaterialBank, MeshBank<NormalVertex>* meshBank, TextureBank* textureBank);
 
     BunnyResult loadPbrTestWorldWithGltfMeshes(std::string_view filePath, World& outWorld);
 
@@ -28,7 +26,6 @@ class WorldLoader
     void postLoad(World& outWorld);
     void loadWorldStructure(fastgltf::Asset& gltfAsset, World& outWorld);
 
-    const VulkanRenderResources* mVulkanResources;
     PbrMaterialBank* mPbrMaterialBank;
     MeshBank<NormalVertex>* mMeshBank;
     TextureBank* mTextureBank;
