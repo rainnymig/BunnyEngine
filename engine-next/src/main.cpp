@@ -40,7 +40,6 @@
 #include <memory>
 
 using namespace Bunny;
-using namespace Bunny;
 using Bunny::ImguiHelper;
 using Bunny::BasicTimer;
 

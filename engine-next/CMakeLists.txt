@@ -5,6 +5,12 @@ target_sources(EngineNext
         src/main.cpp
         src/Config.h
         src/Config.cpp
+        src/Engine.h
+        src/Engine.cpp
+        src/Game.h
+        src/Game.cpp
+        src/GraphicsSystem.h
+        src/GraphicsSystem.cpp
         src/World.h
         src/World.cpp
         src/WorldComponents.h
